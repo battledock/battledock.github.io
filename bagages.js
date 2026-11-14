@@ -431,6 +431,7 @@ async function payer(sc){if(!VAC)return {erreur:'connexion'};
  if(!r)return {erreur:'indispo'};
  if(r.xp>0){try{e.recolte=(e.recolte||0)+r.xp;if((e.score||0)<e.recolte)e.score=e.recolte;sauver();majHaut();}catch(x){}}
  if(!r.erreur&&typeof r.euros==='number'){try{e.euros=r.euros;sauver();majHaut();}catch(x){}}
+ if(r.pochette&&window.montrerPochette)montrerPochette(r.pochette,'TROUVÉE DANS LA SOUTE ⚓',1800);
  return r;}
 /* l'album de la collection */
 function ouvrirAlbum(){if(!RAC||RAC.querySelector('.albv'))return;const pause=J&&!J.fini&&!J.tuto;if(pause)J.tuto=true;const a=album();

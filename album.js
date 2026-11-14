@@ -83,13 +83,22 @@ async function ouvrirPochette(s){if(OCC)return;OCC=true;vib(10);msg('');
  const r=await rpcS('album_pochette',{p_source:s});await new Promise(k=>setTimeout(k,900));OCC=false;
  if(!r||!r.ok){v.remove();msg(r&&r.erreur==='pas_assez'?'Pas assez d’euros.':r&&r.erreur==='deja'?'Tu as déjà ouvert la pochette du jour.':r&&r.erreur==='doublons'?'Il faut 5 doublons.':'L’album arrive très bientôt !');lire();return;}
  if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}
- v.querySelector('.poch').classList.add('dechire');vib([10,30,10]);
- setTimeout(()=>{const L=r.cartes||[],N=r.neuf||[];v.innerHTML='<div class="tri">'+L.map((id,k)=>{const i=ID[id];return i===undefined?'':'<div class="cs" style="position:relative">'+(N[k]?'<span class="nf">NOUVEAU !</span>':'')+sticker(i,1,0).replace('style="--r:','style="animation-delay:'+(k*.35)+'s;--r:')+'</div>';}).join('')+'</div>'+
-  '<div style="font-weight:800;font-size:15px">'+(L.some(id=>rar(ID[id])===2)?'✨ UNE LÉGENDE ! ✨':N.some(Boolean)?'De nouveaux autocollants pour ton album !':'Que des doublons… garde-les pour les échanger !')+'</div><button class="acoll">Coller dans l’album</button>';
+ devoiler(v,r,(L)=>{const p=L.length?Math.floor(ID[L[0]]/9):PG;PG=isFinite(p)?p:PG;lire();});}
+function devoiler(v,r,fin,voir){v.querySelector('.poch').classList.add('dechire');vib([10,30,10]);
+ setTimeout(()=>{const L=r.cartes||[],N=r.neuf||[];v.innerHTML=(r.titre?'<div style="font-weight:900;font-size:13px;letter-spacing:2px;opacity:.75">'+r.titre+'</div>':'')+'<div class="tri">'+L.map((id,k)=>{const i=ID[id];return i===undefined?'':'<div class="cs" style="position:relative">'+(N[k]?'<span class="nf">NOUVEAU !</span>':'')+sticker(i,1,0).replace('style="--r:','style="animation-delay:'+(k*.35)+'s;--r:')+'</div>';}).join('')+'</div>'+
+  '<div style="font-weight:800;font-size:15px;text-align:center;padding:0 20px">'+(L.some(id=>rar(ID[id])===2)?'✨ UNE LÉGENDE ! ✨':N.some(Boolean)?(L.length>1?'De nouveaux autocollants pour ton album !':'Un nouvel autocollant pour ton album !'):(L.length>1?'Que des doublons… garde-les pour les échanger !':'Un doublon… garde-le pour l’échanger !'))+'</div><button class="acoll">Coller dans l’album</button>'+(voir?'<button class="avoir" style="border:0;background:none;color:#fff;opacity:.75;font:800 14px \'Baloo 2\',system-ui,sans-serif;text-decoration:underline">Voir mon album</button>':'');
   if(L.some(id=>rar(ID[id])===2))vib([30,40,30,40,120]);
-  v.querySelector('.acoll').onclick=()=>{vib(8);v.remove();const p=L.length?Math.floor(ID[L[0]]/9):PG;PG=isFinite(p)?p:PG;lire();};},450);}
+  v.querySelector('.acoll').onclick=()=>{vib(8);v.remove();fin(L);};
+  const av=v.querySelector('.avoir');if(av)av.onclick=()=>{vib(8);v.remove();fin(L);setTimeout(()=>window.ouvrirAlbum&&ouvrirAlbum(),60);};},450);}
+function css(){if(!document.getElementById('albCss')){const s=document.createElement('style');s.id='albCss';s.textContent=CSS;document.head.appendChild(s);}}
+/* une pochette gagnée ailleurs (battle, soute, Père Noël, calendrier, trouvaille) */
+window.ALB_REVELER=function(r,titre){if(!r||!Array.isArray(r.cartes)||!r.cartes.length)return;css();
+ let hote=RAC,tmp=false;if(!hote){hote=document.createElement('div');hote.id='alb';hote.className='on';hote.style.cssText='background:none;pointer-events:none;inset:auto;width:0;height:0';document.body.appendChild(hote);tmp=true;}
+ const v=document.createElement('div');v.id='albP';v.style.pointerEvents='auto';v.innerHTML='<div class="poch">BATTLE<br>DOCK<small style="font-size:12px;letter-spacing:3px">AUTOCOLLANTS</small></div><div style="font-weight:800;opacity:.8">'+(titre||'Une pochette pour toi !')+'</div>';hote.appendChild(v);vib(10);
+ const k=Object.assign({},r,{titre:titre||''});
+ setTimeout(()=>devoiler(v,k,()=>{if(tmp)hote.remove();else lire();},tmp),1100);};
 function fermer(){if(!RAC)return;const R0=RAC;RAC=null;window.ECRAN_COUVRANT=false;R0.classList.remove('on');setTimeout(()=>R0.remove(),220);}
-window.ouvrirAlbum=async function(){if(RAC)return;try{if(!window.AUTOCOLLANT)eval(await chargerMorceau('autocollants.js'));}catch(x){}if(RAC)return;if(!document.getElementById('albCss')){const s=document.createElement('style');s.id='albCss';s.textContent=CSS;document.head.appendChild(s);}
+window.ouvrirAlbum=async function(){if(RAC)return;try{if(!window.AUTOCOLLANT)eval(await chargerMorceau('autocollants.js'));}catch(x){}if(RAC)return;css();
  const d=document.createElement('div');d.id='alb';RAC=d;d.innerHTML='<div class="ahd"><b></b><button class="ax" aria-label="Fermer">✕</button></div><div class="aong"></div><div class="acorps"><div class="apage"></div><div class="amsg"></div><div class="apo"></div></div>';
  document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));window.ECRAN_COUVRANT=true;d.querySelector('.ax').onclick=()=>{vib(8);fermer();};rendre();lire();};
 })();

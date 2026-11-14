@@ -58,7 +58,7 @@ async function ouvrir(j,b,dispo,ouv){if(OCC)return;if(ouv){const g=gain(j);pop('
   OCC=true;vib([10,30,10]);const r=await rpc('avent_ouvrir',{p_jour:j});OCC=false;if(!RAC)return;
   if(!r||r.erreur){msg(r&&r.erreur==='connexion'?'Connecte-toi pour ouvrir le calendrier.':r&&r.erreur==='pas encore'?'Cette case n’est pas encore ouvrable.':'Petit souci de réseau, réessaie.');return;}
   MIENS[j]=true;b.classList.add('ouv');b.classList.remove('auj','ret');const g=gain(j);
-  if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}if(r.piece)e.cos=Object.assign({},e.cos||{},{[r.piece]:true});
+  if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}if(r.piece)e.cos=Object.assign({},e.cos||{},{[r.piece]:true});if(r.pochette&&window.montrerPochette)montrerPochette(r.pochette,'CACHÉE DANS LA CASE 📅',2200);
   setTimeout(()=>{pop('+'+((r.valeur||g.e*100)/100).toLocaleString('fr-FR')+' €',g.p?'Et une pièce de Noël : '+g.p[1]+' ! Porte-la depuis « Ma hotte de Noël ».':'Joyeux Noël, docker !');vib([20,40,20]);rendre();},550);}
 function fermer(){if(!RAC)return;const R0=RAC;RAC=null;R0.classList.remove('on');setTimeout(()=>R0.remove(),250);}
 window.ouvrirCalendrierAvent=async function(){if(RAC)return;

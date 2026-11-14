@@ -14638,6 +14638,7 @@ nettoyerBulles();
 const acteurs=[{y:(window.MOI_ASSIS?window.MOI_ASSIS.ys:joueur.y),
 f:()=>{if(window.MOI_ASSIS){const S=window.MOI_ASSIS;try{assis(ctx,Math.round(S.x-camX),Math.round(S.h-camY),e.ap);}catch(x){}return;}if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){try{TKM.dessinerEssai(ctx,camX,camY);}catch(x){}return;}try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*px+m.e,y:m.d*(py-18)+m.f,sc:m.a/3};}catch(x){}if(window.AURA_DERRIERE)try{window.AURA_DERRIERE(ctx,px,py);}catch(x){}
 if(DANSE){if(joueur.marche||(GESTE&&GESTE.t>0))arreterDanse();else{const tD=danseDuJoueur();if(tD!==null)return danseur(ctx,px,py,Object.assign({},e.ap),DANSE.k,tD);}}{const r_=personne(ctx,px,py,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche,court);if(window.AURA_DEVANT)try{window.AURA_DEVANT(ctx,px,py);}catch(x){}return r_;}}}];
+try{acteurTrouvaille(acteurs,camX,camY);}catch(x){}
 if(JOL&&JOL.acteurs){try{for(const a of JOL.acteurs())acteurs.push({y:a.y,f:()=>{try{a.f(ctx,camX,camY);}catch(x){}}});}catch(x){}}
 if(JOL&&JOL.figurants){try{for(const f of JOL.figurants()){const fx=f.x-camX,fy=f.y-camY;if(fx<-40||fy<-30||fx>VW+40||fy>VH+70)continue;acteurs.push({y:f.y,f:()=>{try{const s=GESTE;GESTE={t:0};personne(ctx,Math.round(f.x-camX),Math.round(f.y-camY),Object.assign({},DEF_AP,f.ap),f.dir,f.pas,f.marche!==false,!!f.court);GESTE=s;}catch(x){}}});}}catch(x){}}
 if(OVATION){if(Date.now()>OVATION.fin)OVATION=null;else for(const f of OVATION.gens)acteurs.push({y:f.y,f:()=>{try{dessinerFigurant(ctx,f,camX,camY);}catch(x){}}});}
@@ -20886,6 +20887,27 @@ if(typeof REG!=='undefined'&&REG.secousses===false)return;
 SECOUSSE=Math.max(SECOUSSE,f);
 }
 let TEXTES=[];                                  /* les gains qui montent */
+/* un autocollant caché par lieu et par jour : une petite étoile qui scintille, à ramasser */
+const TROUV={cle:null,x:0,y:0,etat:0};const rpcT=async(n,a)=>{try{if(sb&&sb.rpc){const q=await sb.rpc(n,a||{});return q.data;}return await appelRPC(n,a||{});}catch(x){return null;}};
+function cleTrouvaille(){if(CARTE!=='spawn'||!JOL)return null;const L=window.LIEU_PAGE||'';if(!L)return 'place';if(L.slice(0,9)==='terrasses')return 'galerie';return ['club','stade','plage','corniche','piste'].includes(L)?L:null;}
+async function preparerTrouvaille(){try{const k=cleTrouvaille();if(!k||!JOL.depart)return;
+ const r=await rpcT('album_trouves_jour');if(!Array.isArray(r)||r.includes(k))return;
+ const d=new Date(Date.now()+3600e3*1);let h=(d.getUTCFullYear()*400+d.getUTCMonth()*32+d.getUTCDate())*7919;for(const c of k)h=(h*31+c.charCodeAt(0))>>>0;
+ const rnd=()=>{h=(h*1664525+1013904223)>>>0;return h/4294967296;};const [dx,dy]=JOL.depart;
+ for(let i=0;i<400;i++){const a=rnd()*6.283,R=110+rnd()*330,x=Math.round(dx+Math.cos(a)*R),y=Math.round(dy+Math.sin(a)*R*.8);
+  if(x<30||y<60||x>MONDE_L-30||y>MONDE_H-30)continue;let ok=true;for(const [ox,oy] of [[0,0],[10,0],[-10,0],[0,8],[0,-8]])if(JOL.bloque(x+ox,y+oy)){ok=false;break;}
+  if(ok){TROUV.cle=k;TROUV.x=x;TROUV.y=y;TROUV.etat=1;return;}}}catch(x){}}
+function acteurTrouvaille(acteurs,camX,camY){if(TROUV.etat!==1)return;const t=performance.now()/1000,sx=TROUV.x-camX,sy=TROUV.y-camY;
+ if(joueur.marche&&!window.ECRAN_COUVRANT&&Math.hypot(joueur.x-TROUV.x,joueur.y-TROUV.y)<20){ramasserTrouvaille();return;}
+ if(sx<-30||sy<-30||sx>VW+30||sy>VH+30)return;
+ acteurs.push({y:TROUV.y,f:()=>{const g=ctx,b=Math.sin(t*3)*2,x=Math.round(sx),y=Math.round(sy-7+b);g.save();
+  g.fillStyle='rgba(0,0,0,.18)';g.beginPath();g.ellipse(x,Math.round(sy),6-b*.5,2,0,0,7);g.fill();
+  g.translate(x,y);g.rotate(Math.sin(t*1.7)*.18);g.fillStyle='#fff';g.strokeStyle='rgba(120,90,50,.35)';g.lineWidth=1;g.beginPath();g.roundRect?g.roundRect(-6,-6,12,12,3):g.rect(-6,-6,12,12);g.fill();g.stroke();
+  const gr=g.createLinearGradient(-5,-5,5,5);gr.addColorStop(0,'#ff6ad8');gr.addColorStop(.5,'#ffd23a');gr.addColorStop(1,'#6af0ff');g.fillStyle=gr;g.beginPath();for(let i=0;i<10;i++){const r=i%2?2:4.6,a=i*Math.PI/5-Math.PI/2;g.lineTo(Math.cos(a)*r,Math.sin(a)*r);}g.closePath();g.fill();g.restore();
+  g.fillStyle='rgba(255,255,255,'+(.5+.5*Math.sin(t*5))+')';const k=(t*1.3)%1;g.fillRect(x+7,y-8-k*4,2,2);g.fillRect(x-9,y-2+k*3,1.5,1.5);g.fillRect(x+3,y+7-k*5,1.5,1.5);}});}
+async function ramasserTrouvaille(){if(TROUV.etat!==1)return;TROUV.etat=2;try{vibrer([10,30,10]);}catch(x){}try{texteVolant(TROUV.x,TROUV.y-20,'Un autocollant !','#ffd23a');}catch(x){}
+ let r=null;r=await rpcT('album_trouver',{p_cle:TROUV.cle});
+ if(r&&r.ok&&r.pochette){TROUV.etat=3;montrerPochette(r.pochette,'TROUVÉ PAR TERRE 🔍',500);}else if(r&&r.erreur==='deja')TROUV.etat=3;else setTimeout(()=>{TROUV.etat=1;},8000);}
 function texteVolant(x,y,txt,col){TEXTES.push({x,y,txt,col:col||'#f2e6cc',vie:1});}
 function majTextes(dt){
 for(let i=TEXTES.length-1;i>=0;i--){
@@ -28680,7 +28702,8 @@ try{if(CARTE==='extramar'&&new URLSearchParams(location.search).has('arrivee'))p
    réécrite à chaque pas sur n'importe quelle carte annexe : on arrivait
    donc dans le bois à la position qu'on avait à Extramar, parfois à
    l'intérieur d'un arbre. Le sentier est l'entrée, et la seule. */
-if(CARTE==='spawn'&&JOL){joueur.x=JOL.depart[0];joueur.y=JOL.depart[1];joueur.dir='haut';}   /* on arrive toujours au même endroit de la place */
+if(CARTE==='spawn'&&JOL){joueur.x=JOL.depart[0];joueur.y=JOL.depart[1];joueur.dir='haut';}
+setTimeout(preparerTrouvaille,2500);   /* on arrive toujours au même endroit de la place */
 if(CARTE==='foret'){joueur.x=F_SENT_ARRIVEE[0];joueur.y=F_SENT_ARRIVEE[1];joueur.dir='droite';}
 if(CARTE==='large'){const p=batMonde(0,BARRE_Y+16);joueur.x=p[0];joueur.y=p[1];joueur.dir='haut';
   COIN_VU=null;window.TK_SANS_JOY=true;   /* au large, on ne marche pas : pas de joystick */
@@ -35078,6 +35101,7 @@ const CSS_MR=`#menuRond{position:fixed;right:12px;bottom:calc(14px + env(safe-ar
 function fermerMenu(){const d=document.getElementById('menuTir');if(!d)return;d.classList.remove('on');setTimeout(()=>d.remove(),220);}
 let TEL_CHARGE=false;
 async function ouvrirCarnetN(ong){try{if(!window.ouvrirCarnetNeuf)eval(await chargerMorceau('carnet.js'));window.ouvrirCarnetNeuf(ong);}catch(x){console.warn('CARNET',x);}}
+window.montrerPochette=async function(p,titre,delai){if(!p||!Array.isArray(p.cartes)||!p.cartes.length)return;try{if(!window.AUTOCOLLANT)eval(await chargerMorceau('autocollants.js'));if(!window.ALB_REVELER)eval(await chargerMorceau('album.js'));if(delai)await new Promise(k=>setTimeout(k,delai));window.ALB_REVELER(p,titre);}catch(x){console.warn('POCHETTE',x);}};
 async function ouvrirNeuf(fichier,fn){try{if(!window[fn])eval(await chargerMorceau(fichier));window[fn]();}catch(x){console.warn('ECRAN',fichier,x);}}
 async function ouvrirSacN(){try{if(!window.ouvrirSacNeuf)eval(await chargerMorceau('sac.js'));window.ouvrirSacNeuf();}catch(x){console.warn('SAC',x);}}
 async function ouvrirTelephone(){try{if(!TEL_CHARGE&&!window.ouvrirLeTelephone){eval(await chargerMorceau('telephone.js'));TEL_CHARGE=true;}window.ouvrirLeTelephone();}catch(x){console.warn('TEL',x);}}

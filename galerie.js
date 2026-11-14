@@ -267,7 +267,7 @@ window.ouvrirPereNoel=async function(mode){const H=mode==='hotte';
     const r=await rpc('noel_cadeau');await new Promise(k=>setTimeout(k,900));EN=false;if(!RAC)return;bo.classList.remove('tremble');
     if(!r||r.erreur){go.disabled=false;go.innerHTML='Ouvrir mon cadeau du jour<small>une pièce unique par jour</small>';bulle(r&&r.erreur==='hors saison'?'« Je suis reparti au pôle Nord. À l’hiver prochain ! »':r&&r.erreur==='connexion'?'« Connecte-toi, que je sache à qui donner ! »':'« Mes rennes font des leurs… Réessaie dans un instant. »');return;}
     if(r.deja){montrer({piece:r.cadeau&&r.cadeau!=='complet'?r.cadeau:null},true);return;}
-    if(r.piece)e.cos=Object.assign({},e.cos||{},{[r.piece]:true});
+    if(r.piece)e.cos=Object.assign({},e.cos||{},{[r.piece]:true});if(r.pochette&&window.montrerPochette)montrerPochette(r.pochette,'LA POCHETTE DU PÈRE NOËL 🎅',2600);
     montrer(r,false);vib([20,40,20,40,60]);bulle(r.piece?'« Ho ho ho ! Elle est rien qu’à toi. À demain pour la suivante ! »':'« Tu as déjà toute ma hotte ! Quel docker sage ! »');rendreHotte();};
   go.onclick=ouvrir;bo.onclick=ouvrir;};
 })();

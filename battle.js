@@ -102,7 +102,7 @@ async function terminer(){const S=ST;S.fini=true;try{localStorage.setItem('bd_bt
  if(r&&r.ok){if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}NIV.restant=r.restant;if(r.niveau)NIV.niveau=r.niveau;
   let h=r.gain>0?('+ '+(r.gain/100).toLocaleString('fr-FR')+' €'):'';if(gagne)h+='<em>NIVEAU '+NIV.niveau+' !</em>';
   if(r.piece){h+='<em class="pc">🎁 Tu débloques '+((PALIERS.find(p=>p[0]===NIV.niveau)||[0,r.piece])[1])+' !</em>';try{e.cos=Object.assign({},e.cos||{},{[r.piece]:true});}catch(x){}vib([20,40,20,40,80]);}
-  h+='<small>'+(r.gain>0?(r.restant>0?'encore '+r.restant+' battle'+(r.restant>1?'s':'')+' récompensée'+(r.restant>1?'s':'')+' aujourd’hui':'c’était la dernière récompense du jour'):'Plus de gain en euros aujourd’hui — mais tu montes quand même de niveau.')+'</small>';gn.innerHTML=h;}
+  h+='<small>'+(r.gain>0?(r.restant>0?'encore '+r.restant+' battle'+(r.restant>1?'s':'')+' récompensée'+(r.restant>1?'s':'')+' aujourd’hui':'c’était la dernière récompense du jour'):'Plus de gain en euros aujourd’hui — mais tu montes quand même de niveau.')+'</small>';gn.innerHTML=h;if(r.pochette&&window.montrerPochette)montrerPochette(r.pochette,'POCHETTE DE VICTOIRE 💃',1400);}
  else if(r&&r.erreur==='trop_vite')gn.innerHTML='<small>Doucement ! Attends quelques secondes entre deux battles.</small>';
  else{if(gagne)NIV.niveau++;gn.innerHTML='<small>La caisse du club ne répond pas, réessaie plus tard.</small>';}}
 function lancer(){const R=rivalDe(NIV.niveau);TRAJET=Math.max(.85,1.5-(NIV.niveau-1)*.05);try{musiqueDisco(true);}catch(x){}AO=null;recaler();
