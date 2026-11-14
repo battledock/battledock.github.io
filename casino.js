@@ -3,8 +3,7 @@
    De hautes fenêtres en arc sur la mer de nuit (la lune, le Frioul, le
    phare), des lustres de cristal, du marbre en damier, un tapis rouge
    jusqu'à la grande cagnotte dorée. Les tables : les machines à sous,
-   la roulette, le vingt-et-un de Fonfon, le Treuil, le Mur à clous, les
-   tickets à gratter à la caisse. Les jeux sont dans casinojeux.js ; tout
+   la roulette, le vingt-et-un de Fonfon, les tickets à gratter à la caisse. Les jeux sont dans casinojeux.js ; tout
    se tire côté serveur (casino_coup, casino_21_*).
    Chargé par moteur.js (eval direct) : il voit personne, joueur, e,
    sauver, vibrer, texteVolant, chargerMorceau, VW, VH, GESTE, DEF_AP…
@@ -363,8 +362,6 @@ function acteurs(){const L=[];
   L.push({y:-1e5,f:(g,cx,cy)=>{dessinerCagnotte(g,cx,cy);dessinerLustres(g,cx,cy);}});
   L.push({y:SLOTS[0].y+1,f:(g,cx,cy)=>dessinerMachines(g,cx,cy)});
   L.push({y:ROUL.y+49,f:(g,cx,cy)=>dessinerRoue(g,cx,cy)});
-  L.push({y:TREUIL.y+1,f:(g,cx,cy)=>dessinerTreuil(g,cx,cy)});
-  L.push({y:CLOUS.y+1,f:(g,cx,cy)=>dessinerClous(g,cx,cy)});
   for(const [P,k] of [[CROUPIER,'cr'],[FONFON,'ff'],[CAISSIERE,'cs'],[PORTIER,'po']])L.push(gens(P,k));
   CLIENTS.forEach((P,i)=>L.push(gens(P,'c'+i)));
   return L;}
@@ -376,8 +373,8 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   SLOTS.forEach((S,i)=>{P('x_jol_cas_mac_sol',S.x,S.y,{col:[42,20],v:i});if(!CLIENTS.some(c=>c.jeu===i))P('x_jol_cas_vide',S.x,S.y+20,{agir:()=>jeu('sous',{n:i}),libelle:'Jouer',nom:'MACHINE À SOUS',demi:22});});
   P('x_jol_cas_rt_sol',ROUL.x,ROUL.y+48,{col:[250,70]});P('x_jol_cas_vide',ROUL.x,ROUL.y+80,{agir:()=>jeu('roulette'),libelle:'Miser',nom:'LA ROULETTE',demi:130});
   P('x_jol_cas_bj_sol',BJ.x,BJ.y+38,{col:[200,56]});P('x_jol_cas_vide',BJ.x,BJ.y+64,{agir:()=>jeu('vingtun'),libelle:'S’asseoir',nom:'LE VINGT-ET-UN DE FONFON',demi:100});
-  P('x_jol_cas_tr_sol',TREUIL.x,TREUIL.y,{col:[120,30]});P('x_jol_cas_vide',TREUIL.x,TREUIL.y+20,{agir:()=>jeu('treuil'),libelle:'Hisser',nom:'LE TREUIL',demi:60});
-  P('x_jol_cas_cl_sol',CLOUS.x,CLOUS.y,{col:[106,24]});P('x_jol_cas_vide',CLOUS.x,CLOUS.y+20,{agir:()=>jeu('clous'),libelle:'Lâcher une bille',nom:'LE MUR À CLOUS',demi:56});
+  P('x_jol_cas_bq_sol',170,690,{col:[100,18]});P('x_jol_cas_pa_sol',96,670,{col:[26,10]});P('x_jol_cas_pa_sol',244,670,{col:[26,10]});
+  P('x_jol_cas_bq_sol',880,700,{col:[100,18]});P('x_jol_cas_pa_sol',806,680,{col:[26,10]});P('x_jol_cas_pa_sol',954,680,{col:[26,10]});
   P('x_jol_cas_ca_sol',CAISSE.x,CAISSE.y,{col:[140,40]});P('x_jol_cas_vide',CAISSE.x+10,CAISSE.y+20,{agir:()=>jeu('grattage'),libelle:'Acheter un ticket',nom:'LA CAISSE · TICKETS À GRATTER',demi:70});
   P('x_jol_cas_vide',CAG.x,MUR+26,{agir:()=>jeu('cagnotte',CAG_C),libelle:'Voir la cagnotte',nom:'LA CAGNOTTE DU PORT',demi:80});
   for(const [x,y] of PALMES)P('x_jol_cas_pa_sol',x,y,{col:[26,10]});
@@ -397,7 +394,8 @@ function bloque(x,y){if(x<14||x>W-14||y<MUR+14||y>H-4)return true;
 /* ---------- LA FLUIDITÉ : les gens et le mobilier gravés d'avance ---------- */
 setTimeout(()=>{try{roueImg();for(const k of ['rt','bj','tr','cl','ca'])void k;}catch(x){}},300);
 
-lireCagnotte();setInterval(()=>{if(!document.hidden)lireCagnotte();},20000);
+
+lireCagnotte();setInterval(()=>{if(!document.hidden)lireCagnotte();},8000);
 /* LA SORTIE : par la grande porte, on retrouve la place */
 let PARTI=false;
 setInterval(()=>{try{if(PARTI||typeof joueur==='undefined'||window.ECRAN_COUVRANT)return;if(joueur.y>H-16&&joueur.x>440&&joueur.x<560){PARTI=true;try{sauver();}catch(x){}

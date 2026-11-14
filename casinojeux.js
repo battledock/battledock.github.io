@@ -114,10 +114,11 @@ function sym(g,k,x,y,s){g.save();g.translate(x,y);g.scale(s/40,s/40);g.lineJoin=
 /* ======================= LA MACHINE À SOUS ======================= */
 const SYM=['sardine','cageot','grue','ancre','perle'];
 const PAIE={sardine:8,cageot:14,grue:22,ancre:40,perle:120};
-function jeuSous(){const C=ouvrir('Les Bandits du Port','MACHINE À SOUS · 2 € LE COUP');
-  C.innerHTML='<canvas class="sc"></canvas><div class="msg">Tire le bras… ou appuie sur le bouton !</div><button class="gros">TIRER<small>2 € le coup</small></button><div class="lig"><button class="bt au">Auto × 10<small>dix coups d’affilée</small></button></div>'+
-   '<div class="info">'+SYM.slice().reverse().map(s=>'<span style="display:inline-flex;align-items:center;gap:2px;margin:2px 6px"><canvas data-s="'+s+'" width="44" height="44" style="width:22px;height:22px"></canvas>×3 = <b style="color:#fff2b8">'+PAIE[s]*2+' €</b></span>').join('')+'<br>deux perles = <b style="color:#fff2b8">4 €</b></div>';
-  C.querySelectorAll('canvas[data-s]').forEach(c=>{const g=c.getContext('2d');sym(g,c.dataset.s,22,22,40);});
+function jeuSous(){const C=ouvrir('Les Bandits du Port','MACHINE À SOUS · 1 € À 100 €');
+  C.innerHTML='<canvas class="sc"></canvas><div class="msg">Tire le bras… ou appuie sur le bouton !</div><div class="mises"></div><button class="gros">TIRER</button><div class="lig"><button class="bt au">Auto × 10<small>dix coups d’affilée</small></button></div>'+
+   '<div class="info pt"></div>';
+  const pt=C.querySelector('.pt');const table=m=>{pt.innerHTML=SYM.slice().reverse().map(s=>'<span style="display:inline-flex;align-items:center;gap:2px;margin:2px 6px"><canvas data-s="'+s+'" width="44" height="44" style="width:22px;height:22px"></canvas>×3 = <b style="color:#fff2b8">'+fmt(PAIE[s]*m)+'</b></span>').join('')+'<br>deux perles = <b style="color:#fff2b8">'+fmt(2*m)+'</b>';pt.querySelectorAll('canvas[data-s]').forEach(c=>sym(c.getContext('2d'),c.dataset.s,22,22,40));};
+  const mise=jetons(C.querySelector('.mises'),[100,200,500,1000,2000,5000,10000],'sous',200,table);table(mise());
   const cv=C.querySelector('canvas.sc'),Wd=320,Hd=230,g=toile(cv,Wd,Hd),msg=C.querySelector('.msg'),bt=C.querySelector('.gros'),au=C.querySelector('.au');
   const RL=[{o:0,v:0,cible:null,arret:0},{o:1.4,v:0,cible:null,arret:0},{o:3.1,v:0,cible:null,arret:0}];let BRAS=0,LUM=0,GAGNE=null,EN=false,AUTO=0;
   const H=58;  /* la hauteur d'un symbole sur le rouleau */
@@ -149,17 +150,17 @@ function jeuSous(){const C=ouvrir('Les Bandits du Port','MACHINE À SOUS · 2 �
   let y0t=null;cv.addEventListener('pointerdown',ev=>{const r=cv.getBoundingClientRect();if(ev.clientX-r.left>r.width*.8){y0t=ev.clientY;}});
   cv.addEventListener('pointermove',ev=>{if(y0t===null||EN)return;BRAS=Math.max(0,Math.min(1,(ev.clientY-y0t)/120));});
   cv.addEventListener('pointerup',()=>{if(y0t===null)return;y0t=null;if(BRAS>.5&&!EN)tirer();});
-  async function tirer(){if(EN)return;if(solde()<200){msg.className='msg p';msg.textContent='Il te manque de quoi miser.';AUTO=0;return;}
+  async function tirer(){if(EN)return;const MI=mise();if(solde()<MI){msg.className='msg p';msg.textContent='Il te manque de quoi miser.';AUTO=0;return;}
     EN=true;GAGNE=null;BRAS=1;bt.disabled=true;msg.className='msg';msg.textContent='…';vib(12);son('clac');
-    RL.forEach((R,i)=>{R.v=24+i*2;R.cible=null;});majSolde(solde()-200);
-    const r=await rpcS('casino_coup',{p_jeu:'sous',p_mise:200,p_choix:{}});
+    RL.forEach((R,i)=>{R.v=24+i*2;R.cible=null;});majSolde(solde()-MI);
+    const r=await rpcS('casino_coup',{p_jeu:'sous',p_mise:MI,p_choix:{}});
     if(!vivant(cv))return;
-    if(!r||!r.ok){RL.forEach(R=>{R.cible=Math.ceil(R.o)+1;R.fin=null;});EN=false;bt.disabled=false;BRAS=0;msg.className='msg p';msg.textContent=erreur(r);AUTO=0;majSolde(r&&typeof r.euros==='number'?r.euros:solde()+200);return;}
+    if(!r||!r.ok){RL.forEach(R=>{R.cible=Math.ceil(R.o)+1;R.fin=null;});EN=false;bt.disabled=false;BRAS=0;msg.className='msg p';msg.textContent=erreur(r);AUTO=0;majSolde(r&&typeof r.euros==='number'?r.euros:solde()+MI);return;}
     const L=Array.isArray(r.tirage)?r.tirage:['sardine','cageot','grue'];
     await new Promise(k=>setTimeout(k,380));
     RL.forEach((R,i)=>{const id=Math.max(0,SYM.indexOf(L[i]));setTimeout(()=>{let c=Math.ceil(R.o)+3+i*2;while(((c%5)+5)%5!==id)c++;R.cible=c;R.fin=()=>{son('stop');vib(8);if(i===2)fini();};},i*360);});
     function fini(){EN=false;bt.disabled=false;majSolde(r.euros,r.gain);cagnotte(r);
-      if(r.gain>0){GAGNE=true;msg.className='msg g';msg.textContent=(r.gain>=2400?'JACKPOT ! ':'Gagné ! ')+'+ '+fmt(r.gain);bravo(cv,r.gain,200);setTimeout(()=>{GAGNE=null;},1800);}
+      if(r.gain>0){GAGNE=true;msg.className='msg g';msg.textContent=(r.gain>=MI*12?'JACKPOT ! ':'Gagné ! ')+'+ '+fmt(r.gain);bravo(cv,r.gain,MI);setTimeout(()=>{GAGNE=null;},1800);}
       else{msg.className='msg';msg.textContent=['Pas cette fois…','Presque !','Encore un ?','La prochaine est la bonne ?'][Math.floor(Math.random()*4)];}
       if(AUTO>0){AUTO--;au.querySelector('small').textContent=AUTO?('encore '+AUTO):'dix coups d’affilée';if(AUTO){setTimeout(()=>{if(vivant(cv)&&AUTO)tirer();},r.gain>0?1500:650);}else au.classList.remove('on');}}}
   bt.onclick=()=>tirer();
@@ -260,85 +261,6 @@ function jeu21(){const C=ouvrir('Le Vingt-et-un','LA TABLE DE FONFON · 5 € À
     else{poser(r,true);msg.className='msg';msg.textContent=r.tj===21?'21 ! Reste, peut-être ?':'Encore ?';}}
   C.querySelector('.ti').onclick=()=>agir('tirer');C.querySelector('.re').onclick=()=>agir('rester');C.querySelector('.do').onclick=()=>agir('doubler');}
 
-/* ======================= LE TREUIL ======================= */
-function jeuTreuil(){const C=ouvrir('Le Treuil','JUSQU’OÙ MONTERA LA CAISSE ?');
-  C.innerHTML='<canvas class="sc"></canvas><div class="msg">Pose ta marque : si la caisse l’atteint, tu gagnes ta mise × la marque.</div>'+
-   '<div class="mi"><span>Ta marque</span><span><button class="bt mo" style="flex:0;padding:6px 12px">−</button> <span class="v cv">×2,00</span> <button class="bt pl" style="flex:0;padding:6px 12px">+</button></span></div>'+
-   '<div class="lig cb"></div><div class="info ch2"></div><div class="mises"></div><button class="gros">HISSER LA CAISSE</button>';
-  const cv=C.querySelector('canvas'),Wd=320,Hd=230,g=toile(cv,Wd,Hd),msg=C.querySelector('.msg'),bt=C.querySelector('.gros');
-  let COTE=Math.max(110,Math.min(50000,+(localStorage.getItem('cas_tr_cote')||200)||200));const PAS=[110,125,150,175,200,250,300,400,500,750,1000,1500,2000,3000,5000,10000,25000,50000];
-  const cb=C.querySelector('.cb');cb.innerHTML=[150,200,300,500,1000,5000].map(c=>'<button class="bt" data-c="'+c+'" style="flex:0 0 auto;padding:7px 10px">×'+(c/100)+'</button>').join('');
-  const mise=jetons(C.querySelector('.mises'),[100,500,1000,2500,5000,10000,20000],'tr',500,()=>majC());
-  function majC(){C.querySelector('.cv').textContent='×'+(COTE/100).toLocaleString('fr-FR',{minimumFractionDigits:2});cb.querySelectorAll('.bt').forEach(b=>b.classList.toggle('on',+b.dataset.c===COTE));
-    const p=Math.min(97,9700/COTE);C.querySelector('.ch2').innerHTML='Chance de réussir : <b style="color:#fff2b8">'+(p>=10?Math.round(p):p.toFixed(p>=1?1:2)).toString().replace('.',',')+' %</b> · gain si réussi : <b style="color:#7aff8a">'+fmt(mise()*COTE/100)+'</b>';try{localStorage.setItem('cas_tr_cote',COTE);}catch(x){}}
-  cb.querySelectorAll('.bt').forEach(b=>b.onclick=()=>{COTE=+b.dataset.c;vib(6);son('piece');majC();});
-  C.querySelector('.mo').onclick=()=>{const i=PAS.findIndex(p=>p>=COTE);COTE=PAS[Math.max(0,(i<0?PAS.length:i)-1)];vib(5);majC();};
-  C.querySelector('.pl').onclick=()=>{const i=PAS.findIndex(p=>p>COTE);COTE=PAS[i<0?PAS.length-1:i];vib(5);majC();};majC();
-  /* la scène : la nuit sur le port, la grue, la caisse, le multiplicateur */
-  let M=1,ETAT='repos',HAUT=0,CHUTE=0,ENC=null,MAXV=0;const ETOILES=Array.from({length:40},()=>[Math.random()*Wd,Math.random()*Hd*.55,Math.random()]);
-  function dessiner(){const t=performance.now()/1000;g.clearRect(0,0,Wd,Hd);
-    g.fillStyle=lin(g,0,0,0,Hd,[[0,'#0a1030'],[.7,'#2a1a4a'],[1,'#4a2440']]);g.fillRect(0,0,Wd,Hd);
-    for(const [x,y,k] of ETOILES){g.fillStyle='rgba(255,255,255,'+(.3+.5*Math.abs(Math.sin(t*1.3+k*9)))+')';g.fillRect(x,y,1.2,1.2);}
-    g.fillStyle='#120a20';g.fillRect(0,Hd-26,Wd,26);g.fillStyle='rgba(255,210,120,.5)';for(let x=8;x<Wd;x+=26)g.fillRect(x,Hd-20,2,2);
-    /* la grue */
-    const gx=70,top=22;g.strokeStyle='#e8a018';g.lineWidth=4;g.beginPath();g.moveTo(gx,Hd-26);g.lineTo(gx,top);g.lineTo(Wd-40,top);g.stroke();g.lineWidth=1.6;
-    for(let y=top+4;y<Hd-30;y+=12){g.beginPath();g.moveTo(gx-5,y);g.lineTo(gx+5,y+12);g.moveTo(gx+5,y);g.lineTo(gx-5,y+12);g.stroke();}
-    for(let x=gx+4;x<Wd-44;x+=12){g.beginPath();g.moveTo(x,top-4);g.lineTo(x+12,top+4);g.stroke();}
-    g.fillStyle='#3a3a42';g.fillRect(gx-20,top-12,26,16);g.fillStyle=(Math.floor(t*2)%2)?'#ff3a3a':'#5a1010';g.beginPath();g.arc(Wd-42,top-6,3,0,7);g.fill();
-    /* la caisse */
-    const hx=Wd-110,sol=Hd-40;const tombe=ETAT==='chute'||ETAT==='fin';let cy=sol-HAUT;if(tombe){cy=Math.min(sol,cy+CHUTE);}
-    g.strokeStyle=tombe?'rgba(80,80,80,.5)':'#1a1a1a';g.lineWidth=1.4;g.beginPath();g.moveTo(hx,top+2);g.lineTo(hx,tombe?top+30:cy-18);g.stroke();
-    g.save();g.translate(hx,cy);if(tombe)g.rotate(Math.min(.5,CHUTE*.004));g.fillStyle='#c8904a';g.fillRect(-20,-18,40,30);g.fillStyle='#8a5a2a';g.fillRect(-20,-11,40,3);g.fillRect(-20,-1,40,3);g.strokeStyle='#5a3a1a';g.lineWidth=1.4;g.strokeRect(-20,-18,40,30);
-    if(ENC){g.fillStyle='#7aff8a';g.font='900 12px '+SANS;g.textAlign='center';g.fillText('✓',0,-22);}g.restore();
-    /* la marque du joueur, à sa hauteur */
-    const hm=hauteur(COTE/100);if(hm<sol-top-30){const ym=sol-hm-18;g.setLineDash([5,4]);g.strokeStyle=ENC?'#7aff8a':'#ffe8a0';g.lineWidth=1.4;g.beginPath();g.moveTo(gx+10,ym);g.lineTo(Wd-14,ym);g.stroke();g.setLineDash([]);
-      g.fillStyle=ENC?'#7aff8a':'#ffe8a0';g.font='800 11px '+SANS;g.textAlign='left';g.fillText('ta marque ×'+(COTE/100).toLocaleString('fr-FR'),gx+14,ym-4);}
-    /* le multiplicateur */
-    g.textAlign='center';g.font='900 40px '+SERIF;g.fillStyle=tombe&&!ENC?'#ff6a6a':ENC?'#7aff8a':'#fff2b8';g.fillText('×'+M.toFixed(2).replace('.',','),Wd/2-10,Hd/2+4);
-    if(tombe){g.font='800 13px '+SANS;g.fillStyle='#ffb0b0';g.fillText('le câble a lâché !',Wd/2-10,Hd/2+24);}}
-  const hauteur=m=>Math.log(Math.max(1,m))/Math.log(1000)*(Hd-90)*1.6;
-  let raf=0,last=performance.now(),T0=0,K=.55,TIRE=1,R=null,MI=0;
-  const boucle=()=>{if(!vivant(cv)){cancelAnimationFrame(raf);return;}const n=performance.now(),dt=Math.min(.05,(n-last)/1000);last=n;
-    if(ETAT==='monte'){const u=(n-T0)/1000;M=Math.min(TIRE,Math.exp(K*u));HAUT=Math.min(Hd-90,hauteur(M));if(Math.floor(M*10)!==Math.floor(MAXV*10))son('tic');MAXV=M;
-      if(!ENC&&M>=COTE/100&&TIRE>=COTE/100){ENC=true;son('gros');vib([20,30,20]);msg.className='msg g';msg.textContent='Encaissé à ×'+(COTE/100).toLocaleString('fr-FR')+' : + '+fmt(R.gain);bravo(cv,R.gain,MI);majSolde(R.euros,R.gain);}
-      if(M>=TIRE){ETAT='chute';CHUTE=0;son('casse');vib(40);setTimeout(fini,900);}}
-    else if(ETAT==='chute'||ETAT==='fin')CHUTE+=dt*420;
-    dessiner();raf=requestAnimationFrame(boucle);};raf=requestAnimationFrame(boucle);FERME=()=>cancelAnimationFrame(raf);
-  function fini(){bt.disabled=false;ETAT='fin';cagnotte(R);if(!ENC){majSolde(R.euros,0);msg.className='msg p';msg.textContent='La caisse est tombée à ×'+(TIRE).toFixed(2).replace('.',',')+'… perdu.';}else{msg.textContent+=' (elle est montée jusqu’à ×'+TIRE.toFixed(2).replace('.',',')+')';}}
-  bt.onclick=async()=>{if(ETAT!=='repos'&&ETAT!=='fin')return;const m=mise();if(solde()<m){msg.className='msg p';msg.textContent='Il te manque de quoi miser.';return;}
-    bt.disabled=true;ENC=null;ETAT='repos';CHUTE=0;M=1;HAUT=0;MAXV=1;msg.className='msg';msg.textContent='On hisse…';vib(10);majSolde(solde()-m);MI=m;
-    const r=await rpcS('casino_coup',{p_jeu:'treuil',p_mise:m,p_choix:{cote:COTE}});if(!vivant(cv))return;
-    if(!r||!r.ok){bt.disabled=false;msg.className='msg p';msg.textContent=erreur(r);majSolde(r&&typeof r.euros==='number'?r.euros:solde()+m);return;}
-    R=r;TIRE=Math.max(1,(r.tirage&&r.tirage.tire||100)/100);K=Math.max(.55,Math.log(TIRE)/7);T0=performance.now();ETAT='monte';};}
-
-/* ======================= LE MUR À CLOUS ======================= */
-const FACT=[29,4,1,.4,.2,.4,1,4,29];
-function jeuClous(){const C=ouvrir('Le Mur à Clous','LÂCHE LA BILLE, ELLE CHOISIT SA CASE');
-  C.innerHTML='<canvas class="sc"></canvas><div class="msg">Les bords paient gros, le milieu rend peu.</div><div class="mises"></div><button class="gros">LÂCHER UNE BILLE</button><div class="info">Tu peux en lâcher plusieurs à la suite.</div>';
-  const cv=C.querySelector('canvas'),Wd=320,Hd=340,g=toile(cv,Wd,Hd),msg=C.querySelector('.msg'),bt=C.querySelector('.gros');
-  const mise=jetons(C.querySelector('.mises'),[100,200,500,1000,2000,5000],'cl',200);
-  const ROWS=8,top=40,dy=30,dx=30,cx=Wd/2;const BILLES=[];const FLASH=new Array(9).fill(0);
-  const clou=(r,k)=>[cx+(k-(r+2)/2)*dx,top+r*dy];
-  function dessiner(){const t=performance.now()/1000;g.clearRect(0,0,Wd,Hd);
-    g.fillStyle=lin(g,0,0,0,Hd,[[0,'#2a0a3a'],[1,'#12041a']]);g.fillRect(0,0,Wd,Hd);
-    for(let r=0;r<ROWS;r++)for(let k=0;k<=r+2;k++){const [x,y]=clou(r,k);g.fillStyle='#e8e8f0';g.beginPath();g.arc(x,y,3.2,0,7);g.fill();g.fillStyle='#fff';g.fillRect(x-1.5,y-1.5,1.4,1.4);}
-    const by=top+ROWS*dy+8,bw=dx;
-    for(let k=0;k<9;k++){const x=cx+(k-4)*dx-dx/2,f=FACT[k],c=f>=4?'#ff3a5a':f>=1?'#ffb43a':'#7ad84a',fl=Math.max(0,FLASH[k]-t);g.fillStyle=c;g.globalAlpha=.75+Math.min(.25,fl);g.beginPath();g.roundRect?g.roundRect(x+2,by+(fl>0?4:0),bw-4,34,6):g.rect(x+2,by,bw-4,34);g.fill();g.globalAlpha=1;
-      g.fillStyle='#1a0a06';g.font='900 '+(f<1?9.5:12)+'px '+SANS;g.textAlign='center';g.fillText((f<1?'':'×')+String(f).replace('.',','),x+bw/2,by+22+(fl>0?4:0));}
-    for(const B of BILLES){g.fillStyle=rad(g,B.x-2,B.y-2,1,8,[[0,'#fff8d0'],[1,'#c8922a']]);g.beginPath();g.arc(B.x,B.y,6,0,7);g.fill();}}
-  let raf=0;const boucle=()=>{if(!vivant(cv)){cancelAnimationFrame(raf);return;}const n=performance.now()/1000;
-    for(const B of BILLES){const u=(n-B.t0)/.2,r=Math.floor(u);if(!B.P){const P=[[cx,top-30]];let k=0;for(let i=0;i<ROWS;i++){const [x,y]=clou(i,k+1);P.push([x,y-7]);k+=B.ch[i];}P.push([cx+(k-4)*dx,top+ROWS*dy+22]);B.P=P;}
-      if(r>=B.P.length-1){B.x=B.P[B.P.length-1][0];B.y=B.P[B.P.length-1][1];if(!B.fin){B.fin=true;B.ok();}continue;}
-      const fr=u-r,[x0,y0]=B.P[r],[x1,y1]=B.P[r+1];B.x=x0+(x1-x0)*fr;B.y=y0+(y1-y0)*fr*fr-(r?Math.sin(fr*Math.PI)*7:0);if(!B['s'+r]){B['s'+r]=1;if(r)son('tic');}}
-    for(let i=BILLES.length-1;i>=0;i--)if(BILLES[i].fin&&n-BILLES[i].t0>(ROWS+3)*.2)BILLES.splice(i,1);
-    dessiner();raf=requestAnimationFrame(boucle);};raf=requestAnimationFrame(boucle);FERME=()=>cancelAnimationFrame(raf);
-  let EN=0;bt.onclick=async()=>{const m=mise();if(solde()<m){msg.className='msg p';msg.textContent='Il te manque de quoi miser.';return;}if(EN>=4)return;
-    EN++;vib(8);son('clac');majSolde(solde()-m);const r=await rpcS('casino_coup',{p_jeu:'clous',p_mise:m,p_choix:{}});EN--;if(!vivant(cv))return;
-    if(!r||!r.ok){msg.className='msg p';msg.textContent=erreur(r);majSolde(r&&typeof r.euros==='number'?r.euros:solde()+m);return;}
-    const ch=(r.tirage&&r.tirage.chemin)||[0,1,0,1,0,1,0,1],kk=r.tirage&&typeof r.tirage.case==='number'?r.tirage.case:ch.reduce((a,b)=>a+b,0);
-    BILLES.push({t0:performance.now()/1000,ch,x:cx,y:0,ok:()=>{FLASH[kk]=performance.now()/1000+.5;son(r.gain>m?'gain':r.gain>0?'piece':'perdu');majSolde(r.euros,r.gain>m?r.gain:0);cagnotte(r);
-      if(r.gain>m){msg.className='msg g';msg.textContent='×'+String(FACT[kk]).replace('.',',')+' ! + '+fmt(r.gain);if(FACT[kk]>=4)bravo(cv,r.gain,m);}else{msg.className='msg';msg.textContent='×'+String(FACT[kk]).replace('.',',')+(r.gain>0?' : '+fmt(r.gain)+' rendus':'');}}});};}
-
 /* ======================= LES TICKETS À GRATTER ======================= */
 const GSYM=[null,'mouette','sardine','ancre','bateau','phare','couronne'],GMUL=[0,1,2,5,10,50,500];
 function jeuGrattage(){const C=ouvrir('Tickets à gratter','LE TRÉSOR DU PORT · 50 € LE TICKET');
@@ -377,8 +299,8 @@ function jeuGrattage(){const C=ouvrir('Tickets à gratter','LE TRÉSOR DU PORT �
 /* ======================= LA CAGNOTTE ======================= */
 function jeuCagnotte(c){const C=ouvrir('La Cagnotte du Port','À GAGNER À N’IMPORTE QUELLE TABLE');const v=(window.CASINO_CAGNOTTE&&CASINO_CAGNOTTE())||c||0;
   C.innerHTML='<div class="feutre" style="background:radial-gradient(ellipse at 50% 30%,#7a1a2a,#2a0610);text-align:center;padding:26px 10px"><div style="font:600 12px '+SANS+';letter-spacing:.3em;color:#d8b878">EN CE MOMENT</div><div class="mt" style="font:900 44px '+SERIF+';background:linear-gradient(#fff6c8,#f0c860 55%,#b8801c);-webkit-background-clip:text;background-clip:text;color:transparent">'+(v?fmt(v):'…')+'</div></div>'+
-   '<div class="info" style="font-size:14px">Un peu de chaque mise, à chaque table, tombe dans la cagnotte.<br><br>Et à chaque coup misé, n’importe où dans le casino, il y a <b style="color:#fff2b8">une chance sur trois mille</b> de tout rafler d’un coup.<br><br>Plus on joue, plus elle grossit…</div>';}
+   '<div class="info" style="font-size:14px">À chaque coup joué, à n’importe quelle table, la cagnotte monte : 1 € de la maison, plus 3 % de la mise.<br><br>Et à chaque coup misé, n’importe où dans le casino, il y a <b style="color:#fff2b8">une chance sur trois mille</b> de tout rafler d’un coup.<br><br>Plus on joue, plus elle grossit…</div>';}
 
 /* ======================= L'AIGUILLAGE ======================= */
-window.casinoJouer=function(k,arg){try{({sous:jeuSous,roulette:jeuRoulette,vingtun:jeu21,treuil:jeuTreuil,clous:jeuClous,grattage:jeuGrattage,cagnotte:jeuCagnotte})[k](arg);}catch(x){try{console.warn('CASINO',k,x);}catch(_){}}};
+window.casinoJouer=function(k,arg){try{({sous:jeuSous,roulette:jeuRoulette,vingtun:jeu21,grattage:jeuGrattage,cagnotte:jeuCagnotte})[k](arg);}catch(x){try{console.warn('CASINO',k,x);}catch(_){}}};
 })();
