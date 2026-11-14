@@ -22,13 +22,16 @@ const CSS=`#dec{position:fixed;inset:0;z-index:2147482300;display:flex;flex-dire
 #dec .act{display:flex;gap:6px;padding:8px 12px 4px;flex-shrink:0}
 #dec .ab{flex:1;border:0;border-radius:12px;padding:9px 4px;font:800 13.5px 'Baloo 2',system-ui,sans-serif;background:#fff;color:#3a2410;box-shadow:0 3px 0 rgba(90,60,30,.25)}
 #dec .ab[disabled]{opacity:.35}#dec .ab.ok{background:linear-gradient(#5ad87a,#2a9a4a);color:#fff;box-shadow:0 3px 0 #1a6a2a}
+#dec .ikeo{display:flex;align-items:center;gap:10px;margin:6px 12px 0;padding:8px 12px;border-radius:14px;background:#1c4aa8;color:#fff;box-shadow:0 3px 0 #0e2a6a;flex-shrink:0}
+#dec .ik{font:900 22px/1 'Baloo 2',system-ui,sans-serif;letter-spacing:.06em;color:#1c4aa8;background:#ffd23a;border-radius:9px;padding:4px 9px 2px;transform:rotate(-3deg);box-shadow:0 2px 0 #c89a10}
+#dec .ikt{font-weight:900;font-size:14px;line-height:1.15}#dec .ikt small{display:block;font-weight:700;font-size:11px;opacity:.75}
 #dec .tabs{display:flex;gap:6px;padding:6px 12px 0;overflow-x:auto;flex-shrink:0;scrollbar-width:none}#dec .tabs::-webkit-scrollbar{display:none}
 #dec .tb{flex:0 0 auto;border:0;border-radius:14px;padding:6px 12px;font:800 13.5px 'Baloo 2',system-ui,sans-serif;background:rgba(58,36,16,.08);color:#5a3a1a}
 #dec .tb.on{background:#3a2410;color:#fff}
 #dec .cat{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px 12px calc(14px + env(safe-area-inset-bottom));align-content:start}
 #dec .it{position:relative;border:0;border-radius:14px;padding:6px 4px 7px;background:#fff;color:#3a2410;box-shadow:0 3px 0 rgba(90,60,30,.2);display:flex;flex-direction:column;align-items:center;gap:2px;font:700 11.5px/1.15 'Baloo 2',system-ui,sans-serif;text-align:center;min-height:118px}
 #dec .it canvas{width:72px;height:60px}
-#dec .it em{font-style:normal;font-weight:900;font-size:12.5px;color:#a85a14}#dec .it em.st{color:#2a8a4a}
+#dec .it em{font-style:normal;font-weight:900;font-size:12.5px;color:#1c2a5a;background:#ffd23a;border-radius:6px;padding:0 6px}#dec .it em.st{background:none}#dec .it em.st{color:#2a8a4a}
 #dec .it.conf{box-shadow:0 0 0 3px #f0a020,0 3px 0 rgba(90,60,30,.2)}#dec .it.on{box-shadow:0 0 0 3px #2a9a4a,0 3px 0 rgba(90,60,30,.2)}
 #dec .msg{text-align:center;font-weight:800;font-size:13px;min-height:18px;padding:0 12px;color:#8a5a2a}#dec .msg.p{color:#c83a2a}#dec .msg.g{color:#2a8a4a}`;
 let RAC=null;
@@ -38,11 +41,11 @@ window.ouvrirDecoAppart=function(){if(!document.getElementById('decCss')){const 
   const D=JSON.parse(JSON.stringify(A.deco));D.items=D.items||[];
   const d=document.createElement('div');d.id='dec';d.innerHTML='<div class="dh"><b>Mon appart<small>GLISSE TES MEUBLES DU DOIGT</small></b><span class="so">'+fmt(solde())+'</span><button class="dx" aria-label="Fermer">✕</button></div>'+
    '<div class="plan"><canvas></canvas></div><div class="act"><button class="ab re" disabled>↔ Retourner</button><button class="ab ra" disabled>⤓ Ranger</button><button class="ab ok en">✓ Enregistrer</button></div><div class="msg"></div>'+
-   '<div class="tabs">'+window.MEUBLE_CATS.map(([k,n],i)=>'<button class="tb'+(i?'':' on')+'" data-k="'+k+'">'+n+'</button>').join('')+'<button class="tb" data-k="murs">Murs</button><button class="tb" data-k="sols">Sols</button></div><div class="cat"></div>';
+   '<div class="ikeo"><span class="ik">IKEO</span><span class="ikt">le magasin de meubles du port<small>livré tout de suite, monté sans clé Allen</small></span></div><div class="tabs">'+window.MEUBLE_CATS.map(([k,n],i)=>'<button class="tb'+(i?'':' on')+'" data-k="'+k+'">'+n+'</button>').join('')+'<button class="tb" data-k="murs">Murs</button><button class="tb" data-k="sols">Sols</button></div><div class="cat"></div>';
   document.body.appendChild(d);RAC=d;window.ECRAN_COUVRANT=true;requestAnimationFrame(()=>d.classList.add('on'));
   const msg=d.querySelector('.msg'),cat=d.querySelector('.cat'),cv=d.querySelector('.plan canvas'),bre=d.querySelector('.re'),bra=d.querySelector('.ra');
   const dire=(t,c)=>{msg.className='msg'+(c?' '+c:'');msg.textContent=t||'';};
-  if(!A.serveur)dire('La boutique ouvre très bientôt : tu peux déjà placer tes meubles offerts.');
+  if(!A.serveur)dire('IKEO ouvre très bientôt : tu peux déjà placer tes meubles offerts.');
   /* ---------- le plan ---------- */
   const PW=Math.min(innerWidth-24,440),S=PW/W,PH=H*S,DPR=Math.min(3,devicePixelRatio||1);cv.width=Math.round(PW*DPR);cv.height=Math.round(PH*DPR);cv.style.height=PH+'px';const g=cv.getContext('2d');
   let FOND=null,FOND_K='',SEL=-1;
@@ -83,9 +86,9 @@ window.ouvrirDecoAppart=function(){if(!document.getElementById('decCss')){const 
       b.insertAdjacentHTML('beforeend','<span>'+m.nom+'</span>'+(st>0?'<em class="st">'+st+' en réserve</em>':'<em>'+(CONF===id?'Acheter ?':fmt(m.prix*100))+'</em>'));b.onclick=()=>prendre(id);cat.appendChild(b);}}
   d.querySelectorAll('.tb').forEach(b=>b.onclick=()=>{TAB=b.dataset.k;CONF=null;vib(5);liste();});
   function poser(id){const m=MEUBLES[id];const it={m:id,x:W/2,y:m.mur?MUR-30:(m.tapis?MUR+150:MUR+120),f:0};borner(it);D.items.push(it);SEL=D.items.length-1;majBtn();FOND_K='';dessiner();liste();vib([8,20,8]);dire(m.nom+' posé : fais-le glisser où tu veux.','g');}
-  async function acheter(cle){if(!A.serveur){dire('La boutique ouvre très bientôt.','p');return null;}
+  async function acheter(cle){if(!A.serveur){dire('IKEO ouvre très bientôt.','p');return null;}
     const r=await rpcS('appart_acheter',{p_id:cle});if(!RAC)return null;
-    if(!r||r.erreur){dire(r&&r.erreur==='pas_assez'?'Il te manque de quoi l’acheter.':r&&/function|schema|PGRST/i.test(r.erreur)?'La boutique ouvre très bientôt.':'Petit souci, réessaie.','p');return null;}
+    if(!r||r.erreur){dire(r&&r.erreur==='pas_assez'?'Il te manque de quoi l’acheter.':r&&/function|schema|PGRST/i.test(r.erreur)?'IKEO ouvre très bientôt.':'Petit souci, réessaie.','p');return null;}
     try{e.euros=r.euros;majHaut();}catch(x){}d.querySelector('.so').textContent=fmt(r.euros);if(r.meubles)A.meubles=r.meubles;if(r.murs)A.murs=r.murs;if(r.sols)A.sols=r.sols;vib([10,30,10]);return r;}
   async function prendre(id){const m=MEUBLES[id];if(poss(id)-poses(id)>0){CONF=null;poser(id);return;}
     if(CONF!==id){CONF=id;liste();dire('Touche encore pour acheter : '+m.nom+' pour '+fmt(m.prix*100)+'.');return;}
