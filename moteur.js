@@ -34976,19 +34976,20 @@ try{
 if(document.getElementById('dimEcran'))return;
 if(window.LIEU_PAGE||/[?&](lieu|de|arrivee|niveau)=/.test(location.search))return;   /* passage d'un lieu à l'autre : pas d'écran d'accueil */
 const css=document.createElement('style');css.textContent=
-'#dimEcran{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:24px;'+
-'background:radial-gradient(120% 80% at 50% 0%,#24406e 0%,#13223e 55%,#0a1222 100%);color:#f4ecd8;font-family:system-ui,sans-serif;transition:opacity .45s}'+
+'#dimEcran{position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center;padding:24px 18px calc(22px + env(safe-area-inset-bottom,0px));'+
+'background:#0d1b3e;color:#f4ecd8;font-family:system-ui,sans-serif;transition:opacity .45s;overflow:hidden}'+
+'#dimEcran canvas.fond{position:absolute;inset:0;width:100%;height:100%}'+
 '#dimEcran.part{opacity:0;pointer-events:none}'+
-'#dimEcran .bx{width:min(380px,100%);text-align:center}'+
-'#dimEcran .ic{width:96px;height:96px;margin:0 auto 22px;position:relative}'+
+'#dimEcran .bx{position:relative;width:min(380px,100%);text-align:center;padding:18px 20px 18px;border-radius:26px;background:rgba(8,16,40,.42);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(242,214,136,.22);box-shadow:0 20px 60px rgba(0,0,0,.45)}'+
+'#dimEcran .ic{width:64px;height:64px;margin:0 auto 12px;position:relative}'+
 '#dimEcran .ic i{position:absolute;inset:0;border-radius:50%;border:3px solid rgba(242,214,136,.25);border-top-color:#f2d688;animation:dimTour 1.4s linear infinite}'+
-'#dimEcran .ic i+i{inset:14px;border-color:rgba(118,166,192,.25);border-bottom-color:#76a6c0;animation-duration:2.2s;animation-direction:reverse}'+
-'#dimEcran .ic b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:34px}'+
+'#dimEcran .ic i+i{inset:10px;border-color:rgba(118,166,192,.25);border-bottom-color:#76a6c0;animation-duration:2.2s;animation-direction:reverse}'+
+'#dimEcran .ic b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:24px}'+
 '@keyframes dimTour{to{transform:rotate(360deg)}}'+
 '#dimEcran small{display:block;font:800 11px system-ui;letter-spacing:3px;color:#f2d688;margin-bottom:10px}'+
-'#dimEcran h1{font:900 28px/1.15 system-ui;margin:0 0 14px;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.35)}'+
-'#dimEcran p{font:500 15px/1.5 system-ui;color:#cfd8e8;margin:0 0 10px}'+
-'#dimEcran .pts{display:inline-flex;gap:6px;margin:8px 0 26px}'+
+'#dimEcran h1{font:900 26px/1.12 system-ui;margin:0 0 10px;color:#fff;text-shadow:0 3px 0 rgba(0,0,0,.35)}'+
+'#dimEcran p{font:500 14px/1.45 system-ui;color:#dfe6f2;margin:0 0 8px}'+
+'#dimEcran .pts{display:inline-flex;gap:6px;margin:4px 0 16px}'+
 '#dimEcran .pts span{width:8px;height:8px;border-radius:50%;background:#f2d688;opacity:.25;animation:dimPt 1.2s infinite}'+
 '#dimEcran .pts span:nth-child(2){animation-delay:.2s}#dimEcran .pts span:nth-child(3){animation-delay:.4s}'+
 '@keyframes dimPt{50%{opacity:1;transform:translateY(-3px)}}'+
@@ -34997,7 +34998,7 @@ const css=document.createElement('style');css.textContent=
 '#dimEcran button:active{transform:translateY(3px);box-shadow:0 2px 0 #b89a10}';
 document.head.appendChild(css);
 const d=document.createElement('div');d.id='dimEcran';
-d.innerHTML='<div class="bx"><div class="ic"><i></i><i></i><b>⚓</b></div>'+
+d.innerHTML='<canvas class="fond"></canvas><div class="bx"><div class="ic"><i></i><i></i><b>⚓</b></div>'+
 '<small>BATTLE DOCK · TRAVAUX EN COURS</small>'+
 '<h1>Le jeu change de dimension</h1>'+
 '<p>Le port se transforme : nouveau quai, nouveau personnage, nouvelle façon de jouer.</p>'+
@@ -35009,7 +35010,41 @@ const poser=()=>{document.body.appendChild(d);
   const b=d.querySelector('button');
   const stop=ev=>ev.stopPropagation();
   ['pointerdown','touchstart','mousedown'].forEach(t=>d.addEventListener(t,stop,{passive:true}));
-  b.onclick=()=>{try{vibrer(10);}catch(x){}d.classList.add('part');setTimeout(()=>{d.remove();css.remove();},500);};};
+  b.onclick=()=>{try{vibrer(10);}catch(x){}d.classList.add('part');setTimeout(()=>{d.remove();css.remove();},500);};
+  /* LE FOND : le port de Marseille, la nuit — ciel étoilé, lune, la Bonne Mère sur sa colline,
+     les grues et leurs feux rouges, le phare qui balaie, la mer qui scintille, un voilier qui berce. */
+  try{const cv=d.querySelector('canvas.fond'),g=cv.getContext('2d');const DPR=Math.min(2,window.devicePixelRatio||1);let W=0,H=0;
+   const taille=()=>{W=cv.clientWidth||innerWidth;H=cv.clientHeight||innerHeight;cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);};taille();addEventListener('resize',taille);
+   const ET=[];for(let i=0;i<110;i++)ET.push([Math.random(),Math.random()*.55,Math.random()*1.4+.3,Math.random()*6.28]);
+   const VI=[];for(let i=0;i<70;i++)VI.push([Math.random(),Math.random(),Math.random()<.7?'255,214,140':'190,220,255',Math.random()*6.28]);
+   const dessiner=()=>{if(!d.isConnected)return;const t=performance.now()/1000;g.setTransform(DPR,0,0,DPR,0,0);const hz=H*.43;
+    let gr=g.createLinearGradient(0,0,0,hz);gr.addColorStop(0,'#081430');gr.addColorStop(.55,'#1a2f5e');gr.addColorStop(.88,'#3a3f72');gr.addColorStop(1,'#7a5a7a');g.fillStyle=gr;g.fillRect(0,0,W,hz+2);
+    for(const [x,y0,r,p] of ET){const y=y0*.75;const a=.35+.65*Math.abs(Math.sin(t*.9+p));g.fillStyle='rgba(255,255,255,'+a.toFixed(2)+')';g.fillRect(x*W,y*H,r,r);}
+    const lx=W*.78,ly=H*.11,lr=Math.min(W,H)*.055;let hl=g.createRadialGradient(lx,ly,lr*.5,lx,ly,lr*5);hl.addColorStop(0,'rgba(255,240,200,.28)');hl.addColorStop(1,'rgba(255,240,200,0)');g.fillStyle=hl;g.fillRect(lx-lr*5,ly-lr*5,lr*10,lr*10);
+    const mg=g.createRadialGradient(lx-lr*.3,ly-lr*.3,lr*.1,lx,ly,lr);mg.addColorStop(0,'#fffbe8');mg.addColorStop(1,'#f2dca0');g.fillStyle=mg;g.beginPath();g.arc(lx,ly,lr,0,7);g.fill();g.fillStyle='rgba(200,180,130,.35)';[[.3,.2,.22],[-.3,-.1,.15],[.05,-.45,.12]].forEach(([a,b,c])=>{g.beginPath();g.arc(lx+a*lr,ly+b*lr,c*lr,0,7);g.fill();});
+    /* la colline et la Bonne Mère */
+    g.fillStyle='#16234a';g.beginPath();g.moveTo(-W*.05,hz);g.quadraticCurveTo(W*.2,hz-W*.44,W*.48,hz);g.closePath();g.fill();
+    const bx=W*.2,by=hz-W*.2;g.fillRect(bx-W*.07,by-W*.045,W*.14,W*.05);for(let k=0;k<5;k++){g.fillStyle='rgba(255,214,140,.55)';g.fillRect(bx-W*.055+k*W*.025,by-W*.03,W*.008,W*.014);}g.fillStyle='#16234a';g.fillRect(bx-W*.016,by-W*.13,W*.032,W*.09);g.beginPath();g.moveTo(bx-W*.022,by-W*.13);g.lineTo(bx,by-W*.165);g.lineTo(bx+W*.022,by-W*.13);g.fill();
+    const sy=by-W*.18;const sg=g.createRadialGradient(bx,sy,1,bx,sy,16);sg.addColorStop(0,'rgba(255,214,120,.9)');sg.addColorStop(1,'rgba(255,214,120,0)');g.fillStyle=sg;g.fillRect(bx-16,sy-16,32,32);g.fillStyle='#ffe08a';g.fillRect(bx-1.5,sy-3,3,7);
+    /* la ville, ses fenêtres */
+    g.fillStyle='#101a3a';let x=W*.3;while(x<W){const w=14+((x*7)%22),h=H*.03+((x*13)%40);g.fillRect(x,hz-h,w,h);x+=w+2;}
+    for(const [vx,vy,c,p] of VI){const X=W*.3+vx*W*.7,Y=hz-4-vy*H*.05;g.fillStyle='rgba('+c+','+(.5+.5*Math.sin(t*.3+p)).toFixed(2)+')';g.fillRect(X,Y,2,2);}
+    /* les grues du port, leurs feux rouges */
+    for(const [cx,hh,s] of [[W*.64,W*.34,1],[W*.88,W*.42,-1]]){g.strokeStyle='#0c1530';g.lineWidth=3;g.beginPath();g.moveTo(cx,hz);g.lineTo(cx,hz-hh);g.lineTo(cx+s*W*.2,hz-hh);g.moveTo(cx-s*W*.05,hz-hh);g.lineTo(cx,hz-hh-W*.05);g.lineTo(cx+s*W*.2,hz-hh);g.stroke();g.lineWidth=1.4;g.beginPath();g.moveTo(cx+s*W*.17,hz-hh);g.lineTo(cx+s*W*.17,hz-hh+W*.08);g.stroke();
+     g.lineWidth=1;for(let y=hz-8;y>hz-hh;y-=8){g.beginPath();g.moveTo(cx-3,y);g.lineTo(cx+3,y-8);g.stroke();}
+     const on=Math.sin(t*2.4+cx)>0,ty=hz-hh-W*.05;g.fillStyle=on?'#ff3a3a':'#5a1a1a';g.beginPath();g.arc(cx,ty,2.6,0,7);g.fill();if(on){const rg=g.createRadialGradient(cx,ty,1,cx,ty,12);rg.addColorStop(0,'rgba(255,60,60,.6)');rg.addColorStop(1,'rgba(255,60,60,0)');g.fillStyle=rg;g.fillRect(cx-12,ty-12,24,24);}}
+    /* la mer */
+    gr=g.createLinearGradient(0,hz,0,H);gr.addColorStop(0,'#2a2f5a');gr.addColorStop(.3,'#142450');gr.addColorStop(1,'#060c22');g.fillStyle=gr;g.fillRect(0,hz,W,H-hz);
+    for(let k=0;k<26;k++){const y=hz+6+k*k*.9,w=(14+k*3)*(.6+.4*Math.sin(t*1.3+k*1.7)),a=(.55-k*.018);if(y>H||a<=0)continue;g.fillStyle='rgba(255,236,190,'+a.toFixed(2)+')';g.fillRect(lx-w/2+Math.sin(t*.8+k)*6,y,w,1.6);}
+    for(let k=0;k<14;k++){const y=hz+12+k*k*1.6;if(y>H)break;g.strokeStyle='rgba(140,170,255,'+(.12-k*.006).toFixed(3)+')';g.lineWidth=1;g.beginPath();for(let x2=0;x2<=W;x2+=24){const yy=y+Math.sin(x2*.04+t*1.2+k)*1.5;x2?g.lineTo(x2,yy):g.moveTo(x2,yy);}g.stroke();}
+    /* la jetée et le phare qui balaie */
+    const px=W*.08,py=hz+H*.02;g.fillStyle='#0a1228';g.fillRect(0,py,W*.2,5);g.fillStyle='#d8dce6';g.fillRect(px-3,py-26,6,26);g.fillStyle='#d83a2a';g.fillRect(px-3,py-20,6,4);g.fillRect(px-3,py-10,6,4);
+    const a=t*.7;g.save();g.translate(px,py-28);g.rotate(Math.sin(a)*.9);const bg=g.createLinearGradient(0,0,W*.7,0);bg.addColorStop(0,'rgba(255,240,180,.35)');bg.addColorStop(1,'rgba(255,240,180,0)');g.fillStyle=bg;g.beginPath();g.moveTo(0,0);g.lineTo(W*.7,-28);g.lineTo(W*.7,28);g.closePath();g.fill();g.restore();
+    g.fillStyle='#fff6c8';g.beginPath();g.arc(px,py-28,3,0,7);g.fill();
+    /* un voilier qui berce */
+    const vx=W*.42+Math.sin(t*.1)*W*.05,vy=hz+H*.05+Math.sin(t*1.4)*2;g.save();g.translate(vx,vy);g.rotate(Math.sin(t*1.4)*.04);g.fillStyle='#0a1228';g.beginPath();g.moveTo(-18,0);g.lineTo(18,0);g.lineTo(12,6);g.lineTo(-12,6);g.closePath();g.fill();
+    g.fillRect(-1,-30,2,30);g.beginPath();g.moveTo(2,-28);g.lineTo(16,-2);g.lineTo(2,-2);g.fill();g.beginPath();g.moveTo(-2,-24);g.lineTo(-13,-2);g.lineTo(-2,-2);g.fill();g.fillStyle='#ffd88a';g.fillRect(4,-2,2,2);g.restore();
+    requestAnimationFrame(dessiner);};requestAnimationFrame(dessiner);}catch(x){}};
 if(document.body)poser();else addEventListener('DOMContentLoaded',poser);
 }catch(x){}
 })();

@@ -30,19 +30,18 @@ const CSS=`#alb{position:fixed;inset:0;z-index:2147482300;display:flex;flex-dire
 #alb .aong button{flex:none;border:0;border-radius:14px;padding:6px 12px;background:#fff8e8;color:#5a4a3a;font:800 13px 'Baloo 2',system-ui,sans-serif;box-shadow:0 2px 0 #c8b890;position:relative}
 #alb .aong button.on{background:var(--c1);color:#fff;box-shadow:0 2px 0 var(--c2)}#alb .aong button em{font-style:normal;font-size:10.5px;opacity:.8;margin-left:4px}
 #alb .acorps{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 14px calc(16px + env(safe-area-inset-bottom,0px))}
-#alb .apage{background:#fffaf0;border-radius:20px;padding:12px;box-shadow:0 3px 0 #c8b890,inset 0 0 0 2px #efe2c4;position:relative}
+#alb .apage{background:#f3e6c8;border-radius:20px;padding:12px;box-shadow:0 3px 0 #c8b890,inset 0 0 0 2px #efe2c4;position:relative}
 #alb .apage:before{content:'';position:absolute;left:50%;top:10px;bottom:10px;width:2px;background:repeating-linear-gradient(#e8d8b4 0 6px,transparent 6px 10px);display:none}
 #alb .agr{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-#alb .cs{aspect-ratio:3/4;border-radius:14px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6px}
-#alb .cs.vide{border:2px dashed #d8c8a4;background:#f6ecd6;color:#b8a888}#alb .cs.vide b{font-size:26px;opacity:.5}#alb .cs.vide small{font-size:11px;font-weight:800}
-#alb .st{width:100%;height:100%;border-radius:14px;border:4px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,.25);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;background:linear-gradient(150deg,var(--c1),var(--c2));color:#fff;transform:rotate(var(--r))}
-#alb .st i{font-style:normal;font-size:38px;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}#alb .st span{font:800 10.5px/1.1 'Baloo 2',system-ui,sans-serif;margin-top:4px;text-shadow:0 1px 0 rgba(0,0,0,.3);padding:0 3px}
-#alb .st.r1:after{content:'';position:absolute;inset:-50%;background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.55) 50%,transparent 60%);animation:albBr 3s infinite}
-#alb .st.r2{background:linear-gradient(135deg,#ff6ad8,#ffd23a,#6af0ff,#b86aff,#ff6ad8);background-size:300% 300%;animation:albHolo 4s linear infinite;border-color:#fff6c8}
-#alb .st.r2:after{content:'';position:absolute;inset:-50%;background:linear-gradient(110deg,transparent 40%,rgba(255,255,255,.7) 50%,transparent 60%);animation:albBr 2s infinite}
-@keyframes albBr{0%{transform:translateX(-60%)}60%,100%{transform:translateX(60%)}}@keyframes albHolo{to{background-position:300% 300%}}
-#alb .rb{position:absolute;top:4px;left:4px;font:900 7.5px 'Baloo 2',system-ui,sans-serif;letter-spacing:1px;background:rgba(0,0,0,.35);border-radius:6px;padding:1px 4px;z-index:2}
-#alb .nb{position:absolute;bottom:-6px;right:-6px;background:#2a2016;color:#fff;border-radius:10px;padding:0 6px;font:900 12px 'Baloo 2',system-ui,sans-serif;z-index:3;border:2px solid #fffaf0}
+#alb .cs{aspect-ratio:3/4;border-radius:14px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2px}
+#alb .cs.vide small{font:800 10.5px 'Baloo 2',system-ui,sans-serif;color:#b8a888;margin-top:-4px}#alb .cs .sil{width:92%;opacity:.9}
+#alb .st{width:100%;position:relative;transform:rotate(var(--r));filter:drop-shadow(0 1px 0 rgba(120,90,50,.25))}#alb .st img{width:100%;display:block}
+#alb .st .sh{position:absolute;inset:0;-webkit-mask-image:var(--m);mask-image:var(--m);-webkit-mask-size:100% 100%;mask-size:100% 100%;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.75) 48%,transparent 60%) no-repeat;background-size:250% 100%;animation:albBr 2.8s infinite}
+#alb .st.r2 .sh{background:linear-gradient(110deg,transparent 30%,rgba(255,120,220,.45) 40%,rgba(255,255,255,.85) 48%,rgba(120,240,255,.45) 56%,transparent 66%) no-repeat;background-size:250% 100%;animation-duration:2s}
+@keyframes albBr{0%{background-position:130% 0}60%,100%{background-position:-30% 0}}
+#alb .nm{font:800 10.5px/1.1 'Baloo 2',system-ui,sans-serif;color:#5a4a3a;margin-top:-4px;padding:0 2px}
+#alb .rb{position:absolute;top:4%;left:2%;font:900 7.5px 'Baloo 2',system-ui,sans-serif;letter-spacing:1px;border-radius:6px;padding:1px 5px;z-index:2;color:#2a1a08}#alb .rb.r1{background:linear-gradient(#fff2a8,#e8b030)}#alb .rb.r2{background:linear-gradient(90deg,#ff9ae4,#ffd23a,#8af0ff);}
+#alb .nb{position:absolute;bottom:14px;right:0;background:#2a2016;color:#fff;border-radius:10px;padding:0 6px;font:900 12px 'Baloo 2',system-ui,sans-serif;z-index:3;border:2px solid #fffaf0}
 #alb .apr{margin-top:12px;display:flex;align-items:center;gap:10px;font-weight:800;font-size:14px}#alb .apr .bar{flex:1;height:10px;border-radius:6px;background:#efe2c4;overflow:hidden}#alb .apr .bar i{display:block;height:100%;background:var(--c1);border-radius:6px}
 #alb .arec{display:block;width:100%;margin-top:10px;border:0;border-radius:16px;padding:12px;font:800 16px 'Baloo 2',system-ui,sans-serif;color:#2a1a08;background:linear-gradient(#fff2b8,#e8b838 60%,#c8902a);box-shadow:0 4px 0 #7a5214}#alb .arec[disabled]{opacity:.55}
 #alb .apo{margin-top:14px;background:#2a2016;color:#fff;border-radius:20px;padding:12px;box-shadow:0 4px 0 #120a06}
@@ -51,22 +50,22 @@ const CSS=`#alb{position:fixed;inset:0;z-index:2147482300;display:flex;flex-dire
 #alb .apo button b{margin-left:auto;font-size:14px}#alb .apo button.gr{background:linear-gradient(90deg,#7aff8a,#3ac868);color:#0a2a12;animation:albPu 1.4s ease-in-out infinite}#alb .apo button[disabled]{opacity:.4;animation:none}
 @keyframes albPu{50%{transform:scale(1.02)}}
 #alb .amsg{text-align:center;font-weight:800;font-size:13px;color:#8a6a4a;margin-top:8px;min-height:18px}
-#alb #albP{position:fixed;inset:0;z-index:2147482400;background:radial-gradient(circle at 50% 40%,rgba(60,30,80,.92),rgba(10,6,20,.96));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font-family:'Baloo 2',system-ui,sans-serif;color:#fff}
+#alb #albP{position:fixed;inset:0;z-index:2147482400;background:radial-gradient(circle at 50% 40%,#3c1e50,#0a0614);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font-family:'Baloo 2',system-ui,sans-serif;color:#fff}
 #albP .poch{width:170px;height:230px;border-radius:14px;background:linear-gradient(150deg,#ff3ac8,#8a4aff 50%,#3af0ff);box-shadow:0 0 40px rgba(255,58,200,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;font:900 22px 'Baloo 2',system-ui,sans-serif;text-align:center;animation:albSec .12s infinite alternate;position:relative;overflow:hidden}
 #albP .poch:before{content:'';position:absolute;top:0;left:0;right:0;height:22px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.4) 0 6px,transparent 6px 12px)}
 #albP .poch.dechire{animation:albDe .5s forwards}@keyframes albSec{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}@keyframes albDe{to{transform:scale(1.4) rotate(8deg);opacity:0}}
-#albP .tri{display:flex;gap:12px}#albP .cs{width:100px;height:134px;perspective:600px}#albP .cs .st{animation:albRe .6s cubic-bezier(.3,1.5,.5,1) backwards}
+#albP .tri{display:flex;gap:10px}#albP .cs{width:112px;aspect-ratio:auto;perspective:600px}#albP .cs .st{animation:albRe .6s cubic-bezier(.3,1.5,.5,1) backwards}#albP .nm{color:#fff;font-size:12.5px;margin-top:2px}
 @keyframes albRe{from{transform:rotateY(90deg) scale(.6);opacity:0}}
 #albP .nf{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#ffd23a;color:#2a1a08;font:900 10px 'Baloo 2',system-ui,sans-serif;border-radius:8px;padding:1px 6px;z-index:4;white-space:nowrap}
 #albP .acoll{border:0;border-radius:16px;padding:12px 30px;font:900 17px 'Baloo 2',system-ui,sans-serif;background:#fff;color:#2a1a40}`;
-function sticker(i,n,rot){const c=C[i],r=rar(i),P=PAGES[Math.floor(i/9)];return '<div class="st r'+r+'" style="--c1:'+P.c1+';--c2:'+P.c2+';--r:'+(rot||0)+'deg">'+(r?'<span class="rb">'+RN[r]+'</span>':'')+'<i>'+c[2]+'</i><span>'+c[1]+'</span></div>'+(n>1?'<span class="nb">×'+n+'</span>':'');}
+function sticker(i,n,rot){const c=C[i],r=rar(i),u=window.AUTOCOLLANT?AUTOCOLLANT(c[0],r,220):'';return '<div class="st r'+r+'" style="--r:'+(rot||0)+'deg;--m:url('+u+')"><img src="'+u+'" alt="">'+(r?'<b class="sh"></b><span class="rb r'+r+'">'+RN[r]+'</span>':'')+'</div><span class="nm">'+c[1]+'</span>'+(n>1?'<span class="nb">×'+n+'</span>':'');}
 function rendre(){if(!RAC)return;const P=PAGES[PG];RAC.style.setProperty('--c1',P.c1);RAC.style.setProperty('--c2',P.c2);
  const tot=Object.keys(ET.cartes).filter(k=>ID[k]!==undefined).length;
  RAC.querySelector('.ahd b').innerHTML='📒 Mon album<small>'+tot+' / 54 AUTOCOLLANTS · '+ET.doublons+' DOUBLON'+(ET.doublons>1?'S':'')+'</small>';
  RAC.querySelector('.aong').innerHTML=PAGES.map((p,k)=>{const n=C.slice(k*9,k*9+9).filter(c=>ET.cartes[c[0]]).length;return '<button data-p="'+k+'" class="'+(k===PG?'on':'')+'">'+p.ic+' '+p.n+'<em>'+(ET.pages.includes(k+1)?'✓':n+'/9')+'</em></button>';}).join('');
  RAC.querySelectorAll('.aong button').forEach(b=>b.onclick=()=>{PG=+b.dataset.p;vib(6);rendre();});
  const L=C.slice(PG*9,PG*9+9),pos=L.filter(c=>ET.cartes[c[0]]).length,fait=ET.pages.includes(PG+1);
- RAC.querySelector('.apage').innerHTML='<div class="agr">'+L.map((c,j)=>{const i=PG*9+j,n=ET.cartes[c[0]]||0;return '<div class="cs'+(n?'':' vide')+'">'+(n?sticker(i,n,((i*37)%7)-3):'<b>?</b><small>n° '+(i+1)+(rar(i)?' · '+RN[rar(i)].toLowerCase():'')+'</small>')+'</div>';}).join('')+'</div>'+
+ RAC.querySelector('.apage').innerHTML='<div class="agr">'+L.map((c,j)=>{const i=PG*9+j,n=ET.cartes[c[0]]||0;return '<div class="cs'+(n?'':' vide')+'">'+(n?sticker(i,n,((i*37)%7)-3):'<img class="sil" src="'+(window.SILHOUETTE?SILHOUETTE(c[0],220):'')+'" alt=""><small>n° '+(i+1)+(rar(i)?' · '+RN[rar(i)].toLowerCase():'')+'</small>')+'</div>';}).join('')+'</div>'+
   '<div class="apr">'+pos+' / 9<span class="bar"><i style="width:'+(pos/9*100)+'%"></i></span>'+(fait?'✓ récompense touchée':'')+'</div>'+
   (fait?'':'<button class="arec"'+(pos<9?' disabled':'')+'>'+(pos<9?'Complète la page : 20 000 € à gagner':'🎉 Toucher 20 000 €')+'</button>');
  const rb=RAC.querySelector('.arec');if(rb)rb.onclick=async()=>{if(OCC)return;OCC=true;rb.disabled=true;rb.textContent='…';const r=await rpcS('album_page',{p_page:PG+1});OCC=false;
@@ -85,12 +84,12 @@ async function ouvrirPochette(s){if(OCC)return;OCC=true;vib(10);msg('');
  if(!r||!r.ok){v.remove();msg(r&&r.erreur==='pas_assez'?'Pas assez d’euros.':r&&r.erreur==='deja'?'Tu as déjà ouvert la pochette du jour.':r&&r.erreur==='doublons'?'Il faut 5 doublons.':'L’album arrive très bientôt !');lire();return;}
  if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}
  v.querySelector('.poch').classList.add('dechire');vib([10,30,10]);
- setTimeout(()=>{const L=r.cartes||[],N=r.neuf||[];v.innerHTML='<div class="tri">'+L.map((id,k)=>{const i=ID[id];return i===undefined?'':'<div class="cs" style="position:relative">'+(N[k]?'<span class="nf">NOUVEAU !</span>':'')+sticker(i,1,0).replace('class="st','style="animation-delay:'+(k*.35)+'s" class="st')+'</div>';}).join('')+'</div>'+
+ setTimeout(()=>{const L=r.cartes||[],N=r.neuf||[];v.innerHTML='<div class="tri">'+L.map((id,k)=>{const i=ID[id];return i===undefined?'':'<div class="cs" style="position:relative">'+(N[k]?'<span class="nf">NOUVEAU !</span>':'')+sticker(i,1,0).replace('style="--r:','style="animation-delay:'+(k*.35)+'s;--r:')+'</div>';}).join('')+'</div>'+
   '<div style="font-weight:800;font-size:15px">'+(L.some(id=>rar(ID[id])===2)?'✨ UNE LÉGENDE ! ✨':N.some(Boolean)?'De nouveaux autocollants pour ton album !':'Que des doublons… garde-les pour les échanger !')+'</div><button class="acoll">Coller dans l’album</button>';
   if(L.some(id=>rar(ID[id])===2))vib([30,40,30,40,120]);
   v.querySelector('.acoll').onclick=()=>{vib(8);v.remove();const p=L.length?Math.floor(ID[L[0]]/9):PG;PG=isFinite(p)?p:PG;lire();};},450);}
 function fermer(){if(!RAC)return;const R0=RAC;RAC=null;window.ECRAN_COUVRANT=false;R0.classList.remove('on');setTimeout(()=>R0.remove(),220);}
-window.ouvrirAlbum=function(){if(RAC)return;if(!document.getElementById('albCss')){const s=document.createElement('style');s.id='albCss';s.textContent=CSS;document.head.appendChild(s);}
+window.ouvrirAlbum=async function(){if(RAC)return;try{if(!window.AUTOCOLLANT)eval(await chargerMorceau('autocollants.js'));}catch(x){}if(RAC)return;if(!document.getElementById('albCss')){const s=document.createElement('style');s.id='albCss';s.textContent=CSS;document.head.appendChild(s);}
  const d=document.createElement('div');d.id='alb';RAC=d;d.innerHTML='<div class="ahd"><b></b><button class="ax" aria-label="Fermer">✕</button></div><div class="aong"></div><div class="acorps"><div class="apage"></div><div class="amsg"></div><div class="apo"></div></div>';
  document.body.appendChild(d);requestAnimationFrame(()=>d.classList.add('on'));window.ECRAN_COUVRANT=true;d.querySelector('.ax').onclick=()=>{vib(8);fermer();};rendre();lire();};
 })();
