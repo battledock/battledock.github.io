@@ -2491,7 +2491,7 @@ poserAmbiance('vent',false);
 poserAmbiance('oiseaux',false);
 poserAmbiance('riviere',false);
 poserAmbiance('fontaine',false);
-poserAmbiance('grillons',nuit&&window.LIEU_PAGE!=='club'&&window.LIEU_PAGE!=='casino');
+poserAmbiance('grillons',nuit&&window.LIEU_PAGE!=='club'&&window.LIEU_PAGE!=='casino'&&window.LIEU_PAGE!=='appart');
 }
 /* ONGLET CACHÉ : on se tait. Un fond sonore qui continue dans un onglet
    qu'on a quitté, c'est le genre de chose qu'on cherche pendant dix
@@ -7678,8 +7678,8 @@ R(-4,-5,9,5,V.tronc);R(-4,-5,9,2,V.troncC);R(-2,-4,5,1,'#a5764a');R(-4,-2,9,2,V.
    fin de la ville — une derniere facade, une esplanade de platanes — et
    surtout les collines boisees qui apparaissent sur l'horizon : on marche
    vers quelque chose qu'on voit, pas vers un mur. */
-const MONDE_L=CARTE==='spawn'?((window.LIEU_PAGE==='terrasses'||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche')?1600:(window.LIEU_PAGE==='piste'?2000:(window.LIEU_PAGE==='foire'?1800:(window.LIEU_PAGE==='casino'?1400:800)))):(CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760)))));   /* spawn : 800×800 */
-const MONDE_H=CARTE==='spawn'?(window.LIEU_PAGE==='piste'?1040:(window.LIEU_PAGE==='foire'?1400:(window.LIEU_PAGE==='casino'?880:800))):(CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:562))));   /* spawn : 800×800 */
+const MONDE_L=CARTE==='spawn'?((window.LIEU_PAGE==='terrasses'||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche')?1600:(window.LIEU_PAGE==='piste'?2000:(window.LIEU_PAGE==='foire'?1800:(window.LIEU_PAGE==='casino'?1400:(window.LIEU_PAGE==='appart'?640:800))))):(CARTE==='large'?2400:(CARTE==='foret'?1500:(CARTE==='tokyo'?900:(CARTE==='garde'?640:(CARTE==='village'?(FORET_SEULE?1400:(FERME_VIERGE?1800:1200)):1760)))));   /* spawn : 800×800 */
+const MONDE_H=CARTE==='spawn'?(window.LIEU_PAGE==='piste'?1040:(window.LIEU_PAGE==='foire'?1400:(window.LIEU_PAGE==='casino'?880:(window.LIEU_PAGE==='appart'?540:800)))):(CARTE==='large'?2400:(CARTE==='foret'?1000:(CARTE==='village'&&!FORET_SEULE?(FERME_VIERGE?1800:1600):(CARTE==='tokyo'?2560:562))));   /* spawn : 800×800 */
 const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la hauteur
 /* AU LARGE, LA CAMÉRA RECULE : le bateau fait à lui seul 252 points de
    long, et naviguer sans voir devant soi n'a aucun sens. */
@@ -10794,7 +10794,7 @@ let TXT_FERME=null;
 /* SI port.js NE CHARGE PAS, les cinquante-trois symboles ci-dessous
    restent indéfinis et le port ne se dessine pas, sans un mot. On le dit. */
 try{
-if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':(lieu==='garde'?'garde.js':(lieu==='tour'?'tour.js':(lieu==='plateau'?'plateau.js':(lieu==='labo'?'labo.js':(lieu==='quai'?'quai.js':(lieu==='piste'?'piste.js':(lieu==='foire'?'foire.js':(lieu==='club'?'club.js':(lieu==='casino'?'casino.js':'joliette.js')))))))))))))));}catch(x){console.warn('JOL',x);JOL=null;}}
+if(CARTE==='spawn'){try{let lieu=window.LIEU_PAGE||'';try{lieu=lieu||new URLSearchParams(location.search).get('lieu')||'';}catch(x){}JOL=eval(await chargerMorceau(lieu.slice(0,9)==='terrasses'?'terrasses.js':(lieu==='stade'?'stade.js':(lieu==='plage'?'plage.js':(lieu==='corniche'?'corniche.js':(lieu==='blocus'?'blocus.js':(lieu==='garde'?'garde.js':(lieu==='tour'?'tour.js':(lieu==='plateau'?'plateau.js':(lieu==='labo'?'labo.js':(lieu==='quai'?'quai.js':(lieu==='piste'?'piste.js':(lieu==='foire'?'foire.js':(lieu==='club'?'club.js':(lieu==='casino'?'casino.js':(lieu==='appart'?'appart.js':'joliette.js'))))))))))))))));}catch(x){console.warn('JOL',x);JOL=null;}}
 if(CARTE==='extramar'){({XP,CARGO_X,PAV,CABANON,STATIONS_VELO,surPonton,dansLeBassin,bloqueExtramar,GX,bloqueGarde,construireSolGarde,graverLaBasilique,graverLaLongueVue,semerDecorGarde,panoramaGarde,construireSolExtramar,TU_M,ENDUITS,PI_X,toitCanal,enduit,chaine,fenetreM,balconM,VOLETS,graverImmeuble,graverLaGarde,graverLesToitsDuFond,graverBelArbre,graverLaCriee,graverLeCabanon,graverLaStationVelo,graverTonBateau,POISSONS_MARMITE,RECETTE,ouvrirLeCabanon,dessinerLeCabanon,cuisinerLaBouillabaisse,graverPavillon,graverArbuste,CANNES,ACCESSOIRES,APPATS,chargerLEquipement,illustrerArticle,ouvrirLaBoutiqueDePeche,fermerLeCatalogue,afficherPecheMarine,acheterALaBoutique,FERRY,positionDuFerry,BANCS,eauVivante,semerDecorExtramar,affinerLeSolExtramar,graverLeHangar,dessinerLePanorama}=eval(await chargerMorceau('port.js')));}
 if(CARTE==='tokyo'){TKM=eval(await chargerMorceau('tokyo.js'));}
 }catch(erPort){
@@ -19722,7 +19722,7 @@ const CIEL=[
 {h:21.5, amb:[44,54,104],  lampes:1,   soleil:null},
 {h:24,   amb:[30,40,86],   lampes:1,   soleil:null}];
 function cielDuMoment(){
-if(window.LIEU_PAGE==="terrasses"||window.LIEU_PAGE==="garde"||window.LIEU_PAGE==="tour"||window.LIEU_PAGE==="plateau"||window.LIEU_PAGE==="labo"||window.LIEU_PAGE==="club"||window.LIEU_PAGE==="casino")return null;   /* sous la verrière, toujours éclairé */
+if(window.LIEU_PAGE==="terrasses"||window.LIEU_PAGE==="garde"||window.LIEU_PAGE==="tour"||window.LIEU_PAGE==="plateau"||window.LIEU_PAGE==="labo"||window.LIEU_PAGE==="club"||window.LIEU_PAGE==="casino"||window.LIEU_PAGE==="appart")return null;   /* sous la verrière, toujours éclairé */
 const m=minuteDuJour();
 if(m===null)return null;
 const h=m/60;
@@ -20580,7 +20580,7 @@ DECOR.filter(o=>o.t==='bancP').sort((a,b)=>(a.y-b.y)||(a.x-b.x))
 return l;
 }
 function coinDuJoueur(){
-if(window.LIEU_PAGE==='club')return 'au Disco Club';if(window.LIEU_PAGE==='casino')return 'au Grand Casino';if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='quai')return 'au port';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';if(window.LIEU_PAGE==='piste')return 'à la piste d’athlétisme';if(window.LIEU_PAGE==='foire')return 'à la fête foraine';if(window.LIEU_PAGE==='plage')return 'à la plage des Catalans';if(window.LIEU_PAGE==='corniche')return 'sur la Corniche';if(window.LIEU_PAGE==='blocus')return 'au blocus';if(window.LIEU_PAGE==='garde')return 'en garde à vue';if(window.LIEU_PAGE==='tour')return 'à la tour du port';if(window.LIEU_PAGE==='plateau')return 'sur le plateau de Mistral TV';
+if(window.LIEU_PAGE==='club')return 'au Disco Club';if(window.LIEU_PAGE==='casino')return 'au Grand Casino';if(window.LIEU_PAGE==='appart')return 'chez lui';if(window.LIEU_PAGE==='terrasses')return 'à la Galerie Bleue';if(window.LIEU_PAGE==='quai')return 'au port';if(window.LIEU_PAGE==='stade')return 'au Vélodrome';if(window.LIEU_PAGE==='piste')return 'à la piste d’athlétisme';if(window.LIEU_PAGE==='foire')return 'à la fête foraine';if(window.LIEU_PAGE==='plage')return 'à la plage des Catalans';if(window.LIEU_PAGE==='corniche')return 'sur la Corniche';if(window.LIEU_PAGE==='blocus')return 'au blocus';if(window.LIEU_PAGE==='garde')return 'en garde à vue';if(window.LIEU_PAGE==='tour')return 'à la tour du port';if(window.LIEU_PAGE==='plateau')return 'sur le plateau de Mistral TV';
 if(CARTE==='extramar')return 'à Extramar';
 if(CARTE==='garde')return 'à Notre-Dame';
 if(CARTE==='tokyo')return 'à Tokyo';
@@ -35119,15 +35119,16 @@ function ouvrirMenu(){if(document.getElementById('menuTir'))return;try{vibrer(8)
     carnet:['................','...aaaaaaaaaa...','..abbbbbbbbbbc..','..abddddddddbc..','..abbbbbbbbbbc..','..abeeeeeeebbc..','..abbbbbbbbbbc..','..abeeeeebbbbc..','..abbbbbbbbbbc..','..abeeeeeeebbc..','..abbbbbbbbbbc..','..abbbbbbffbbc..','..abbbbbbffbbc..','...aaaaaaaaaa...','................','................'],
     cls:['................','...aaaaaaaaaa...','..aabbbbbbbbaa..','.a.abbbbbbbba.a.','.a.abbbbbbbba.a.','..aabbbbbbbbaa..','....abbbbbba....','.....abbbba.....','......abba......','.......aa.......','.......aa.......','.....cccccc.....','....cddddddc....','....cccccccc....','................','................'],
     reg:['................','.......aa.......','...aa.abba.aa...','...abaabbaaba...','....abbbbbba....','..aabbbccbbbaa..','..abbbccccbbba..','...abcc..ccba...','...abcc..ccba...','..abbbccccbbba..','..aabbbccbbbaa..','....abbbbbba....','...abaabbaaba...','...aa.abba.aa...','.......aa.......','................'],
+    appart:['................','.......aa.......','......abba......','.....abbbba.....','....abbbbbba....','...abbbbbbbba...','..aaaaaaaaaaaa..','...acccccccca...','...acddcceeca...','...acddcceeca...','...acccccfeca...','...acddcceeca...','...acddcceeca...','...acccccceca...','..aaaaaaaaaaaa..','................'],
     parrain:['................','....aa....aa....','...abba..abba...','....abbaabba....','.aaaaaaaaaaaaaa.','.adddddbbddddda.','.acccccbbccccca.','.aaaaaaaaaaaaaa.','..accccbbcccca..','..accccbbcccca..','..accccbbcccca..','..accccbbcccca..','..accccbbcccca..','..accccbbcccca..','..aaaaaaaaaaaa..','................'],
     album:['................','..aaaaaaaaaaaa..','.abbbbbbbbbbbbc.','.abddddbeeeebbc.','.abddddbeeeebbc.','.abddddbeeeebbc.','.abbbbbbbbbbbbc.','.abffffbgggg.bc.','.abffffbggggbbc.','.abffffbggggbbc.','.abbbbbbbbbbbbc.','.abhhhhhhhhhhbc.','.abbbbbbbbbbbbc.','..aaaaaaaaaaaa..','................','................'],
     radio:['................','..........a.....','.........a......','..bbbbbbbbbbbb..','.bccccccccccccb.','.bcddddcceeeecb.','.bcdffdcceeeecb.','.bcdffdcceeeecb.','.bcddddcceeeecb.','.bccccccccccccb.','.bcggcggcggcgcb.','.bccccccccccccb.','..bbbbbbbbbbbb..','..b..........b..','................','................'],
     carte:['................','..aaa.aaaa.aaa..','..abbaccccaddda.','..abbacccca.dda.','..abbaccccaddda.','..abbac.ccadeda.','..ab.acccca.dda.','..abbaccccaddda.','..abbacccca.dda.','..abbaccccaddda.','..abba.cccaddda.','..abbaccccaddda.','..aaa.aaaa.aaa..','................','................','................']};
   const PAL={sac:{a:'#5a3418',b:'#5a3418',c:'#e8923a',d:'#b8622a',e:'#5a3418',f:'#f2c94c'},vest:{a:'#1d3a6a',b:'#2a62b0',c:'#f2c94c'},carnet:{a:'#5a3a18',b:'#f6ead0',c:'#c8a060',d:'#d84a3a',e:'#a89070',f:'#e8b030'},
-    cls:{a:'#a86a10',b:'#f2c43a',c:'#6a4a2a',d:'#8a6a4a'},album:{a:'#5a3a18',b:'#f6ead0',c:'#c8a060',d:'#ff6ad8',e:'#3ac8e8',f:'#ffd23a',g:'#7ac85a',h:'#c8a060'},parrain:{a:'#3a1a08',b:'#ffd23a',c:'#d83a3a',d:'#ff6a6a'},radio:{a:'#4a4e58',b:'#5a1408',c:'#c84a2a',d:'#2a1a14',e:'#f6e8c8',f:'#f6e8c8',g:'#f6e8c8'},reg:{a:'#4a4e58',b:'#8a909c',c:'#c8ccd4'},carte:{a:'#6a5030',b:'#7ab0d8',c:'#9ad07a',d:'#e8d8a8',e:'#d84a3a'}};
+    cls:{a:'#a86a10',b:'#f2c43a',c:'#6a4a2a',d:'#8a6a4a'},album:{a:'#5a3a18',b:'#f6ead0',c:'#c8a060',d:'#ff6ad8',e:'#3ac8e8',f:'#ffd23a',g:'#7ac85a',h:'#c8a060'},parrain:{a:'#3a1a08',b:'#ffd23a',c:'#d83a3a',d:'#ff6a6a'},appart:{a:'#4a2a14',b:'#d8503a',c:'#f6e6c8',d:'#7ac8f0',e:'#8a5a2a',f:'#ffd23a'},radio:{a:'#4a4e58',b:'#5a1408',c:'#c84a2a',d:'#2a1a14',e:'#f6e8c8',f:'#f6e8c8',g:'#f6e8c8'},reg:{a:'#4a4e58',b:'#8a909c',c:'#c8ccd4'},carte:{a:'#6a5030',b:'#7ab0d8',c:'#9ad07a',d:'#e8d8a8',e:'#d84a3a'}};
   const icone=k=>{const c=document.createElement('canvas');c.width=16;c.height=16;const g=c.getContext('2d');PIX[k].forEach((l,y)=>[...l].forEach((ch,x)=>{if(ch!=='.'){g.fillStyle=PAL[k][ch];g.fillRect(x,y,1,1);}}));return c.toDataURL();};
   const T=[['sac','Sac','tes affaires','#ffe2c0'],['vest','Vestiaire','tes tenues','#dce8ff'],['carte','Carte','aller ailleurs','#dcf4e0'],
-    ['cls','Classement','les couronnes','#fff0b8'],['album','Album','tes autocollants','#f4e0ff'],['parrain','Parrainer','5 000 € pour un ami','#ffe8c8'],['radio','Radio','la musique du port','#ffe0d8'],['reg','Réglages','son, compte','#ececf0']];
+    ['cls','Classement','les couronnes','#fff0b8'],['album','Album','tes autocollants','#f4e0ff'],['appart','Chez moi','ton appart','#ffe8d8'],['parrain','Parrainer','5 000 € pour un ami','#ffe8c8'],['radio','Radio','la musique du port','#ffe0d8'],['reg','Réglages','son, compte','#ececf0']];
   d.innerHTML='<div class="f"><div class="pg"></div><div class="tt">MENU</div><div class="g g3">'+
     T.map(([k,n,s,c,bientot])=>'<button data-k="'+k+'"'+(bientot?' class="bt"':'')+'><i style="background:'+c+'"><img src="'+icone(k)+'" alt=""></i>'+n+'<small>'+s+'</small>'+(bientot?'<em>bientôt</em>':'')+'</button>').join('')+
     '</div></div>';
@@ -35135,7 +35136,7 @@ function ouvrirMenu(){if(document.getElementById('menuTir'))return;try{vibrer(8)
   d.addEventListener('click',ev=>{if(ev.target===d){fermerMenu();return;}const b=ev.target.closest('button[data-k]');if(!b)return;const k=b.dataset.k;
     if(b.classList.contains('bt')){try{vibrer(20);}catch(x){}b.classList.remove('nope');void b.offsetWidth;b.classList.add('nope');return;}
     fermerMenu();
-    setTimeout(()=>{try{if(k==='cls')ouvrirLeClassement();if(k==='sac')ouvrirSacN();if(k==='carnet')ouvrirCarnetN();if(k==='reg')ouvrirNeuf('reglages.js','ouvrirReglagesNeufs');if(k==='radio')ouvrirNeuf('radio.js','ouvrirRadio');if(k==='album')ouvrirNeuf('album.js','ouvrirAlbum');if(k==='parrain')ouvrirNeuf('parrain.js','ouvrirParrainage');if(k==='vest')ouvrirNeuf('vestiaire.js','ouvrirVestiaireNeuf');if(k==='carte')ouvrirNeuf('carte.js','ouvrirCarteNeuve');}catch(x){console.warn('MENU',x);}},120);});}
+    setTimeout(()=>{try{if(k==='cls')ouvrirLeClassement();if(k==='sac')ouvrirSacN();if(k==='carnet')ouvrirCarnetN();if(k==='reg')ouvrirNeuf('reglages.js','ouvrirReglagesNeufs');if(k==='radio')ouvrirNeuf('radio.js','ouvrirRadio');if(k==='album')ouvrirNeuf('album.js','ouvrirAlbum');if(k==='parrain')ouvrirNeuf('parrain.js','ouvrirParrainage');if(k==='appart'){if(window.LIEU_PAGE==='appart'){try{texteVolant(joueur.x,joueur.y-50,'Tu es déjà chez toi !','#fff');}catch(x){}}else{try{sauver();}catch(x){}const v=window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'';location.href='appart.html'+v;}}if(k==='vest')ouvrirNeuf('vestiaire.js','ouvrirVestiaireNeuf');if(k==='carte')ouvrirNeuf('carte.js','ouvrirCarteNeuve');}catch(x){console.warn('MENU',x);}},120);});}
 function poser(){if(document.getElementById('menuRond'))return;const s=document.createElement('style');s.textContent=CSS_MR;document.head.appendChild(s);
   const b=document.createElement('button');b.id='menuRond';b.setAttribute('aria-label','Menu');b.innerHTML='<i></i>';b.onclick=ouvrirMenu;document.body.appendChild(b);}
 if(document.body)setTimeout(poser,400);else addEventListener('DOMContentLoaded',()=>setTimeout(poser,400));
