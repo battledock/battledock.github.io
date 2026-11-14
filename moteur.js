@@ -7683,7 +7683,7 @@ const MONDE=MONDE_H;              // ce qui reste écrit MONDE parle de la haute
    long, et naviguer sans voir devant soi n'a aucun sens. */
 const VUE_L=196, VUE_H=400;       /* la vue de référence, en points de jeu */
 const ZOOM=2;                     /* ne sert plus que de repli */
-let SOL=null, SOL_FIN=null;
+let SOL=null, SOL_FIN=null, SOL_NUIT_POSE=false;
 /* ================= LA POUSSIÈRE A LA COULEUR DU SOL =================
    En courant, chaque appui projetait quatre grains beiges — #b8a482 et
    #c9b894 — quelle que soit la carte. Sur la terre du village cela passait
@@ -12004,6 +12004,11 @@ function ombreCuite(C,pente,ecrase){
    milieu d'une place bleu nuit. Chaque dessin reçoit donc sa version de nuit
    (le même dessin, passé au bleu sombre), posée par-dessus selon l'heure. */
 function nuitDecor(){try{const c=cielDuMoment();return c?Math.min(1,c.lampes||0):0;}catch(x){return 0;}}
+/* LE MÉLANGE JOUR/NUIT, GRAVÉ UNE FOIS PAR PALIER. Au crépuscule, chaque décor se dessinait deux fois
+   par image (le jour, puis la nuit par-dessus en transparence) : sur un grand écran, c'est le double de
+   pixels à peindre. La nuit avance lentement : on grave le mélange une fois par vingtième, et on le pose. */
+function melangeNuit(jour,nuit,k){if(k<=.02)return jour;if(k>=.98)return nuit;const q=Math.round(k*20)/20;const M=jour._mel;if(M&&M.q===q&&M.n===nuit)return M.c;
+ const c=(M&&M.c)||document.createElement('canvas');if(c.width!==jour.width||c.height!==jour.height){c.width=jour.width;c.height=jour.height;}const g=c.getContext('2d');g.globalAlpha=1;g.clearRect(0,0,c.width,c.height);g.drawImage(jour,0,0);g.globalAlpha=q;g.drawImage(nuit,0,0);jour._mel={q,n:nuit,c};return c;}
 function versionNuit(C){if(C._nuit)return C._nuit;const s=C.toile,c=document.createElement('canvas');c.width=s.width;c.height=s.height;const g=c.getContext('2d');
 g.drawImage(s,0,0);g.globalCompositeOperation='multiply';g.fillStyle='#4a5288';g.fillRect(0,0,c.width,c.height);
 g.globalCompositeOperation='destination-in';g.drawImage(s,0,0);C._nuit=c;return c;}
@@ -12051,8 +12056,8 @@ if(o.t==='x_cargo'||o.t==='x_caboteur')dy=Math.round(Math.sin(Date.now()/2400)*0
 const X0=Math.round(x-C.W/2), Y0=Math.round(y-C.sol+dy);
 if(o.flip){g.save();g.translate(Math.round(x)*2,0);g.scale(-1,1);}
 ombrePortee(g,C,x,y+dy,o.t);
-g.drawImage(C.toile,X0,Y0,C.W,C.H);
-if(CARTE==='spawn'&&(!window.LIEU_PAGE||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche'||window.LIEU_PAGE==='blocus'||window.LIEU_PAGE==='plateau'||window.LIEU_PAGE==='quai')&&(o.t||'').slice(0,6)==='x_jol_'){const k=nuitDecor();if(k>0.02){g.globalAlpha=k;g.drawImage(versionNuit(C),X0,Y0,C.W,C.H);g.globalAlpha=1;}}
+{const kN=(CARTE==='spawn'&&(!window.LIEU_PAGE||window.LIEU_PAGE==='stade'||window.LIEU_PAGE==='plage'||window.LIEU_PAGE==='corniche'||window.LIEU_PAGE==='blocus'||window.LIEU_PAGE==='plateau'||window.LIEU_PAGE==='quai')&&(o.t||'').slice(0,6)==='x_jol_')?nuitDecor():0;
+g.drawImage(kN>0.02?melangeNuit(C.toile,versionNuit(C),kN):C.toile,X0,Y0,C.W,C.H);}
 if(lampesAllumees()){const t=o.t||'';
 /* LES FEUX PORTÉS PAR LE CALQUE. Les tests par nom ci-dessous ne
    marchent que pour un dessin dont on connaît d'avance la taille : la
@@ -14332,7 +14337,7 @@ else{
   if(Math.abs(cibleX-CAM.x)<0.04)CAM.x=cibleX;
   if(Math.abs(cibleY-CAM.y)<0.04)CAM.y=cibleY;}
 const camXf=CAM.x, camYf=CAM.y;
-const camX=Math.floor(camXf), camY=Math.floor(camYf);
+const camX=Math.floor(camXf), camY=Math.floor(camYf);CAM_IMG.x=camX;CAM_IMG.y=camY;
 const fx=Math.round((camXf-camX)*ECH)/ECH;      /* la part fractionnaire, calée sur l'écran */
 const fy=Math.round((camYf-camY)*ECH)/ECH;
 const sx=SECOUSSE>0.01?Math.round((Math.random()-.5)*SECOUSSE*4)*ECH:0;
@@ -14613,7 +14618,8 @@ ambiance(ctx);
 ctx.setTransform(1,0,0,1,0,0);
 return;
 }
-if(SOL_FIN)ctx.drawImage(SOL_FIN,camX*2,camY*2,lw*2,lh*2,0,0,lw,lh);   /* le sol affiné */
+SOL_NUIT_POSE=false;if(SOL_FIN){let S_=SOL_FIN;try{const Cq=solNuitPossible()&&CIEL_T0&&Date.now()-CIEL_T0>1700?cielDuMoment():null;if(Cq&&!(Cq.amb[0]>=250&&Cq.amb[1]>=250&&Cq.amb[2]>=246)){const N=solNuit(Cq);if(N){S_=N;SOL_NUIT_POSE=Cq;}}}catch(x){}
+ctx.drawImage(S_,camX*2,camY*2,lw*2,lh*2,0,0,lw,lh);}   /* le sol affiné (déjà assombri la nuit) */
 else ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
 if(CHEMIN)ctx.drawImage(CHEMIN,camX,camY,lw,lh,0,0,lw,lh);   /* la couche du chemin */
 if(CARTE==='village'&&FIN_OK()&&!FERME_SEULE)dessinerLaPlaceFin(ctx,camX,camY);    /* la grand-place en dalles fines */
@@ -19755,7 +19761,27 @@ const X=m?m.a*x+m.c*y+m.e:x, Y=m?m.b*x+m.d*y+m.f:y;
 const mt=/rgba\((\d+),\s*(\d+),\s*(\d+)/.exec(teinte||'')||[0,255,190,90];
 const rr=rayon*sc*1.35;if(X<-rr||Y<-rr||X>cv.width+rr||Y>cv.height+rr)return;           /* hors de l'écran : rien à éclairer */
 if(LUMIERES.length<160)LUMIERES.push({x:X,y:Y,r:rr,c:[+mt[1],+mt[2],+mt[3]],a:C.lampes});
+if(g===ctx&&ECH>0){const wx=X/ECH+CAM_IMG.x,wy=Y/ECH+CAM_IMG.y,k=Math.round(wx/6)+','+Math.round(wy/6);if(!LUM_MONDE.has(k)&&LUM_MONDE.size<400){LUM_MONDE.set(k,{x:wx,y:wy,r:rr/ECH,c:[+mt[1],+mt[2],+mt[3]]});LUM_MONDE_V++;}}
 }
+/* ================= LE SOL DE NUIT, GRAVÉ D'AVANCE =================
+   LE VOILE « MULTIPLY » EST CE QUI COÛTE LE PLUS CHER DE TOUT LE JEU (voir poserLeCiel) :
+   une fusion sur tout l'écran, à chaque image. Or au port il ne sert qu'à assombrir le SOL —
+   le décor et les gens ont leur propre version de nuit, posée après. Et le sol ne bouge pas.
+   On grave donc une fois le sol assombri, avec les flaques de lumière des lampes (en coordonnées
+   du monde), et on le repose tel quel : plus aucune fusion par image. On regrave seulement quand
+   la lumière du moment change d'un cran, ou qu'une lampe nouvelle entre dans le champ. */
+const CAM_IMG={x:0,y:0};const LUM_MONDE=new Map();let LUM_MONDE_V=0;
+let SOLN={c:null,cle:'',src:null,t:0};
+function solNuitPossible(){return CARTE==='spawn'&&!window.LIEU_PAGE&&SOL_FIN&&!(typeof REG!=='undefined'&&REG.ciel==='jour')&&(typeof QUALITE==='undefined'||QUALITE>=1);}
+function solNuit(Cm){if(!solNuitPossible())return null;const a=Cm.amb,q=v=>Math.round(v/6)*6,la=Math.round((Cm.lampes||0)*10)/10;
+ const cle=q(a[0])+','+q(a[1])+','+q(a[2])+'|'+la+'|'+LUM_MONDE_V;if(SOLN.c&&SOLN.src===SOL_FIN&&SOLN.cle===cle)return SOLN.c;
+ const now_=performance.now();if(SOLN.c&&SOLN.src===SOL_FIN&&now_-SOLN.t<1500&&SOLN.cle.split('|')[0]===cle.split('|')[0])return SOLN.c;   /* une lampe de plus : on attend un peu */
+ try{const W2=SOL_FIN.width,H2=SOL_FIN.height,c=(SOLN.c&&SOLN.c.width===W2&&SOLN.c.height===H2)?SOLN.c:document.createElement('canvas');if(c.width!==W2){c.width=W2;c.height=H2;}
+  const sx=W2/MONDE_L,sy=H2/MONDE_H,Lr=.25,Lw=Math.ceil(MONDE_L*Lr),Lh=Math.ceil(MONDE_H*Lr),L=document.createElement('canvas');L.width=Lw;L.height=Lh;const lg=L.getContext('2d');
+  lg.fillStyle='rgb('+q(a[0])+','+q(a[1])+','+q(a[2])+')';lg.fillRect(0,0,Lw,Lh);lg.globalCompositeOperation='lighter';
+  for(const l of LUM_MONDE.values()){const T=tacheTeinte(l.c[0],l.c[1],l.c[2]),rr=l.r*Lr;if(rr<.5)continue;lg.globalAlpha=Math.min(.72,la*.72);lg.drawImage(T,l.x*Lr-rr,l.y*Lr-rr,rr*2,rr*2);}
+  const g=c.getContext('2d');g.globalCompositeOperation='source-over';g.globalAlpha=1;g.drawImage(SOL_FIN,0,0);g.globalCompositeOperation='multiply';g.imageSmoothingEnabled=true;g.drawImage(L,0,0,W2,H2);g.globalCompositeOperation='source-over';
+  SOLN={c,cle,src:SOL_FIN,t:now_};return c;}catch(x){return null;}}
 let TACHE=null;
 function tacheDeLumiere(){if(TACHE)return TACHE;const c=document.createElement('canvas');c.width=c.height=128;const q=c.getContext('2d');
 const d=q.createRadialGradient(64,64,0,64,64,64);d.addColorStop(0,'rgba(255,255,255,1)');d.addColorStop(0.35,'rgba(255,255,255,.62)');
@@ -19822,7 +19848,8 @@ L.globalCompositeOperation='lighter';
 for(const l of LUMIERES){const T=tacheTeinte(l.c[0],l.c[1],l.c[2]), rr=l.r*R;if(rr<1)continue;L.globalAlpha=Math.min(0.72,l.a*0.72);L.drawImage(T,l.x*R-rr,l.y*R-rr,rr*2,rr*2);}
 if(false&&Cm.f>0.18&&typeof joueur!=='undefined'){const m=ctxJoueurEcran();   /* plus de halo autour du joueur */if(m){const T=tacheTeinte(170,170,190), rr=64*R*(m.sc||1);L.globalAlpha=Math.min(0.55,(Cm.f-0.18)*1.4);L.drawImage(T,m.x*R-rr,m.y*R-rr,rr*2,rr*2);}}
 L.globalAlpha=1;L.globalCompositeOperation='source-over';
-g.globalCompositeOperation='multiply';g.imageSmoothingEnabled=true;g.drawImage(CARTE_LUM,0,0,W,H);
+if(SOL_NUIT_POSE&&k>=1){if(Cm.f>0.2){const v=g.createRadialGradient(W/2,H*0.48,Math.min(W,H)*0.3,W/2,H*0.5,Math.max(W,H)*0.75);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,10,'+((Cm.f-0.2)*0.9*0.85).toFixed(3)+')');g.fillStyle=v;g.fillRect(0,0,W,H);}}
+else{g.globalCompositeOperation='multiply';g.imageSmoothingEnabled=true;g.drawImage(CARTE_LUM,0,0,W,H);}
 }
 if(Cm.soleil&&Cm.soleil.f>0.02){const s=Cm.soleil, x0=s.cote<0?0:W, x1=s.cote<0?W:0;
 const d=g.createLinearGradient(x0,0,x1,H*0.4);d.addColorStop(0,'rgba('+s.c[0]+','+s.c[1]+','+s.c[2]+','+s.f.toFixed(3)+')');d.addColorStop(0.55,'rgba('+s.c[0]+','+s.c[1]+','+s.c[2]+','+(s.f*0.25).toFixed(3)+')');d.addColorStop(1,'rgba(0,0,0,0)');

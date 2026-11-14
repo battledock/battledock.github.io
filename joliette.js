@@ -486,9 +486,8 @@ function nuitDuMoment(){try{const c=cielDuMoment();return c?Math.max(0,Math.min(
 function dessinerLesDocks(g,o,x,y){
   if(!DOCKS_JOUR)DOCKS_JOUR=toileDocks(true);
   const X0=Math.round(x-W/2), Y0=Math.round(y-248);
-  g.drawImage(DOCKS_JOUR,X0,Y0,W,250);
-  const k=nuitDuMoment();
-  if(k>0.02){if(!DOCKS_NUIT)DOCKS_NUIT=toileDocks(false);g.globalAlpha=k;g.drawImage(DOCKS_NUIT,X0,Y0,W,250);g.globalAlpha=1;}
+  const k=nuitDuMoment();if(k>0.02&&!DOCKS_NUIT)DOCKS_NUIT=toileDocks(false);
+  g.drawImage(k>0.02?melangeNuit(DOCKS_JOUR,DOCKS_NUIT,k):DOCKS_JOUR,X0,Y0,W,250);
   try{dessinerLesPortes(g,X0,Y0);}catch(x){}
 }
 
@@ -788,9 +787,9 @@ function graverFontaine(){if(TF)return TF;const Wd=130,Hd=118,sol=100,D=2,c=docu
   vasque(g,cx,by-24,18,6,8,PIERRE,'#5aa8d0');nappe(g,cx,by-24,18,6,22,.5);
   for(let k=0;k<4;k++){const a=k*Math.PI/2+Math.PI/4,x=cx+Math.cos(a)*50,y=by+Math.sin(a)*22;arc(g,x,y,cx+Math.cos(a)*16,by-2+Math.sin(a)*7,12,.7);}jet(g,cx,by-26,12,.8);
   TF={toile:c,W:Wd,H:Hd,sol};return TF;}
-function dessinerFontaine(g,o,x,y){const t=graverFontaine();const X0=x-t.W/2,Y0=y-t.sol;g.drawImage(t.toile,X0,Y0,t.W,t.H);
+function dessinerFontaine(g,o,x,y){const t=graverFontaine();const X0=x-t.W/2,Y0=y-t.sol;const kF=nuitDecor();g.drawImage(kF>.02?melangeNuit(t.toile,versionNuit(t),kF):t.toile,X0,Y0,t.W,t.H);
   /* la nuit : la pierre passe au bleu sombre, l'eau s'éclaire par en dessous */
-  {const k=nuitDecor();if(k>.02){g.globalAlpha=k;g.drawImage(versionNuit(t),X0,Y0,t.W,t.H);g.globalAlpha=1;
+  {const k=kF;if(k>.02){
     const wy=Y0+t.sol-(FY-BY);g.save();g.globalCompositeOperation='lighter';
     const gr=g.createRadialGradient(x,wy,2,x,wy,54);gr.addColorStop(0,'rgba(80,230,240,'+(.42*k)+')');gr.addColorStop(.7,'rgba(40,160,210,'+(.22*k)+')');gr.addColorStop(1,'rgba(40,160,210,0)');
     g.fillStyle=gr;g.beginPath();g.ellipse(x,wy,52,22,0,0,Math.PI*2);g.fill();
