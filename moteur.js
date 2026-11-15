@@ -15828,7 +15828,7 @@ if(PEDALE){
   }
 }
 
-const hanche=pG.x;                                              /* (gardé pour les anciens calculs) */
+const hanche=pG.x, hancheB=SQM?Math.max(-1,Math.min(1,-SQM.brasG.n)):Math.max(-1,Math.min(1,pG.x));   /* le bras lit son propre balancier, borné : le pied du squelette dépasse ±1 */                                              /* (gardé pour les anciens calculs) */
 const leveG=pG.lift, leveD=pD.lift;
 const AMPL=COURSE?1.35:1;
 const balance=bouge?Math.round(Math.sin(2*Math.PI*tC)*(COURSE?1.2:1.7)):0;   /* le report de poids de face : un pixel de chaque côté (il ne valait qu'un demi) */
@@ -16547,7 +16547,7 @@ return;
    conducteur avait l'air de descendre un escalier derriere sa machine.
    Les chiffres sont en demi-pixels, comme tout l'interieur du sprite. */
 const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1+(PEDALE?2:0)+(TROT?5:0))+vrille,
-      dy=(PEDALE||TROT)?0:Math.round(balance*(COURSE?8:8)),
+      dy=(PEDALE||TROT)?0:Math.round(balance>0?balance*(COURSE?8:6):balance*(COURSE?5:3)),   /* devant, la main descend vers nous ; derrière, elle remonte à peine */
       hCoude=TROT?8:(PEDALE?10:(COURSE?9:11)),
       hPoignet=TROT?TROT_MAIN:(PEDALE?21:(COURSE?14:19)),
       yC=yEp+hCoude+Math.round(dy/2), yM=yEp+hPoignet+dy;
@@ -16558,7 +16558,11 @@ const lb=SX.bras[0]+1;R(bx-Math.floor(lb/2),yEp,lb,3,manches>0?c:sk);R(bx-2,yEp-
    restaient collés au corps et le balancement ne se lisait pas. Elle
    glisse maintenant aussi vers l'axe du corps quand le bras part en
    avant, et vers l'extérieur quand il part en arrière. */
-const dxS=TROT?cote2*4:(PEDALE?cote2*3:(diag?Math.round(balance*5*tourne*(dos?-1:1)):Math.round(balance*5*-cote2)));
+const dxS=TROT?cote2*4:(PEDALE?cote2*3:(diag?Math.round(balance*5*tourne*(dos?-1:1)):-cote2*Math.round(balance>0?balance*3:-balance*1)));
+/* LE BRAS NE S'ÉCARTE PLUS EN ARRIÈRE. Le balancement était symétrique :
+   devant la main rentrait vers l'axe, derrière elle partait autant vers
+   l'extérieur — le bras faisait une aile, cassé au coude. Un bras qui
+   recule passe DERRIÈRE la hanche : il rentre un peu, lui aussi. */
 /* ================= LE PONT DE L'ÉPAULE =================
    Il restait un coin de fond entre le bras et le buste. Le trapèze
    descend en pente vers le cou sur les quatre premières lignes — de onze
@@ -18067,12 +18071,12 @@ const avanceD=diag&&bouge?tourne*(COURSE?2:1):0;              /* de trois-quarts
    se penchait du côté où il n'y avait plus personne. */
 const swayX=balance+avanceD-(rpA?rpA.sway[rpF]:0)+trVire, swayY=diag&&COURSE?1:0;
 if(swayX||swayY){g.save();g.translate(swayX*u,swayY*u);}           /* le poids passe d'un pied sur l'autre */
-if(diag){const loin=vis;bras(loin,loin>0?(dos?hanche:-hanche):(dos?-hanche:hanche),true);}
+if(diag){const loin=vis;bras(loin,loin>0?(dos?hancheB:-hancheB):(dos?-hancheB:hancheB),true);}
 torse();
 if(diag){const loin=vis, pres=-vis;
-bras(pres,loin>0?(dos?-hanche:hanche):(dos?hanche:-hanche),false);}
+bras(pres,loin>0?(dos?-hancheB:hancheB):(dos?hancheB:-hancheB),false);}
 else if(DZ_POSE){brasDZ(-1,dos?DZ_POSE.aD:DZ_POSE.aG,false);brasDZ(1,dos?DZ_POSE.aG:DZ_POSE.aD,false);}
-else{bras(-1,dos?-hanche:hanche,false);bras(1,dos?hanche:-hanche,false);}
+else{bras(-1,dos?-hancheB:hancheB,false);bras(1,dos?hancheB:-hancheB,false);}
 if(dos)sac(false);else sac(true);
 tete();echarpeDe();
 if(!dos)barbeDe();
@@ -18296,7 +18300,14 @@ const allure=allureBase*(VELO&&CARTE==='extramar'?1.75:1)*(REPU_FIN>Date.now()?1
    refermer : le pouce qui tremble au bord ne la fait plus clignoter. */
 court=(pousse>(court?COURSE_SORTIE:COURSE_ENTREE))&&!SOUF.vide&&CARTE!=='large';
 try{SOUF.maj(dt,court&&n>0.16,n>0.16);}catch(x){}
-const allureS=allure*(court&&SOUF.v>0?1.22:1)*(SOUF.vide?0.82:1);   /* le sprint, et le souffle court quand la jauge est vide */
+/* ================= LA MARCHE À ALLURE HUMAINE =================
+   À la taille du personnage, il marchait à quatre mètres par seconde :
+   l'allure d'un footing, que les jambes devaient faire passer pour une
+   marche en glissant sur le sol. La marche descend de quarante pour
+   cent — un peu moins de deux mètres par seconde, une marche franche —
+   et la course garde toute sa vitesse : c'est elle qui sert à aller vite. */
+const MARCHE_HUMAINE=0.6;
+const allureS=allure*(court&&SOUF.v>0?1.22:1)*(SOUF.vide?0.82:1)*(court?1:MARCHE_HUMAINE);   /* le sprint, et le souffle court quand la jauge est vide */
 /* ================= LE VIRAGE =================
    Le pivot ne se déclenchait que sur un cas : le renversement
    gauche↔droite. Les six autres changements de cap claquaient sec.
@@ -18562,7 +18573,7 @@ joueur.x=ax;joueur.y=ay;
    CADENCE, DÉRIVÉE, à partir du glissement, de la longueur du pas et du
    nombre d'images du cycle. Pour revenir à l'ancienne marche nerveuse,
    c'est GLISSE qu'on monte. */
-if(!bloqueBord)joueur.pas+=Math.min(v,vReel)*dt*CADENCE_PAS;
+if(!bloqueBord)joueur.pas+=Math.min(v,vReel)*dt*CADENCE_PAS*(court?1:1.25);   /* en marche, le pied glisse moins : on pose vraiment ses pas */
 const versX=Math.abs(vx)>Math.abs(vy)*1.35;
 const versY=Math.abs(vy)>Math.abs(vx)*1.35;
 if(versX)joueur.dir=vx>0?'droite':'gauche';
