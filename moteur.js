@@ -15673,7 +15673,7 @@ course:[
 /* L'ESSAI : la nouvelle animation ne s'allume que pour qui le demande
    (?anim2=1 dans l'adresse, retenu sur l'appareil ; ?anim2=0 l'éteint).
    Les autres joueurs gardent l'ancienne tant qu'elle n'est pas validée. */
-const ANIM2_ON=(()=>{try{const q=new URLSearchParams(location.search);if(q.has('anim2'))localStorage.setItem('bd_anim2',q.get('anim2')==='0'?'0':'1');return localStorage.getItem('bd_anim2')==='1';}catch(x){return false;}})();
+const ANIM2_ON=(()=>{try{const q=new URLSearchParams(location.search);if(q.has('anim2'))localStorage.setItem('bd_anim2',q.get('anim2')==='0'?'0':'1');return localStorage.getItem('bd_anim2')!=='0';}catch(x){return true;}})();   /* validée : allumée pour tous, ?anim2=0 l'éteint sur un appareil */
 const SOMBRE_CACHE=new Map();
 function sombrir(c,k){const cle=k+c;let r=SOMBRE_CACHE.get(cle);if(r)return r;
  const m=/^#([0-9a-f]{6})$/i.exec(c);if(!m){SOMBRE_CACHE.set(cle,c);return c;}
@@ -18480,7 +18480,13 @@ try{SOUF.maj(dt,court&&n>0.16,n>0.16);}catch(x){}
    cent — un peu moins de deux mètres par seconde, une marche franche —
    et la course garde toute sa vitesse : c'est elle qui sert à aller vite. */
 const MARCHE_HUMAINE=0.6;
-const allureS=allure*(court&&SOUF.v>0?1.22:1)*(SOUF.vide?0.82:1)*(court?1:MARCHE_HUMAINE);   /* le sprint, et le souffle court quand la jauge est vide */
+/* LA COURSE À ALLURE HUMAINE, elle aussi : elle filait à six ou sept
+   mètres par seconde à la taille du personnage — un sprint de
+   compétition, tenu aussi longtemps que le souffle. Elle descend à un
+   peu moins de quatre : une course franche, qu'on peut tenir. Les
+   souliers la font toujours monter. */
+const COURSE_HUMAINE=0.72;
+const allureS=allure*(court&&SOUF.v>0?1.22:1)*(SOUF.vide?0.82:1)*(court?COURSE_HUMAINE:MARCHE_HUMAINE);   /* le sprint, et le souffle court quand la jauge est vide */
 /* ================= LE VIRAGE =================
    Le pivot ne se déclenchait que sur un cas : le renversement
    gauche↔droite. Les six autres changements de cap claquaient sec.
@@ -18746,7 +18752,7 @@ joueur.x=ax;joueur.y=ay;
    CADENCE, DÉRIVÉE, à partir du glissement, de la longueur du pas et du
    nombre d'images du cycle. Pour revenir à l'ancienne marche nerveuse,
    c'est GLISSE qu'on monte. */
-if(!bloqueBord)joueur.pas+=Math.min(v,vReel)*dt*CADENCE_PAS*(court?1:1.25);   /* en marche, le pied glisse moins : on pose vraiment ses pas */
+if(!bloqueBord)joueur.pas+=Math.min(v,vReel)*dt*CADENCE_PAS*(court?1.15:1.25);   /* en marche, le pied glisse moins : on pose vraiment ses pas */
 const versX=Math.abs(vx)>Math.abs(vy)*1.35;
 const versY=Math.abs(vy)>Math.abs(vx)*1.35;
 if(versX)joueur.dir=vx>0?'droite':'gauche';
