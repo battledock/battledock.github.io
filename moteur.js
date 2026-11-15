@@ -15777,6 +15777,339 @@ function poseA2(action,t){
     marche au lieu d'être porté. En unités d'avance de la hanche. */
  r.tw=(r.D.z-r.G.z)/18*(action==='course'?2.4:1.8);
  return r;}
+/* ===================== CHEVEUX 2 =====================
+   Une coupe = des mèches (courbes épaisses qui s'effilent) et des masses
+   (ellipses) posées sur le crâne, éclairées comme des volumes, puis
+   rastérisées au demi-pixel. Repère : x au centre du crâne, y = 0 à hauteur
+   des yeux (yTete+10 dans spriteFin). Vues : bas, bas-droite, droite, haut,
+   haut-droite ; les autres s'obtiennent par miroir. */
+const HAIR2={
+mix(a,b,t){const p=h=>{const n=parseInt(h.slice(1),16);return [n>>16,n>>8&255,n&255];};const A=p(a),B=p(b);return '#'+A.map((v,i)=>Math.round(v+(B[i]-v)*t).toString(16).padStart(2,'0')).join('');},
+pal(b){const M=HAIR2.mix;const n=parseInt(b.slice(1),16);const lum=((n>>16)*0.3+(n>>8&255)*0.59+(n&255)*0.11);
+ if(lum>140)return [M(b,'#3a2010',0.72),M(b,'#5a3618',0.5),M(b,'#80582c',0.3),b,M(b,'#fff0c0',0.3),M(b,'#fffae8',0.55),M(b,'#ffffff',0.75)];
+ return [M(b,'#0e0614',0.78),M(b,'#1a0c22',0.55),M(b,'#2a1228',0.3),b,M(b,'#e8a058',0.28),M(b,'#ffc884',0.5),M(b,'#fff0d4',0.7)];},
+spline(P,n=5){if(P.length<2)return P.slice();const out=[];for(let i=0;i<P.length-1;i++){const p0=P[Math.max(0,i-1)],p1=P[i],p2=P[i+1],p3=P[Math.min(P.length-1,i+2)];for(let k=0;k<n;k++){const t=k/n,t2=t*t,t3=t2*t;const f=(a,b,c,d)=>0.5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t2+(-a+3*b-3*c+d)*t3);out.push([f(p0[0],p1[0],p2[0],p3[0]),f(p0[1],p1[1],p2[1],p3[1])]);}}out.push(P[P.length-1]);return out;},
+/* opt : band (anneau de reflet), peau (couleur de peau pour les rasés), pointes (palette des pointes), clipY (sous un chapeau) */
+render(strands,pal,opt={}){const G=new Map();const key=(x,y)=>(x+500)*1000+(y+500);const L=[-0.45,-0.7,0.56];const ln=Math.hypot(...L);const Lx=L[0]/ln,Ly=L[1]/ln,Lz=L[2]/ln;
+ const clip=opt.clipY;
+ strands.forEach((S,li)=>{
+  if(S.e){const [cx,cy,rx,ry]=S.e;for(let y=Math.floor(cy-ry);y<=Math.ceil(cy+ry);y++)for(let x=Math.floor(cx-rx);x<=Math.ceil(cx+rx);x++){const u=(x+0.5-cx)/rx,v=(y+0.5-cy)/ry;if(u*u+v*v>1||(S.ymax!=null&&y>S.ymax)||(S.hl&&y>S.hl(x)))continue;
+    const h=Math.sqrt(Math.max(0,1-u*u-v*v));const lv=u*Lx+v*Ly+h*Lz;const r2=u*u+v*v;G.set(key(x,y),{v:S.lump?(lv*0.95-0.05+(r2>0.55&&(u+v)>0.2?-0.5:0)+(S.dv||0)):lv*0.62+0.06+(S.dv||0),li,o:1,peau:S.peau?S.peau(x,y):0,gr:S.grain});}return;}
+  const P=HAIR2.spline(S.p);const Ls=[0];for(let i=1;i<P.length;i++)Ls.push(Ls[i-1]+Math.hypot(P[i][0]-P[i-1][0],P[i][1]-P[i-1][1]));const tot=Ls[Ls.length-1]||1;
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;for(const [x,y] of P){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y;}const W=Math.max(S.w[0],S.w[1])/2+1;
+  const tp=S.taper??1.4;
+  const gx0=Math.floor(x0-W),gy0=Math.floor(y0-W),GW=Math.ceil(x1+W)-gx0+1,GH=Math.ceil(y1+W)-gy0+1;
+  const BD=new Float32Array(GW*GH).fill(1e9),BT=new Float32Array(GW*GH),BS=new Float32Array(GW*GH),BNX=new Float32Array(GW*GH),BNY=new Float32Array(GW*GH);
+  for(let i=0;i<P.length-1;i++){const ax=P[i][0],ay=P[i][1],dx=P[i+1][0]-ax,dy=P[i+1][1]-ay,l2=dx*dx+dy*dy||1e-6,l=Math.sqrt(l2),snx=-dy/l,sny=dx/l;
+   const xa=Math.max(gx0,Math.floor(Math.min(ax,ax+dx)-W)),xb=Math.min(gx0+GW-1,Math.ceil(Math.max(ax,ax+dx)+W)),ya=Math.max(gy0,Math.floor(Math.min(ay,ay+dy)-W)),yb=Math.min(gy0+GH-1,Math.ceil(Math.max(ay,ay+dy)+W));
+   for(let y=ya;y<=yb;y++)for(let x=xa;x<=xb;x++){const px=x+0.5,py=y+0.5;let u=((px-ax)*dx+(py-ay)*dy)/l2;u=u<0?0:u>1?1:u;const qx=ax+u*dx,qy=ay+u*dy,d=Math.hypot(px-qx,py-qy);const j=(y-gy0)*GW+(x-gx0);
+    if(d<BD[j]){BD[j]=d;BT[j]=(Ls[i]+u*(Ls[i+1]-Ls[i]))/tot;BNX[j]=snx;BNY[j]=sny;BS[j]=(px-qx)*snx+(py-qy)*sny;}}}
+  for(let y=gy0;y<gy0+GH;y++)for(let x=gx0;x<gx0+GW;x++){const j=(y-gy0)*GW+(x-gx0);const best=BD[j];if(best>=1e9)continue;const bt=BT[j],bs=BS[j],nx=BNX[j],ny=BNY[j];
+   let w=(S.w[0]+(S.w[1]-S.w[0])*Math.pow(bt,tp))/2;if(S.braid)w*=0.8+0.2*Math.abs(Math.sin(bt*tot*Math.PI/S.braid));if(best>w)continue;
+   const ss=Math.max(-1,Math.min(1,bs/Math.max(0.6,w)));const h=Math.sqrt(Math.max(0,1-ss*ss));
+   const NX=nx*ss*0.9+(S.bx||0), NY=ny*ss*0.9+(S.by??-0.25), NZ=h;const nn=Math.hypot(NX,NY,NZ);
+   let v=(NX*Lx+NY*Ly+NZ*Lz)/nn;
+   if(!S.nr)v-=bt<0.12?(0.12-bt)*2.2:0;
+   v-=bt>0.8?(bt-0.8)*0.8:0;
+   if(S.braid){const k=(bt*tot+Math.abs(ss)*1.5)%S.braid;if(k<0.85)v-=0.42;else if(k<1.6)v+=0.12;}
+   if(S.rope){const k=(bt*tot+(ss*1.2))%2.6;if(k<0.9)v-=0.32;}
+   const fib=(S.fib??[0.32]);let f=false;for(const k of fib)if(Math.abs(ss-k)<0.13&&bt>0.12&&bt<0.9)f=true;
+   G.set(key(x,y),{v:v+(S.dv||0),li,f,bt,flat:S.flat?(v>0.6?HAIR2.mix(S.flat,'#ffffff',0.3):v<0.3?HAIR2.mix(S.flat,'#000000',0.35):S.flat):0,dip:S.flat?0:bt>0.66&&!S.nodip});}
+ });
+ const out=new Map();const T=v=>v>0.93?5:v>0.79?4:v>0.46?3:v>0.18?2:1;const SB=opt.band;
+ for(const [k,P] of G){const x=Math.floor(k/1000)-500,y=k%1000-500;
+  if(clip!=null&&y<clip)continue;
+  if(opt.trou&&opt.trou(x,y))continue;
+  if(clip!=null&&y<4&&Math.abs(x+0.5)>15.5)continue;
+  const n0=G.get(key(x+1,y)),n1=G.get(key(x-1,y)),n2=G.get(key(x,y+1)),n3=G.get(key(x,y-1));
+  const edge=!n0||!n1||!n2||!n3||(clip!=null&&y===clip);
+  let t=T(P.v);
+  if(P.f)t=Math.max(1,t-1);
+  if(P.gr&&((x*7+y*13)%P.gr===0))t=Math.max(1,t-1);
+  if(SB&&!P.flat){const yb=SB[0]+Math.pow((x+0.5-SB[2])/SB[3],2)*SB[1];const dd=Math.abs(y+0.5-yb);if(dd<0.9&&t>=3&&!P.f&&(x+y)%5!==0)t=Math.min(6,t+(P.v>0.5?2:1));else if(dd<1.6&&t>=2&&P.v>0.3)t=Math.min(5,t+1);}
+  if((n3&&n3.li>P.li)||(n1&&n1.li>P.li&&!n1.o)||(n0&&n0.li>P.li&&!n0.o))t=Math.max(0,Math.min(t,2)-1);
+  if(edge)t=(!n3||!n1)&&P.v>0.4?1:0;
+  let c=(P.dip&&opt.pointes?opt.pointes:pal)[t];
+  if(P.flat&&!edge)c=P.flat;
+  if(P.peau&&opt.peau)c=HAIR2.mix(c,opt.peau,edge?P.peau*0.7:P.peau);
+  out.set(k,c);}
+ return out;}
+};
+
+/* ===================== LES COUPES ===================== */
+const HAIR2C=(()=>{
+const RUBAN='#c0392b';
+const TX={diag:([x,y])=>[x<0?x*1.05+1:x*0.85+1.5,y], diagDos:([x,y])=>[x>0?x*1.05-1:x*0.85-1.5,y]};
+const txS=(s,tx)=>{if(s.e){const o={...s,e:[tx([s.e[0],s.e[1]])[0],s.e[1],s.e[2]*(tx===TX.diag?0.97:0.97),s.e[3]]};if(s.hl){const f=s.hl;o.hl=x=>f(x-(tx([0,0])[0]));}return o;}return {...s,p:s.p.map(tx)};};
+const vue=(d,tx)=>({band:d.band&&[d.band[0],d.band[1],tx([d.band[2],0])[0],d.band[3]],ar:(d.ar||[]).map(s=>txS(s,tx)),av:(d.av||[]).map(s=>txS(s,tx))});
+const sym=(s)=>s.e?{...s,e:[-s.e[0],s.e[1],s.e[2],s.e[3]],hl:s.hl&&(x=>s.hl(-x-1))}:{...s,p:s.p.map(([x,y])=>[-x,y]),bx:s.bx&&-s.bx};
+const paire=(s)=>[s,sym(s)];
+/* une chute de cheveux de (x0,y0) à (x1,yF), ondulée si besoin */
+const chute=(x0,y0,x1,yF,ond=0,ph=0)=>{const n=Math.max(2,Math.ceil((yF-y0)/5));const P=[];for(let i=1;i<=n;i++){const t=i/n;const y=y0+(yF-y0)*t;P.push([x0+(x1-x0)*Math.sin(t*Math.PI/2)+(ond?ond*Math.sin(y*0.5+ph)*Math.min(1,t*2):0),y]);}return P;};
+const BAND_F=[-15,3,0,14],BAND_P=[-15,4,-2,12];
+
+/* ---------- LES DESSUS ---------- */
+const HL_FRONT_TIRE=x=>{const a=Math.abs(x+0.5);return a<=8?-7.5-a*0.15:Math.min(-1,-9+(a-8)*2.5);};
+const TOP={
+meche:{
+ bas:[{e:[0,-7,14,9],ymax:-9},
+  {p:[[-3,-17],[-11,-13],[-14,-6],[-13,1]],w:[7,2],bx:-0.4},
+  {p:[[5,-16],[12,-12],[14,-5],[13,1]],w:[6,2],bx:0.4},
+  {p:[[-6,-17],[0,-19],[6,-18]],w:[6,4],taper:1,by:-0.7},
+  {p:[[6,-18],[10,-14],[12,-9],[11,-5]],w:[7,1.5],bx:0.3},
+  {p:[[6,-17],[2,-13],[-1,-8],[-2,-5]],w:[7,1.5]},
+  {p:[[5,-18],[-1,-16],[-7,-12],[-10,-7],[-11,-3]],w:[9,1.5],by:-0.5}],
+ diag:[{e:[1,-6,14,10.5],hl:x=>x<-11?6:(x<-8?-1:-9)},
+  {p:[[-4,-15],[-11,-12],[-14,-5],[-14,2],[-12,6]],w:[7,2],bx:-0.5},
+  {p:[[-2,-12],[-8,-9],[-11,-4],[-11,-1]],w:[6,2],bx:-0.2},
+  {p:[[8,-15],[12,-11],[14,-5],[13,0]],w:[6,2],bx:0.4},
+  {p:[[-4,-17],[2,-19],[8,-17]],w:[6,4],taper:1,by:-0.7},
+  {p:[[8,-17],[11,-13],[12,-8],[12,-5]],w:[6,1.5],bx:0.3},
+  {p:[[8,-16],[4,-12],[2,-8],[1,-5]],w:[7,1.5]},
+  {p:[[7,-18],[1,-16],[-4,-12],[-7,-7],[-8,-3]],w:[9,1.5],by:-0.5}],
+ droite:[{e:[-2,-4,13,13],hl:x=>x>3?-5-(x-3)*0.35:(x>=-2?(x>0?2:-1):(x<-5?7:5))},
+  {p:[[-4,-6],[-10,-2],[-13,3],[-12,7]],w:[7,2]},
+  {p:[[-1,-9],[-8,-7],[-13,-2],[-14,3]],w:[7,2]},
+  {p:[[-1,-4],[-4,0],[-5,4],[-5,7]],w:[5,2]},
+  {p:[[4,-7],[2,-3],[2,2]],w:[5,1.5],bx:0.3},
+  {p:[[2,-12],[-5,-14],[-11,-10],[-14,-3]],w:[8,2.5]},
+  {p:[[6,-14],[0,-17],[-7,-16],[-12,-12]],w:[8,3],by:-0.6},
+  {p:[[-1,-15],[4,-14],[7,-10],[7,-7]],w:[6,1.5],by:-0.3},
+  {p:[[-4,-16],[2,-18],[7,-15],[10,-11],[11,-8]],w:[8,1.5],by:-0.6}],
+ haut:[{e:[0,-4,13.5,10.5],ymax:3},
+  {p:[[0,-15],[-8,-13],[-13,-6],[-12,2]],w:[7,2]},
+  {p:[[0,-15],[8,-13],[13,-6],[12,2]],w:[7,2]},
+  {p:[[-1,-15],[-7,-10],[-9,0],[-8,5]],w:[7,2]},
+  {p:[[1,-15],[7,-10],[9,0],[8,5]],w:[7,2]},
+  {p:[[0,-15],[-3,-6],[-3,8]],w:[7,2]},
+  {p:[[0,-15],[3,-6],[3,7]],w:[7,2]},
+  {p:[[0,-16],[0,-8],[0,2]],w:[6,3]},
+  {p:[[-5,-17],[0,-19],[5,-17]],w:[5,4],taper:1,by:-0.6}],
+},
+raie:{
+ bas:[{e:[0,-7,14,9],ymax:-9},
+  {p:[[-6,-17],[1,-19],[7,-17]],w:[6,4],taper:1,by:-0.7},
+  {p:[[1,-18],[-7,-15],[-12,-8],[-13,0]],w:[7,2.5],bx:-0.3},
+  {p:[[3,-18],[10,-15],[13,-8],[13,0]],w:[7,2.5],bx:0.3},
+  {p:[[1,-18],[-3,-14],[-6,-9],[-8,-4]],w:[7,1.5]},
+  {p:[[3,-18],[6,-14],[8,-9],[9,-5]],w:[6,1.5]}],
+ droite:[{e:[-2,-4,13,13],hl:x=>x>3?-5-(x-3)*0.35:(x>=-2?-3:(x<-5?7:5))},
+  {p:[[-4,-6],[-10,-2],[-13,3],[-12,7]],w:[7,2]},
+  {p:[[-1,-9],[-8,-7],[-13,-2],[-14,3]],w:[7,2]},
+  {p:[[2,-12],[-5,-14],[-11,-10],[-14,-3]],w:[8,2.5]},
+  {p:[[6,-14],[0,-17],[-7,-16],[-12,-12]],w:[8,3],by:-0.6},
+  {p:[[0,-9],[-2,-5],[-3,-1]],w:[5,2],bx:0.2},
+  {p:[[-3,-16],[3,-17],[8,-13],[9,-9],[9,-7]],w:[8,1.5],by:-0.5}],
+},
+tire:{
+ bas:[{e:[0,-6,13.8,12],hl:HL_FRONT_TIRE,dv:0.1},
+  {p:[[-12,0],[-13,-7],[-10,-13],[-5,-17]],w:[2.5,1.5],dv:-0.35,fib:[],nr:1},
+  {p:[[12,0],[13,-7],[10,-13],[5,-17]],w:[2.5,1.5],dv:-0.35,fib:[],nr:1},
+  {p:[[-7,-8],[-7,-13],[-3,-18]],w:[2,1.5],dv:-0.3,fib:[],nr:1},
+  {p:[[7,-8],[7,-13],[3,-18]],w:[2,1.5],dv:-0.3,fib:[],nr:1},
+  {p:[[-1,-8],[-1,-14],[0,-18]],w:[2,1.5],dv:-0.25,fib:[],nr:1}],
+ diag:[{e:[1,-6,14,12],hl:x=>{const a=Math.abs(x-3+0.5);if(x<-9)return 6;return a<=8?-7.5-a*0.15:Math.min(-1,-9+(a-8)*2.5);},dv:0.1},
+  {p:[[-12,4],[-13,-4],[-9,-11],[-3,-16]],w:[2,1.5],dv:-0.35,fib:[],nr:1},
+  {p:[[14,0],[14,-7],[11,-13],[6,-17]],w:[2.5,1.5],dv:-0.35,fib:[],nr:1},
+  {p:[[-4,-8],[-4,-13],[0,-18]],w:[2,1.5],dv:-0.3,fib:[],nr:1},
+  {p:[[9,-8],[9,-13],[5,-18]],w:[2,1.5],dv:-0.3,fib:[],nr:1},
+  {p:[[3,-8],[3,-14],[3,-18]],w:[2,1.5],dv:-0.25,fib:[],nr:1}],
+ droite:[{e:[-1.5,-3,12.8,12.5],hl:x=>x>3?-5-(x-3)*0.35:(x>=-2?-1:(x<-6?7:5)),dv:0.15},
+  {p:[[3,-2],[-3,-4],[-9,-5],[-14,-6]],w:[2,1.5],dv:-0.3,fib:[],nr:1},
+  {p:[[7,-7],[1,-11],[-7,-11],[-14,-8]],w:[2,1.5],dv:-0.3,fib:[],nr:1},
+  {p:[[5,-13],[0,-15],[-7,-15],[-13,-11]],w:[2,1.5],dv:-0.3,fib:[],nr:1},
+  {p:[[-6,4],[-10,1],[-14,-4]],w:[2,1.5],dv:-0.3,fib:[],nr:1}],
+ haut:(cy=-4)=>[{e:[0,-5,13.8,11],ymax:4,dv:0.12},
+  {p:[[-12,3],[-11,-5],[-5,-6],[-1,cy]],w:[2,1.5],dv:-0.3,fib:[],nr:1},
+  {p:[[12,3],[11,-5],[5,-6],[1,cy]],w:[2,1.5],dv:-0.3,fib:[],nr:1},
+  {p:[[-6,5],[-4,0],[-1,cy+1]],w:[2,1.5],dv:-0.3,fib:[],nr:1},
+  {p:[[6,5],[4,0],[1,cy+1]],w:[2,1.5],dv:-0.3,fib:[],nr:1},
+  {p:[[-10,-12],[-6,-9],[-1,cy-1]],w:[2,1.5],dv:-0.3,fib:[],nr:1},
+  {p:[[10,-12],[6,-9],[1,cy-1]],w:[2,1.5],dv:-0.3,fib:[],nr:1},
+  {p:[[0,-15],[0,-10],[0,cy-2]],w:[2,1.5],dv:-0.3,fib:[],nr:1}],
+},
+};
+TOP.raie.haut=TOP.meche.haut;
+/* le dessus « raie » de 3/4 : la vue de face tournée, et l'arrière du crâne couvert */
+TOP.raie.diag=[{e:[1,-6,14,10.5],hl:x=>x<-11?6:(x<-8?-1:-9)},{p:[[-4,-15],[-11,-12],[-14,-5],[-14,2],[-12,6]],w:[7,2],bx:-0.5},...vue({av:TOP.raie.bas.slice(1)},TX.diag).av];
+
+/* ---------- LES LONGUEURS ---------- */
+/* L : longueur sous l'oreille ; ond : ondulation ; carre : coupe nette au menton */
+const longs=(L,ond=0,carre=false)=>{const yF=L+1;
+ const wE=carre?4:3, tp=carre?0.6:1.4;
+ const bas={ar:[],av:[]},droite={ar:[],av:[]},haut={ar:[],av:[]},diag={ar:[],av:[]};
+ if(!carre&&L>=12){bas.ar.push(...paire({p:[[-11,-6],...chute(-11,-6,-15.5,yF+1,ond,0.5)],w:[9,4],bx:-0.3,dv:-0.15}));}
+ const fin=carre?[[-12.5,yF-1],[-11,yF+0.5]]:[];
+ bas.av.push(...paire({p:[[0,-17],[-6,-13],[-11,-6],...chute(-11,-6,-12.8,yF-6,ond,1)],w:[6,2.5],bx:-0.2,taper:tp}));
+ bas.av.push(...paire({p:[[1,-18],[-7,-15],[-12,-8],...chute(-12,-8,-14.5,yF-(carre?2:1),ond,0),...fin],w:[7,wE],bx:-0.3,taper:tp}));
+ /* profil */
+ droite.av.push({e:[-9,(yF-12)/2,6.5,(yF+12)/2],ymax:yF-2,dv:-0.05});
+ droite.av.push({p:[[-4,-12],[-11,-6],...chute(-11,-6,-15,yF,ond,0)],w:[8,carre?4:3],taper:tp});
+ droite.av.push({p:[[-1,-11],[-7,-6],...chute(-7,-6,-11,yF-2,ond,1.2)],w:[7,carre?4:3],taper:tp});
+ droite.av.push({p:[[1,-9],[-2,-4],...chute(-2,-4,carre?-3:-5,yF-(carre?3:4),ond,2)],w:[6,carre?3.5:2.5],bx:0.2,taper:tp});
+ /* dos */
+ haut.av.push({e:[0,(yF-18)/2,14.5,(yF+18)/2+0.5],ymax:yF-1});
+ const XS=[-13,13,-8,8,-3,3,0];XS.forEach((x,i)=>{const fin2=carre?[]:[];
+  haut.av.push({p:[[0,-17],[x*0.6,-12],[x,-2],...chute(x,-2,x*(carre?0.95:1.08),yF+1-((i*3)%4)*(carre?0.3:1),ond,i)],w:[7,carre?4:2],bx:x/30,taper:tp});});
+ haut.av.push({p:[[-5,-17],[0,-19],[5,-17]],w:[5,4],taper:1,by:-0.6});
+ return {bas,droite,haut};};
+
+/* ---------- LES BOUCLES ---------- */
+/* des boucles en C posées en quinconce dans une région */
+const boucles=(dedans,pas,taille,x0,x1,y0,y1,dv=0)=>{const L=[];let r=0;for(let y=y0;y<=y1;y+=pas*0.78,r++){for(let x=x0+((r%2)?pas/2:0);x<=x1;x+=pas){const jx=x+Math.sin(x*3.1+y*1.7)*0.7,jy=y+Math.cos(x*2.3+y)*0.5;if(!dedans(jx,jy))continue;const s=taille*(0.9+0.2*Math.abs(Math.sin(x*1.3+y*2.1)));
+  L.push({e:[jx,jy,s*0.62,s*0.55],dv,lump:1});}}return L;};
+const dansE=(cx,cy,rx,ry,ex)=>(x,y)=>{const u=(x-cx)/rx,v=(y-cy)/ry;return u*u+v*v<=1&&!(ex&&ex(x,y));};
+
+/* ---------- LES PIQUES (hirsute, crête) ---------- */
+const piques=(cx,cy,r0,r1,a0,a1,n,w=4.5,courbe=0.25)=>{const L=[];for(let i=0;i<n;i++){const t=n>1?i/(n-1):0.5;const a=(a0+(a1-a0)*t)*Math.PI/180+Math.sin(i*2.7)*0.08;const rr=r1+Math.sin(i*1.9)*1.6;
+  const bx=cx+Math.cos(a)*r0,by=cy+Math.sin(a)*r0,ex=cx+Math.cos(a)*rr,ey=cy+Math.sin(a)*rr;const mx=(bx+ex)/2-Math.sin(a)*courbe*rr*0.4,my=(by+ey)/2+Math.cos(a)*courbe*rr*0.4;
+  L.push({p:[[bx,by],[mx,my],[ex,ey]],w:[w,1],bx:Math.cos(a)*0.3,by:Math.sin(a)*0.3});}return L;};
+
+/* ---------- LA TRESSE ---------- */
+const tresse=(x0,y0,x1,y1,larg=6)=>[
+ {p:[[x0,y0-2],[x0+(x1-x0)*0.5,(y0+y1)/2],[x1,y1]],w:[larg,larg*0.72],taper:1,braid:2.8,fib:[],nr:1},
+ {p:[[x1-1.3,y1+0.6],[x1+1.3,y1+0.6]],w:[2.4,2.4],taper:1,flat:RUBAN},
+ {p:[[x1,y1+1.4],[x1+0.4,y1+3.8],[x1,y1+6]],w:[3.6,1],fib:[]}];
+
+/* ---------- LE CHIGNON ---------- */
+const chignon=(cx,cy,r)=>[{e:[cx,cy,r,r*0.92],dv:0.05},
+ {p:[[cx-r*0.8,cy+r*0.2],[cx-r*0.2,cy-r*0.75],[cx+r*0.7,cy-r*0.3]],w:[2,1.5],dv:-0.3,fib:[],nr:1,taper:1},
+ {p:[[cx-r*0.6,cy+r*0.6],[cx+r*0.1,cy-r*0.05],[cx+r*0.8,cy+r*0.3]],w:[2,1.5],dv:-0.3,fib:[],nr:1,taper:1},
+ {p:[[cx-r*0.1,cy+r*0.85],[cx+r*0.55,cy+r*0.55]],w:[1.6,1.2],dv:-0.3,fib:[],nr:1,taper:1}];
+
+/* ---------- LES COUPES ---------- */
+const C={};
+const base=(top,L,ond,carre)=>{const l=L?longs(L,ond,carre):null;
+ const T=TOP[top];
+ const bas={band:BAND_F,ar:l?l.bas.ar:[],av:[...T.bas,...(l?l.bas.av:[])]};
+ const droite={band:BAND_P,av:[...(l?l.droite.av:[]),...T.droite]};
+ const haut={band:BAND_F,av:l?l.haut.av:(typeof T.haut==='function'?T.haut():T.haut)};
+ return {bas,droite,haut};};
+const fin=(c,diag)=>{c['bas-droite']=diag||{...vue({ar:c.bas.ar,av:c.bas.av},TX.diag),band:[-15,3,2,14]};c['haut-droite']=vue(c.haut,TX.diagDos);return c;};
+/* 3/4 face générique : la face tournée, plus l'arrière gauche du crâne */
+const diagDe=(c,L=0)=>{const d=vue({ar:c.bas.ar,av:c.bas.av},TX.diag);d.band=[-15,3,2,14];
+ const nuque={e:[-9.5,0,4.5,7.5],hl:x=>x<-9?7:-99};
+ const cote={p:[[-4,-15],[-10,-12],[-12.5,-6],[-12.8,0],[-12,L?3:6]],w:[6,2],bx:-0.5};
+ if(L)d.ar=[...d.ar,{e:[-9,L/2-2,6.5,L/2+8],ymax:L,dv:-0.1},{p:[[-6,-12],[-12,-8],...chute(-12,-8,-15.5,L+1)],w:[8,3],bx:-0.5,dv:-0.1}];
+ d.av=[d.av[0],nuque,cote,...d.av.slice(1)];return d;};
+
+C['courts']=fin(base('meche',0),{band:[-15,3,3,14],ar:[],av:TOP.meche.diag});
+C['très courts']=(()=>{const g=11;
+ const bas={band:[-13,2,0,13],av:[{e:[0,-4,13.6,11.6],hl:x=>{const a=Math.abs(x+0.5);return a<=9?-7.8-a*0.12:Math.min(-1,-10+(a-9)*3);},dv:0.08,grain:g}]};
+ const droite={band:[-13,3,-2,11],av:[{e:[-2,-2,12.6,12.6],hl:x=>x>3?-6-(x-3)*0.3:(x>=-2?(x>0?1:-1):(x<-6?8:5)),dv:0.08,grain:g}]};
+ const haut={band:[-13,2,0,13],av:[{e:[0,-2,13.6,12.6],ymax:8,dv:0.08,grain:g},{e:[0,6,7,4],ymax:10,dv:0.0,grain:g}]};
+ const c={bas,droite,haut};return fin(c,{band:[-13,2,2,13],av:[{e:[1,-4,13.6,11.6],hl:x=>x<-11?7:(x<-8?-1:-8),dv:0.08,grain:g}]});})();
+C['dégradé']=(()=>{const fade=(y0)=>(x,y)=>Math.max(0,Math.min(0.62,(y-y0)*0.09));const M=TOP.meche;
+ const bas={band:BAND_F,av:[{e:[0,-4,13.6,11.6],hl:x=>{const a=Math.abs(x+0.5);return a<=9?-8:Math.min(-1,-10+(a-9)*3);},peau:fade(-10),grain:9},...M.bas.slice(3)]};
+ const droite={band:BAND_P,av:[{e:[-2,-2,12.6,12.6],hl:x=>x>3?-6-(x-3)*0.3:(x>=-2?(x>0?1:-1):(x<-6?8:5)),peau:fade(-7),grain:9},M.droite[5],M.droite[6],M.droite[7],M.droite[8]]};
+ const haut={band:BAND_F,av:[{e:[0,-2,13.6,12.6],ymax:8,peau:fade(-5),grain:9},
+  ...[-11,-7,-3.5,0,3.5,7,11].map(x=>({p:[[x*0.3,-18],[x*0.8,-13],[x*1.02,-5]],w:[6,2],bx:x/30})),{p:[[-5,-17],[0,-19],[5,-17]],w:[5,4],taper:1,by:-0.6}]};
+ const c={bas,droite,haut};return fin(c,{band:[-15,3,3,14],av:[{e:[1,-4,13.6,11.6],hl:x=>x<-11?7:(x<-8?-1:-8),peau:fade(-10),grain:9},...M.diag.slice(4)]});})();
+C['bol']=(()=>{const bas={band:[-15,2.5,0,14],av:[{e:[0,-6,14.5,10],ymax:-5},
+  ...[-12,-8,-4,0,4,8,12].map((x,i)=>({p:[[x*0.3,-18],[x*0.8,-12],[x,Math.abs(x)>10?3:-4.5]],w:[7,4],taper:0.8,bx:x/28})),
+  {p:[[-14,-6],[-14.5,2],[-14,6]],w:[5,4],taper:1,bx:-0.5},{p:[[14,-6],[14.5,2],[14,6]],w:[5,4],taper:1,bx:0.5}]};
+ const droite={band:[-16,3,-2,12],av:[{e:[-2,-4,13.5,13],hl:x=>x>4?-5:(x<-6?7:5)},
+  ...[[9,-5],[5,-4],[1,4],[-4,6],[-9,7],[-13,6]].map(([x,yF])=>({p:[[-3,-18],[(x-3)/2,-14],[x,yF]],w:[7,4],taper:0.8}))]};
+ const haut={band:[-15,2.5,0,14],av:[{e:[0,-4,14.5,12],ymax:7},...[-13,-9,-4,0,4,9,13].map(x=>({p:[[x*0.2,-18],[x*0.8,-10],[x,Math.abs(x)>11?5:7]],w:[7,4],taper:0.8,bx:x/28}))]};
+ const c={bas,droite,haut};return fin(c,diagDe(c));})();
+C['carré']=fin(base('raie',9,0,true));C['carré']['bas-droite']=diagDe(C['carré'],9);
+C['mi-longs']=fin(base('raie',14));C['mi-longs']['bas-droite']=diagDe(C['mi-longs'],14);
+C['longs']=fin(base('raie',24));C['longs']['bas-droite']=diagDe(C['longs'],24);
+C['très longs']=fin(base('raie',34));C['très longs']['bas-droite']=diagDe(C['très longs'],34);
+C['ondulés']=fin(base('raie',16,1.6));C['ondulés']['bas-droite']=diagDe(C['ondulés'],16);
+C['mulet']=(()=>{const l=longs(18);const c={bas:{band:BAND_F,ar:l.bas.ar,av:TOP.meche.bas},droite:{band:BAND_P,av:[l.droite.av[0],l.droite.av[1],l.droite.av[2],...TOP.meche.droite]},haut:{band:BAND_F,av:l.haut.av}};
+ return fin(c,{band:[-15,3,3,14],ar:[{p:[[-11,-4],...chute(-11,-4,-15,19)],w:[8,3],bx:-0.3,dv:-0.1}],av:TOP.meche.diag});})();
+/* queue */
+const tireDos=(cy)=>TOP.tire.haut(cy);
+C['queue']=fin({bas:{band:BAND_F,ar:[{p:[[9,-2],[13,6],[14,16]],w:[5,1.5],bx:0.3,dv:-0.2}],av:TOP.tire.bas},
+ droite:{band:BAND_P,av:[...TOP.tire.droite,{p:[[-14,-8],[-16,-6]],w:[4,4],taper:1,flat:RUBAN},{p:[[-16,-7],[-21,-2],[-22,8],[-19,18]],w:[8,2],taper:1.3,fib:[-0.3,0.35]}]},
+ haut:{band:[-14,3,0,14],av:[...tireDos(-4),{p:[[0,-3],[1,5],[0,14],[-1,22]],w:[8,2],taper:1.3,fib:[-0.3,0.35]},{p:[[-2,-4],[2,-4]],w:[4,4],taper:1,flat:RUBAN}]}},
+ {band:[-15,3,3,14],ar:[{p:[[-12,-5],[-16,2],[-17,11],[-15,18]],w:[7,2],taper:1.3,bx:-0.3,dv:-0.1,fib:[-0.3,0.35]},{p:[[-12,-6],[-14,-4]],w:[4,4],taper:1,flat:RUBAN}],av:TOP.tire.diag});
+/* couettes */
+C['couettes']=(()=>{const q=s=>[{p:[[s*14,-4],[s*19,-1],[s*21,7],[s*19,16]],w:[7,2],taper:1.3,bx:s*0.3,fib:[-0.3,0.35]},{p:[[s*13.6,-4.6],[s*15,-3.4]],w:[2.6,2.6],taper:1,flat:RUBAN}];
+ const bas={band:BAND_F,ar:[],av:[...TOP.raie.bas,...q(-1),...q(1)]};
+ const droite={band:BAND_P,av:[{p:[[-12,-2],[-17,2],[-18,10],[-16,17]],w:[7,2],taper:1.3,fib:[-0.3,0.35]},{p:[[-11,-3],[-13,-1]],w:[4,4],taper:1,flat:RUBAN},...TOP.raie.droite]};
+ const haut={band:BAND_F,av:[...TOP.meche.haut,...q(-1),...q(1)]};
+ return fin({bas,droite,haut},{band:[-15,3,2,14],ar:[...vue({av:q(-1)},TX.diag).av],av:[...TOP.raie.diag,...vue({av:q(1)},TX.diag).av]});})();
+/* chignons */
+C['chignon']=fin({bas:{band:BAND_F,av:TOP.tire.bas},
+ droite:{band:BAND_P,av:[...TOP.tire.droite,...chignon(-15,1,6)]},
+ haut:{band:[-14,3,0,14],av:[...tireDos(-1),...chignon(0,1,6.5).map(x=>x.e?{...x,dv:0.18}:x)]}},
+ {band:[-15,3,3,14],ar:chignon(-13,2,5.5),av:TOP.tire.diag});
+C['chignon haut']=fin({bas:{band:BAND_F,av:[...TOP.tire.bas,...chignon(0,-21,6)]},
+ droite:{band:BAND_P,av:[...TOP.tire.droite,...chignon(-4,-21,6)]},
+ haut:{band:[-14,3,0,14],av:[...tireDos(-12),...chignon(0,-20,6)]}},
+ {band:[-15,3,3,14],av:[...TOP.tire.diag,...chignon(2,-21,6)]});
+/* tresses */
+C['tresse']=fin({bas:{band:BAND_F,ar:tresse(12,0,14,16,4),av:TOP.tire.bas},
+ droite:{band:BAND_P,av:[...TOP.tire.droite,...tresse(-14,-6,-16,22,5.5)]},
+ haut:{band:[-14,3,0,14],av:[...tireDos(-4),...tresse(0,-4,0,24,6)]}},
+ {band:[-15,3,3,14],ar:tresse(-13,-4,-16,20,5),av:TOP.tire.diag});
+C['tresses']=fin({bas:{band:BAND_F,av:[...TOP.raie.bas,...tresse(-13,0,-14,22,5),...tresse(13,0,14,22,5)]},
+ droite:{band:BAND_P,av:[...TOP.raie.droite,...tresse(-6,2,-7,22,5)]},
+ haut:{band:BAND_F,av:[...TOP.meche.haut,...tresse(-12,0,-13,22,5),...tresse(12,0,13,22,5)]}},
+ {band:[-15,3,2,14],av:[...TOP.raie.diag,...tresse(-12,0,-13,22,5),...tresse(13,0,13,22,5)]});
+/* bouclés et afro */
+C['bouclés']=(()=>{const face=(x,y)=>y>-7&&Math.abs(x+0.5)<10.5&&y<16;const faceP=(x,y)=>(x>3&&y>-6)||(x>-1&&y>1);const faceD=(x,y)=>y>-7&&x>-8&&x<13&&y<16;
+ const bas={band:[-18,3,0,16],trou:face,av:[{e:[0,-5,16,13],hl:x=>Math.abs(x)<11?-8:7,dv:-0.05},...boucles(dansE(0,-5,15.5,12.5),4.4,5,-16,16,-18,8)]};
+ const droite={band:[-18,3,-2,14],trou:faceP,av:[{e:[-3,-4,15,14],hl:x=>x>3?-6:(x>-1?1:9),dv:-0.05},...boucles(dansE(-3,-4,14.5,13.5),4.4,5,-18,12,-18,10)]};
+ const haut={band:[-18,3,0,16],av:[{e:[0,-3,16,14],ymax:10,dv:-0.05},...boucles(dansE(0,-3,15.5,13.5,(x,y)=>y>9),4.4,5,-16,16,-17,10)]};
+ const c={bas,droite,haut};fin(c,{band:[-18,3,2,16],trou:faceD,av:[{e:[0,-5,16,13],hl:x=>(x>-8&&x<13)?-8:7,dv:-0.05},...boucles(dansE(0,-5,15.5,12.5),4.4,5,-16,16,-18,8)]});c['haut-droite'].trou=null;return c;})();
+C['afro']=(()=>{const face=(x,y)=>y>-7&&Math.abs(x+0.5)<11&&y<16;const faceP=(x,y)=>(x>3&&y>-6)||(x>-1&&y>1);const faceD=(x,y)=>y>-7&&x>-8&&x<14&&y<16;
+ const bas={band:[-25,4,0,20],trou:face,av:[{e:[0,-9,20,17],hl:x=>Math.abs(x)<11?-8:4,dv:-0.05},...boucles(dansE(0,-9,19.5,16.5),5,5.6,-20,20,-26,4)]};
+ const droite={band:[-25,4,-4,18],trou:faceP,av:[{e:[-4,-8,19,17],hl:x=>x>3?-6:(x>-1?1:6),dv:-0.05},...boucles(dansE(-4,-8,18.5,16.5),5,5.6,-23,15,-26,8)]};
+ const haut={band:[-25,4,0,20],av:[{e:[0,-8,20,17],ymax:9,dv:-0.05},...boucles(dansE(0,-8,19.5,16.5,(x,y)=>y>8),5,5.6,-20,20,-26,9)]};
+ const c={bas,droite,haut};fin(c,{band:[-25,4,1,20],trou:faceD,av:[{e:[1,-9,20,17],hl:x=>(x>-8&&x<14)?-8:4,dv:-0.05},...boucles(dansE(1,-9,19.5,16.5),5,5.6,-20,21,-26,4)]});return c;})();
+/* dreads */
+C['dreads']=(()=>{const corde=(pts,w=3.4)=>({p:pts,w:[w,w*0.8],taper:1,rope:1,fib:[]});
+ const bas={band:BAND_F,ar:[...[-16,-13].flatMap(x=>paire(corde([[x+3,-6],[x,6],[x-0.5,18],[x,24]])))],av:[{e:[0,-7,14,9],ymax:-9},
+  {p:[[-6,-17],[1,-19],[7,-17]],w:[6,4],taper:1,by:-0.7},
+  ...[[-14.5,1],[-12,-3],[-9.5,-7],[-6,-9]].flatMap(([x,y0],i)=>paire(corde([[x*0.3,-18],[x*0.85,-12],[x,y0],[x-0.8,y0+8+(i%2)*3],[x-0.5,y0+16-i*2]])))]};
+ const droite={band:BAND_P,av:[{e:[-2,-4,13,13],hl:x=>x>3?-5-(x-3)*0.35:(x>=-2?-1:(x<-5?12:6))},
+  ...[-14,-11,-8,-5,-2].map((x,i)=>corde([[x*0.3+3,-17+Math.abs(x)*0.2],[x,-8+i],[x-1,6],[x-1.5,16],[x-1,22-i]])),
+  ...[3,6].map(x=>corde([[x-6,-17],[x,-12],[x+2,-7]]))]};
+ const haut={band:BAND_F,av:[{e:[0,0,14.5,18],ymax:20},...[-13,-9.5,-6,-2,2,6,9.5,13].map((x,i)=>corde([[x*0.3,-18],[x*0.8,-12],[x,-2],[x*1.05,10],[x*1.08,22-(i%3)*2]]))]};
+ const c={bas,droite,haut};return fin(c,diagDe(c,22));})();
+/* banane */
+C['banane']=(()=>{
+ const bas={band:[-20,2,0,11],av:[...TOP.tire.bas.slice(0,3),{e:[0,-15,11.5,6.5],dv:0.1},
+  {p:[[-10,-9],[-9,-16],[-3,-21],[4,-20]],w:[4,2.5],fib:[],nr:1},{p:[[-5,-9],[-4,-17],[2,-22],[8,-19]],w:[4,2.5],fib:[],nr:1},{p:[[1,-9],[2,-17],[7,-20],[10,-16]],w:[4,2.5],fib:[],nr:1},
+  {p:[[6,-9],[8,-15],[11,-15],[10,-12]],w:[3.5,2],fib:[],nr:1}]};
+ const droite={band:[-21,2,2,9],av:[...TOP.tire.droite,{e:[0,-15,10,6.5],dv:0.1},
+  {p:[[-10,-11],[-4,-18],[4,-21],[10,-18],[12,-14],[9,-11]],w:[4.5,2.5],fib:[],nr:1},{p:[[-8,-9],[-2,-15],[6,-17],[10,-15]],w:[4,2],fib:[],nr:1}]};
+ const haut={band:[-14,3,0,14],av:[...tireDos(-2),{e:[0,-14,11.5,4],dv:0.1},...[-7,-2.5,2.5,7].map(x=>({p:[[x*0.7,-18],[x,-13],[x*1.05,-9]],w:[3,1.5],fib:[],nr:1}))]};
+ const c={bas,droite,haut};return fin(c,{band:[-20,2,3,11],av:[...TOP.tire.diag,...vue({av:bas.av.slice(3)},TX.diag).av]});})();
+/* crête */
+C['crête']=(()=>{const ras=()=>(x,y)=>0.78;
+ const bas={band:null,av:[{e:[0,-4,13.6,11.6],hl:x=>{const a=Math.abs(x+0.5);return a<=9?-8:Math.min(-1,-10+(a-9)*3);},peau:ras(),grain:7},
+  {e:[0,-14,4.2,7]},...piques(0,-6,7,20,-122,-58,5,5,0.15)]};
+ const droite={band:null,av:[{e:[-2,-2,12.6,12.6],hl:x=>x>3?-6-(x-3)*0.3:(x>=-2?(x>0?1:-1):(x<-6?8:5)),peau:ras(),grain:7},
+  ...piques(-2,-3,10,19,-200,-20,7,5.5,0.2)]};
+ const haut={band:null,av:[{e:[0,-2,13.6,12.6],ymax:8,peau:ras(),grain:7},{e:[0,-6,4.2,13]},...piques(0,-6,7,20,-122,-58,5,5,0.15)]};
+ const c={bas,droite,haut};return fin(c,{av:[{e:[1,-4,13.6,11.6],hl:x=>x<-11?7:(x<-8?-1:-8),peau:ras(),grain:7},{e:[1,-14,4.2,7]},...piques(1,-6,7,20,-125,-62,5,5,0.15)]});})();
+/* hirsute */
+C['hirsute']=(()=>{
+ const bas={band:[-16,3,0,15],av:[{e:[0,-7,15,10],ymax:-8},...piques(0,-4,8,19,-170,-10,9,6,0.3),
+  ...[[-9,-4],[-4,-3],[1,-4],[6,-3],[10,-5]].map(([x,y],i)=>({p:[[x*0.5,-15],[x*0.9,-9],[x+(i%2?1:-1),y]],w:[6,1],taper:1.2})),
+  {p:[[-12,-8],[-15,-2],[-14,3]],w:[5,1]},{p:[[12,-8],[15,-2],[14,3]],w:[5,1]}]};
+ const droite={band:[-16,3,-2,13],av:[{e:[-2,-4,13,13],hl:x=>x>3?-5-(x-3)*0.35:(x>=-2?-1:(x<-5?8:5))},...piques(-2,-3,9,19,-215,-25,9,6,0.3),
+  {p:[[2,-14],[7,-11],[10,-6]],w:[6,1]},{p:[[-1,-12],[3,-7],[5,-4]],w:[5,1]},{p:[[-10,2],[-13,6],[-12,9]],w:[5,1]}]};
+ const haut={band:[-16,3,0,15],av:[{e:[0,-3,15,12],ymax:6},...piques(0,-4,8,19,-170,-10,9,6,0.3),...[-11,-5,0,5,11].map((x,i)=>({p:[[x*0.4,-8],[x*0.9,0],[x+(i%2?1.5:-1.5),7]],w:[6,1]}))]};
+ const c={bas,droite,haut};return fin(c,diagDe(c));})();
+/* les formes du salon */
+C['afroGeante']=C['afro'];C['samourai']=C['chignon haut'];C['pics']=C['hirsute'];C['creteGeante']=C['crête'];C['bananeGeante']=C['banane'];C['dreadsOr']=C['dreads'];C['comete']=C['ondulés'];
+return {C,sym};})();
+
+/* rendu mis en cache : une coupe, une vue, une couleur ne se calculent qu'une fois */
+const HAIR2_CACHE=new Map();
+function hair2Carte(def,couche,chev,pointes,peau,clip,cleBal){
+ const k=couche+'|'+chev+'|'+(pointes||'')+'|'+peau+'|'+clip;
+ let m=cleBal?null:(def.__c&&def.__c.get(k));if(m)return m;
+ const pal=HAIR2.pal(chev);
+ m=HAIR2.render(couche==='ar'?def.ar:def.av,pal,{band:couche==='av'?def.band:null,peau,pointes:pointes?HAIR2.pal(pointes):null,clipY:clip,trou:couche==='av'?def.trou:null});
+ if(!cleBal){(def.__c||(def.__c=new Map())).set(k,m);}
+ return m;}
+
 function spriteFin(g,x,y,ap0,dir,pas,bouge){
 const p=Object.assign({},DEF_AP,ap0||{}), P=PALETTES;
 appliquerDeguisement(p);
@@ -17221,8 +17554,26 @@ const reflet=(cx,y0,w)=>{for(let x2=-Math.round(w/2);x2<Math.round(w/2);x2++){if
 const yy=y0+Math.round(Math.pow(x2/(w/2),2)*2);R(cx+x2,yy,1,1,Math.abs(x2)<w/4?H5.cc:H5.c);}
 R(cx-Math.round(w/4),y0+1,Math.round(w/3),1,H5.c);};
 const pointes=(x0,w,y2,n)=>{for(let k=0;k<n;k++){const xx=x0+Math.round(k*w/n);R(xx,y2,Math.max(1,Math.round(w/n)-1),2+(k%2),H5.o);}};
+/* CHEVEUX 2 : la coupe est dessinée mèche par mèche par HAIR2 (voir plus haut) */
+const H2DEF=coiffe!=='crâne'&&HAIR2C.C[coiffe];let H2COUV=null;
+const hair2=(couche)=>{let vue,mir=false;
+if(cote)vue='droite';
+else if(dos){vue=diag?'haut-droite':'haut';mir=diag&&tourne<0;}
+else{vue=diag?'bas-droite':'bas';mir=diag&&tourne<0;}
+const SOUS={'afro':'bouclés','afroGeante':'bouclés','crête':'très courts','creteGeante':'très courts','hirsute':'très courts','pics':'très courts','banane':'très courts','bananeGeante':'très courts','chignon haut':'queue','samourai':'queue'};
+const DEFC=(chapeau!=='aucun'&&SOUS[coiffe])?HAIR2C.C[SOUS[coiffe]]:H2DEF;
+const def=DEFC[vue];if(!def)return;const L=couche==='ar'?def.ar:def.av;if(!L||!L.length)return;
+const clip=chapeau==='aucun'?null:(chapeau==='bandana'?-11:-4);
+let d2=def,cle='';
+if(bouge){const b=[bal(4),bal(12),bal(20),bal(30)];if(b.some(v=>v)){cle=b.join();
+ const sw=S=>S.p?{...S,p:S.p.map(([x,y])=>[x+(y>2?bal(Math.round(y-2)):0),y])}:S;d2={...def,[couche]:L.map(sw)};}}
+const m=hair2Carte(d2,couche,chev,POINTES,peau,clip,cle);
+const oy=yTete+10;
+if(couche==='av')H2COUV=m;
+for(const [k,c] of m){const px=Math.floor(k/1000)-500,py=k%1000-500;R(mir?-px-1:px,oy+py,1,1,c);}};
 const cheveuxDerriere=()=>{
 if(coiffe==='crâne')return;
+if(H2DEF){if(!cote&&!dos)hair2('ar');return;}
 const hy=yTete;
 if(cote){
 if(cf.lg){const L=cf.lg;
@@ -17240,7 +17591,7 @@ R(-hw-ond,hy+8+r,1,1,H5.oo);R(hw-1+ond,hy+8+r,1,1,H5.oo);}
 pointes(-17,5,hy+8+L+5,2);pointes(12,5,hy+8+L+5,2);}
 if(coiffe==='dreads')for(let k=0;k<3;k++)for(let r=0;r<22;r++){R(-16+k*2,hy+8+r,2,1,(r+k)%4===0?H5.oo:H5.b);R(11+k*2,hy+8+r,2,1,(r+k)%4===0?H5.oo:H5.b);}
 };
-const finitionsSalon=()=>{const X=cf.x;if(!X)return;const hy=yTete, dx=(!cote&&diag)?vis*2:0;
+const finitionsSalon=()=>{const X=cf.x;if(!X)return;if(H2DEF&&X!=='comete'&&X!=='perles')return;const hy=yTete, dx=(!cote&&diag)?vis*2:0;
 if(X==='pics'){for(let k=-3;k<=3;k++){const x=(cote?k*3:k*4)+dx, h=5+(k%2?2:4);for(let r=0;r<h;r++)R(x-Math.round((h-r)/3),hy-4-r,Math.max(1,3-Math.floor(r/2)),1,r>h-2?H5.cc:(r>h/2?H5.c:H5.b));}}
 if(X==='crete'){for(let r=0;r<16;r++){const w=Math.max(2,6-Math.floor(r/4));R(dx-w/2+(cote?1:0),hy-2-r,w,1,r>12?H5.o:(r>8?H5.b:H5.c));}R(dx-1,hy-18,2,2,H5.o);}
 if(X==='banane'){for(let r=0;r<8;r++){const w=16-r;R((cote?4:0)+dx-w/2+r*0.6,hy-4-r,w,1,r>5?H5.c:H5.b);}R((cote?4:0)+dx-3,hy-11,6,1,H5.cc);}
@@ -17251,6 +17602,7 @@ if(X==='comete'){for(let k=0;k<9;k++){const x=((k*7)%24)-12+dx, y=hy-2+((k*5)%14
 const cheveuxDessus=()=>{
 const hy=yTete;
 if(coiffe==='crâne'){calotteCrane();return;}
+if(H2DEF){hair2('av');return;}
 if(cote){
 const vol=cf.vol, top=hy-vol;
 const basNuque=cf.fr==='rase'||cf.fr==='degrade'?hy+17:hy+20;
@@ -18324,7 +18676,7 @@ if(cote){laTete(()=>{cheveuxDerriere();tete();echarpeDe();barbeDe();cheveuxDessu
 for(const B of brs)if(!fond(B))dessinerBras(B,false);
 if(!cote){if(dos)sac(false);else sac(true);
  laTete(()=>{tete();echarpeDe();if(!dos)barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();
- if(diag&&dos){const cx2=tourne>0?9:-12;R(cx2,yTete+9,3,9,peau);R(cx2+(tourne>0?1:0),yTete+11,2,4,peauO);R(tourne>0?11:-13,yTete+14,2,3,peau);}
+ if(diag&&dos&&!(H2COUV&&H2COUV.has(510*1000+503))){const cx2=tourne>0?9:-12;R(cx2,yTete+9,3,9,peau);R(cx2+(tourne>0?1:0),yTete+11,2,4,peauO);R(tourne>0?11:-13,yTete+14,2,3,peau);}
  chapeauDe();masqueDe();});}
 g.restore();
 }
@@ -18486,7 +18838,7 @@ if(dos)sac(false);else sac(true);
 tete();echarpeDe();
 if(!dos)barbeDe();
 cheveuxDessus();if(chapeau==='aucun')finitionsSalon();
-if(diag&&dos){const cx2=tourne>0?9:-12;R(cx2,yTete+9,3,9,peau);R(cx2+(tourne>0?1:0),yTete+11,2,4,peauO);R(tourne>0?11:-13,yTete+14,2,3,peau);}
+if(diag&&dos&&!(H2COUV&&H2COUV.has(510*1000+503))){const cx2=tourne>0?9:-12;R(cx2,yTete+9,3,9,peau);R(cx2+(tourne>0?1:0),yTete+11,2,4,peauO);R(tourne>0?11:-13,yTete+14,2,3,peau);}
 chapeauDe();masqueDe();
 if(swayX||swayY)g.restore();
 }
