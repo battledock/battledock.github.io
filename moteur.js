@@ -18540,7 +18540,7 @@ const pj=(q,pz,haut)=>{const X=-q[0]*ca+q[2]*sa, Dp=q[0]*sa+q[2]*ca;return {x:X+
    semblait clouée à la hanche. On appuie la profondeur des bras (comme un
    dessinateur appuie un raccourci) : la main qui vient vers nous descend
    franchement, celle qui recule remonte. De profil, rien ne change. */
-const PZB=cote?PZ:(dos?0.45:0.9);   /* de dos le bras qui part devant monte : trop appuyé, il se mettait à l horizontale */
+const PZB=cote?PZ:(dos?0.15:0.9);   /* de dos le bras qui part devant monte : trop appuyé, il se mettait à l horizontale */
 /* la pose : en marche celle de la foulée, au repos celle du report de poids */
 const PJ=A2P?{D:A2P.D,G:A2P.G}:{D:{z:pD.x*PAS_U,l:pD.lift*6,ta:pD.talon,po:pD.pointe},G:{z:pG.x*PAS_U,l:pG.lift*6,ta:pG.talon,po:pG.pointe}};
 const PB=A2P?{D:A2P.bD,G:A2P.bG}:{D:{s:2+souffle*.6,e:9},G:{s:2+souffle*.6,e:9}};
@@ -18623,8 +18623,20 @@ const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
      le balancement du bras autour de l'épaule. Appliquée à l'épaule elle-même,
      elle la faisait monter de neuf unités de trois quarts — l'épaule du fond
      flottait à hauteur du menton, détachée du corps. */
-  const S0=pj(sh,0.12,1),Sb=pj(sh,PZB,1),kx=(dos&&diag)?0.5:1,rel=v=>{const p=pj(v,PZB,1);return {x:S0.x+(p.x-Sb.x)*kx,y:S0.y+p.y-Sb.y,d:p.d};};   /* de trois quarts dos, le balancement part en profondeur : on n'en garde que la moitié sur le côté, sinon le bras battait comme une aile */
+  const S0=pj(sh,0.12,1),Sb=pj(sh,PZB,1),kx=(dos&&diag)?0.5:1,rel=v=>{
+   /* DE DOS, ce qui part vers nous (le bras qui recule) descend franchement ; ce qui
+      s'éloigne (le bras qui part devant) ne remonte presque pas — sinon les deux
+      mains montaient aux épaules et le coureur avait l'air de lever les bras. */
+   const vers=pj(v,1,1).d-Sb.d>0, pz=dos?(vers?0.6:0.12):PZB, kk=(dos&&diag)?(vers?0.6:0.28):kx;const p=pj(v,pz,1),sb=pj(sh,pz,1);return {x:S0.x+(p.x-sb.x)*kk,y:S0.y+p.y-sb.y-(dos&&diag&&!vers?Math.abs(p.x-sb.x)*0.25:0),d:p.d};};   /* de trois quarts dos, le balancement part en profondeur : on n'en garde que la moitié sur le côté, sinon le bras battait comme une aile */
   const P={S:S0,E:rel(el),W:rel(wr),M:rel(mn)};
+  /* de dos, la main du bras qui part devant passe derrière le buste : on la
+     ramène vers l'axe du corps, elle disparaît derrière le dos au lieu de flotter à côté */
+  if(dos){const cx0=diag?-tourne*1.5:0, loinB=pj(el).d<-0.5;   /* l'axe du dos */
+   if(loinB){for(const k of ['W','M'])P[k].x=cx0+(P[k].x-cx0)*0.45;P.E.x=cx0+(P.E.x-cx0)*0.8;}
+   /* EN COURSE, vus de dos, les avant-bras partent devant : ils se raccourcissent
+      jusqu'à disparaître, et le bras avait l'air tendu le long du corps. On écarte
+      le coude et on rentre la main vers le ventre : le L du bras plié se lit. */
+   if(COURSE&&!diag){P.E.x=cx0+(P.E.x-cx0)*1.12;if(!loinB){for(const k of ['W','M']){P[k].x=cx0+(P[k].x-cx0)*0.8;P[k].y-=1;}}}}
  if(diag){const loin=(sh[0]*sa+sh[2]*ca)<0;const ec=Math.sign(-sx*ca||1)*13*(1-Math.abs(ca))*(loin?0.3:1);for(const k in P)P[k].x+=ec;}   /* le bras du fond, lui, reste collé au flanc qui fuit */
  return {S:P.S,E:P.E,W:P.W,M:P.M,cote2,d:pj(el).d,recule:q.s<-6};};
 const dessinerJambe=(J,fonce)=>{
