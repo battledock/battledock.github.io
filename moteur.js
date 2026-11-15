@@ -15758,7 +15758,7 @@ if(PEDALE){
 const hanche=pG.x;                                              /* (gardé pour les anciens calculs) */
 const leveG=pG.lift, leveD=pD.lift;
 const AMPL=COURSE?1.35:1;
-const balance=bouge&&!COURSE?Math.round(Math.sin(2*Math.PI*tC)*1):0;
+const balance=bouge?Math.round(Math.sin(2*Math.PI*tC)*(COURSE?1.2:1.7)):0;   /* le report de poids de face : un pixel de chaque côté (il ne valait qu'un demi) */
 /* ================= LA VRILLE DU BUSTE =================
    Les épaules restaient parfaitement carrées et horizontales d'un bout à
    l'autre du cycle : le buste était un bloc posé sur des jambes qui
@@ -16075,9 +16075,15 @@ const prof=Math.round(av*3);
    assez pour qu'on voie les jambes se croiser, pas assez pour qu'elles
    se traversent. */
 cx+=Math.round(passage*(leve>0.2?4:2))*((cx<0)?1:-1);
-const lev=Math.round(leve*(COURSE?5.2:5)), y0=Y_HANCHE+bob, yGen=Y_GENOU_F-Math.round(lev*0.6)+prof, yChev=-5-lev+prof;
+const lev=Math.round(leve*(COURSE?7.5:7)), y0=Y_HANCHE+bob, yGen=Y_GENOU_F-Math.round(lev*0.85)+prof, yChev=-5-lev+prof;
 const col=(r)=>r<yGen?c:(court?sk:c), colO=(r)=>r<yGen?cO:(court?skO:cO), colC=(r)=>r<yGen?cc:(court?skC:cc);
 const J=SX.jambe;
+/* LE GENOU PLIE, DE FACE AUSSI. La jambe levée n'était qu'une colonne
+   raccourcie : elle montait d'un bloc. Le genou part maintenant vers
+   l'extérieur et le pied revient sous le corps — la jambe dessine un
+   chevron, et on lit enfin une jambe qui se plie au lieu d'un piston. */
+const kOut=(lev>=2&&bouge)?Math.min(3,Math.round(lev*0.4)):0, sensK=(cx<0)?-1:1;
+const decK=(r)=>!kOut?0:sensK*Math.round(r<yGen?kOut*(r-y0)/Math.max(1,yGen-y0):kOut*(yChev-r)/Math.max(1,yChev-yGen));
 for(let r=y0;r<yChev;r++){
 let w=r<y0+6?J+(SX.ventre?1:0):J;                                               /* le haut de la cuisse */
 if(r>yGen+1)w=r<yGen+6?J:J-1;                                                   /* le mollet, puis la cheville */
@@ -16087,7 +16093,7 @@ if(r>yChev-3)w=J-2;
    jambe, c'est ce qui donne la forme de la jambe vue de face. */
 const dehors=(cx<0)?-1:1;
 const bombe=(r>yGen+1&&r<yGen+5)?1:0;
-const x0=cx-Math.floor(J/2)+Math.floor((J-w)/2)+(bombe&&dehors<0?-1:0);
+const x0=cx-Math.floor(J/2)+Math.floor((J-w)/2)+(bombe&&dehors<0?-1:0)+decK(r);
 const ww=w+bombe;
 R(x0,r,ww,1,court&&r>=yGen-2?sk:col(r));
 R(x0,r,1,1,court&&r>=yGen-2?skO:colO(r));
@@ -16095,13 +16101,13 @@ R(x0+ww-1,r,1,1,court&&r>=yGen-2?skC:colC(r));
 /* LA CHEVILLE, resserrée, prend l'ombre du bas de jambe */
 if(r===yChev-1)R(x0,r,ww,1,court?skO:cO);
 }
-if(!dos){R(cx-1,yGen,2,1,court?skC:cc);R(cx-2,yGen+1,1,1,court?skO:cO);}           /* le genou */
-else R(cx-2,yGen,4,1,court?skO:cO);                                               /* le creux derrière le genou */
+if(!dos){R(cx-1+decK(yGen),yGen,2,1,court?skC:cc);R(cx-2+decK(yGen),yGen+1,1,1,court?skO:cO);}           /* le genou */
+else R(cx-2+decK(yGen),yGen,4,1,court?skO:cO);                                               /* le creux derrière le genou */
 if(court)R(cx-4,yGen-3,8,1,cO);                                                   /* le bas du short */
 if(!court&&basT==='treillis'){R(cx-3,-18,3,4,cO);R(cx-3,-18,3,1,cc);}             /* la poche du treillis */
 if(!court&&!jupe)R(cx+(cx<0?2:-3),yChev-2,2,1,cO);                                /* le pli du bas de pantalon */
-if(p._docker&&!court&&!jupe){for(const t of [0.3,0.68]){const yb=Math.round(yGen+(yChev-yGen)*t);
-  R(cx-Math.floor(J/2),yb,J,2,'#e9eef2');R(cx-Math.floor(J/2),yb,J,1,'#ffffff');R(cx-Math.floor(J/2)+J-1,yb,1,2,'#aab4bd');}}   /* les bandes réfléchissantes */
+if(p._docker&&!court&&!jupe){for(const t of [0.3,0.68]){const yb=Math.round(yGen+(yChev-yGen)*t), xb=cx-Math.floor(J/2)+decK(yb);
+  R(xb,yb,J,2,'#e9eef2');R(xb,yb,J,1,'#ffffff');R(xb+J-1,yb,1,2,'#aab4bd');}}   /* les bandes réfléchissantes */
 soulierDe(cx,-lev+prof,fonce);
 };
 function soulierDe(cx,by,fonce,pp){
@@ -16412,10 +16418,10 @@ if(cote){
    seize unites sous l'epaule au lieu de vingt-deux. */
 /* LE COUDE EST A MI-CHEMIN, un rien plus haut que la ligne epaule-main :
    c'est ce qui donne le bras TENDU plutot que le bras raide. */
-const ex=TROT?(fonce?8:9):(PEDALE?(fonce?3:4):(COURSE?-1+balance*7:2+balance*6*AMPL)),   /* en course, le coude part loin derriere puis revient devant */
+const ex=TROT?(fonce?8:9):(PEDALE?(fonce?3:4):(COURSE?-1+balance*7:2+balance*7*AMPL)),   /* en course, le coude part loin derriere puis revient devant */
       ey=TROT?yEp+6:yEp+11-(COURSE?1:0);
-const hx=TROT?(fonce?TROT_AVANT-2:TROT_AVANT):(PEDALE?(fonce?5:6):(COURSE?ex+6+Math.max(0,balance)*2:2+balance*11*AMPL+(balance>0?1:0))),
-      hy=TROT?yEp+TROT_MAIN+(fonce?1:0):(PEDALE?yEp+22:(COURSE?ey-3-Math.round(balance*5):yEp+20-Math.round(Math.abs(balance)*2)));   /* au bout du balancement, la main remonte un peu : le bras decrit un arc */
+const hx=TROT?(fonce?TROT_AVANT-2:TROT_AVANT):(PEDALE?(fonce?5:6):(COURSE?ex+6+Math.max(0,balance)*2:2+balance*12*AMPL+Math.round(Math.max(0,balance)*4))),
+      hy=TROT?yEp+TROT_MAIN+(fonce?1:0):(PEDALE?yEp+22:(COURSE?ey-3-Math.round(balance*5):yEp+20-Math.round(Math.abs(balance)*2)-Math.round(Math.max(0,balance)*4)));   /* devant, l'avant-bras remonte : le coude se plie */   /* au bout du balancement, la main remonte un peu : le bras decrit un arc */
 const hautC=manches>0?c:sk, basC=manches>=1?c:sk;
 R(-3,yEp,7,4,manches>0?cC:sk);R(-3,yEp+3,7,1,manches>0?c:skO);          /* l'épaule, arrondie */
 /* LE BRAS SE DETACHE DU BUSTE. De la meme etoffe que la veste, le bras
@@ -16448,7 +16454,7 @@ return;
    conducteur avait l'air de descendre un escalier derriere sa machine.
    Les chiffres sont en demi-pixels, comme tout l'interieur du sprite. */
 const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1+(PEDALE?2:0)+(TROT?5:0))+vrille,
-      dy=(PEDALE||TROT)?0:Math.round(balance*(COURSE?7:6)),
+      dy=(PEDALE||TROT)?0:Math.round(balance*(COURSE?8:8)),
       hCoude=TROT?8:(PEDALE?10:(COURSE?9:11)),
       hPoignet=TROT?TROT_MAIN:(PEDALE?21:(COURSE?14:19)),
       yC=yEp+hCoude+Math.round(dy/2), yM=yEp+hPoignet+dy;
@@ -16459,7 +16465,7 @@ const lb=SX.bras[0]+1;R(bx-Math.floor(lb/2),yEp,lb,3,manches>0?c:sk);R(bx-2,yEp-
    restaient collés au corps et le balancement ne se lisait pas. Elle
    glisse maintenant aussi vers l'axe du corps quand le bras part en
    avant, et vers l'extérieur quand il part en arrière. */
-const dxS=TROT?cote2*4:(PEDALE?cote2*3:(diag?Math.round(balance*4*tourne*(dos?-1:1)):Math.round(balance*4*-cote2)));
+const dxS=TROT?cote2*4:(PEDALE?cote2*3:(diag?Math.round(balance*5*tourne*(dos?-1:1)):Math.round(balance*5*-cote2)));
 /* ================= LE PONT DE L'ÉPAULE =================
    Il restait un coin de fond entre le bras et le buste. Le trapèze
    descend en pente vers le cou sur les quatre premières lignes — de onze
@@ -17817,7 +17823,7 @@ const xs=EP-1+(diag?vis:0);
 if(snow){R(xs,yTete-12,6,62,c);R(xs,yTete-12,1,62,T(c,26));R(xs+5,yTete-12,1,62,cO);R(xs+1,yEp+6,4,6,c2);R(xs+1,yTete-13,4,1,c);}
 else{[0,3].forEach(o=>{R(xs+o,yTete-14,2,64,c);R(xs+o,yTete-14,1,64,T(c,26));R(xs+o-1,yTete-16,2,2,c);R(xs+o,yEp+6,2,5,c2);});}
 };
-const lean=frG>0?Math.round(pencheG*1.3):(PEDALE&&cote?9:(COURSE&&cote?4:0));   /* (en course : deux pixels, le corps part devant ses pieds) le buste se penche vers ce qu'on frappe, en avant quand on court, et sur le guidon à vélo */
+const lean=frG>0?Math.round(pencheG*1.3):(PEDALE&&cote?9:(COURSE&&cote?4:(bouge&&cote?1:0)));   /* (en course : deux pixels, le corps part devant ses pieds) le buste se penche vers ce qu'on frappe, en avant quand on court, et sur le guidon à vélo */
 const penche=(f)=>{if(!lean)return f();g.save();g.translate(s*lean*u,0);f();g.restore();};
 if(!dos&&!cote)skisDe();                                                        /* de face, les skis passent derrière le corps */
 if(cote){
