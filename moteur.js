@@ -15563,6 +15563,76 @@ if(C&&C.id!=='cape'){try{C.dessin(g,x,y,tc,dir||'bas',ap);}catch(err){}}
    sont entre nous et le cycliste. */
 if(enTrot)dessinerUneTrottinette(g,x,yV,dir||'bas',(pas||0)*2.2,vTrot,1);
 }
+/* ======================================================================
+   LE SQUELETTE DE LA MARCHE
+   ----------------------------------------------------------------------
+   La foulée était une table de positions de pied, et tout le reste —
+   le genou, la hauteur du bassin, le balancement des bras — était posé à
+   côté, en tables séparées qui ne savaient rien les unes des autres.
+
+   On part maintenant des ANGLES, comme un corps : la hanche se fléchit,
+   le genou se plie, la cheville se casse. Les courbes sont celles de la
+   marche humaine mesurée en laboratoire (hanche de +25° à −15°, genou
+   qui plie deux fois — un petit amorti au contact, un grand pli au
+   passage —, cheville qui pousse en fin d'appui), à peine forcées pour
+   se lire en petit. La course a les siennes : appui court, talon aux
+   fesses, deux temps de suspension.
+
+   TOUT LE RESTE EN DÉCOULE, au lieu d'être réglé à la main :
+     — le pied, par cinématique directe (cuisse puis tibia) ;
+     — LE BASSIN se pose de lui-même : on l'abaisse jusqu'à ce que le pied
+       le plus bas touche le sol. Il descend donc au double appui, quand
+       les jambes sont en compas, et remonte quand la jambe d'appui passe
+       à la verticale. C'est le mouvement de pendule inversé d'une vraie
+       marche — plus aucun tableau de rebond ;
+     — en course, il décolle en plus aux deux temps de suspension ;
+     — les bras s'opposent à la hanche du même côté, avec un léger
+       retard, et le coude plie davantage quand le bras part devant.
+
+   Les longueurs sont celles du dessin (deux os de 16,5 unités, de la
+   hanche à la cheville) : le genou que le dessin recalcule tombe donc
+   exactement sur celui du squelette. */
+const SQ={
+L:16.5,
+marche:{
+hanche:[[0,25],[.10,23],[.30,5],[.50,-15],[.62,-7],[.76,17],[.88,28],[1,25]],
+genou :[[0,4],[.12,17],[.38,4],[.56,32],[.71,62],[.84,40],[.96,5],[1,4]],
+chev  :[[0,4],[.07,-6],[.40,10],[.58,-20],[.68,-6],[.86,3],[1,4]],
+bras:30, coude:[12,26], vol:0},
+course:{
+hanche:[[0,32],[.17,8],[.36,-20],[.48,-12],[.65,30],[.82,50],[1,32]],
+genou :[[0,22],[.13,42],[.34,18],[.52,88],[.67,118],[.83,72],[.95,30],[1,22]],
+chev  :[[0,8],[.12,18],[.34,-30],[.50,-14],[.80,6],[1,8]],
+bras:42, coude:[82,22], vol:2.6}};
+/* la courbe se lit en Catmull-Rom, bouclée : pas d'angle aux poses clés */
+function sqLire(K,t){t=((t%1)+1)%1;const n=K.length-1;let i=0;while(i<n-1&&t>K[i+1][0])i++;
+const a=K[i],b=K[i+1],u=(t-a[0])/Math.max(1e-6,b[0]-a[0]);
+const p0=K[(i-1+n)%n][1],p3=K[i+2<n?i+2:(i+2===n?0:1)][1];
+const p1=a[1],p2=b[1];const u2=u*u,u3=u2*u;
+return 0.5*((2*p1)+(-p0+p2)*u+(2*p0-5*p1+4*p2-p3)*u2+(-p0+3*p1-3*p2+p3)*u3);}
+const SQ_CACHE=new Map();
+function squelette(phi,course){
+const k=(course?'c':'m')+Math.round((((phi%1)+1)%1)*960);
+let r=SQ_CACHE.get(k);if(r)return r;
+const M=course?SQ.course:SQ.marche, L=SQ.L, D=Math.PI/180;
+const jambe=(f)=>{const h=sqLire(M.hanche,f)*D, g=sqLire(M.genou,f)*D, c=sqLire(M.chev,f);
+const ku=Math.sin(h)*L, kh=Math.cos(h)*L, s=h-g;
+return {u:ku+Math.sin(s)*L, h:kh+Math.cos(s)*L, inclin:s/D+c};};
+const jG=jambe(phi), jD=jambe(phi+0.5);
+/* le bassin descend jusqu'à ce que le pied le plus bas touche le sol */
+let bob=2*L-Math.max(jG.h,jD.h);
+/* la suspension de la course : le corps décolle entre deux appuis */
+if(M.vol){const v=(f)=>{f=((f%1)+1)%1;return f>0.34&&f<0.52?Math.sin((f-0.34)/0.18*Math.PI):0;};bob-=M.vol*Math.max(v(phi),v(phi+0.5));}
+const pied=(j)=>{const lift=Math.max(0,(2*L-j.h-bob)/6);
+/* le déroulé : talon levé quand le pied pousse, pointe levée à l'attaque */
+const pointe=Math.max(0,Math.min(1,-j.inclin/45)), talon=Math.max(0,Math.min(1,(j.inclin-6)/22));
+return {x:j.u, lift, pointe:lift<0.05&&pointe<0.25?0:pointe, talon:lift>0.6?0:talon};};
+const hm=(M.hanche.reduce((a,b)=>Math.max(a,b[1]),-99)+M.hanche.reduce((a,b)=>Math.min(a,b[1]),99))/2,
+      ha=(M.hanche.reduce((a,b)=>Math.max(a,b[1]),-99)-M.hanche.reduce((a,b)=>Math.min(a,b[1]),99))/2;
+/* le bras : à l'opposé de la hanche de son côté, avec un vingtième de retard */
+const bras=(f)=>{const n=-(sqLire(M.hanche,f-0.05)-hm)/ha;return {n, a:n*M.bras, coude:M.coude[0]+M.coude[1]*Math.max(0,n)};};
+r={G:pied(jG),D:pied(jD),bob,brasG:bras(phi),brasD:bras(phi+0.5)};
+SQ_CACHE.set(k,r);return r;}
 function spriteFin(g,x,y,ap0,dir,pas,bouge){
 const p=Object.assign({},DEF_AP,ap0||{}), P=PALETTES;
 appliquerDeguisement(p);
@@ -15695,7 +15765,10 @@ return {x:m(a.x,b.x), lift:m(a.lift,b.lift),
 pointe:m(a.pointe,b.pointe), talon:m(a.talon,b.talon)};};
 const pied=(phi)=>{phi=((phi%1)+1)%1;
 return lireFoulee(COURSE?FOULEE.course:FOULEE.marche,phi);};
-let pG=bouge?pied(tC):{x:0,lift:0,pointe:0,talon:0}, pD=bouge?pied(tC+0.5):{x:0,lift:0,pointe:0,talon:0};
+/* LE SQUELETTE fournit les deux pieds ; l'avance repasse dans l'unité du dessin */
+const SQM=(bouge&&!(typeof VELO_FIN==='object'&&VELO_FIN)&&!(typeof TROT_FIN!=='undefined'&&TROT_FIN===true))?squelette(tC,COURSE):null, AMsq=(COURSE?1.35:1)*PAS_U;
+const sqPied=(q)=>({x:q.x/AMsq, lift:q.lift, pointe:q.pointe, talon:q.talon});
+let pG=SQM?sqPied(SQM.G):(bouge?pied(tC):{x:0,lift:0,pointe:0,talon:0}), pD=SQM?sqPied(SQM.D):(bouge?pied(tC+0.5):{x:0,lift:0,pointe:0,talon:0});
 /* LE REPORT DE POIDS passe par les pieds : la jambe libre glisse de deux
    unités et sa pointe se relève, la jambe porteuse reste plantée. Un
    dixième d'avance suffit — au-delà il fait un pas, et ce n'est plus une
@@ -15867,11 +15940,11 @@ const BOB_M=[ 0, 1, 2, 1, 1, 0,-1,-1,-2,-1, 0, 0,   /* un demi-pixel de plus en 
               0, 1, 2, 1, 1, 0,-1,-1,-2,-1, 0, 0];
 const BOB_C=[ 1, 0, 0,-1,-1,-1, 0, 1, 1, 2, 1, 1,
               1, 0, 0,-1,-1,-1, 0, 1, 1, 2, 1, 1];
-const bobPas=(COURSE?BOB_C:BOB_M)[((F%PASM)+PASM)%PASM];
+const bobPas=SQM?Math.round(SQM.bob):(COURSE?BOB_C:BOB_M)[((F%PASM)+PASM)%PASM];   /* le bassin du squelette */
 /* L'AMORTI DU TALON : au moment où le pied se pose, le corps s'enfonce
    d'un pixel de plus. Une seule image sur seize, mais c'est elle qui donne
    le poids. */
-const frappe=(!COURSE&&bouge&&(F===0||F===PASM/2))?1:0;
+const frappe=0;   /* l'amorti du talon sort maintenant du squelette : le bassin est au plus bas au double appui */
 /* LA TRANSITION, lue par le dessin : elle penche le buste, tasse le corps
    et ouvre la foulée. Les trois moments ont une signature opposée :
    l'élan pousse en avant, le freinage retient en arrière, le pivot tasse. */
@@ -16075,14 +16148,28 @@ const prof=Math.round(av*3);
    assez pour qu'on voie les jambes se croiser, pas assez pour qu'elles
    se traversent. */
 cx+=Math.round(passage*(leve>0.2?4:2))*((cx<0)?1:-1);
-const lev=Math.round(leve*(COURSE?7.5:7)), y0=Y_HANCHE+bob, yGen=Y_GENOU_F-Math.round(lev*0.85)+prof, yChev=-5-lev+prof;
+/* ================= LA JAMBE DE FACE, PROJETÉE =================
+   Elle se résout maintenant comme de profil et de trois quarts : le
+   genou est calculé dans le plan de marche (deux os égaux, plié vers
+   l'avant), puis hanche, genou et cheville passent par la même
+   projection — un pas vers nous descend à l'écran de PROF_Z. La cuisse
+   qui monte se raccourcit d'elle-même, le tibia qui part en arrière
+   aussi : plus de coefficients posés au jugé pour le genou. */
+const PZf=0.23, syF=dos?-1:1, Lf=(Y_PIED-Y_HANCHE)/2;
+const fuF=av*PAS_U*AMPL, fhF=-3-leve*6, y0=Y_HANCHE+bob;
+const duF=fuF, dhF=fhF-y0, dF=Math.min(Lf*2-0.01,Math.hypot(duF,dhF)), nlF=Math.hypot(duF,dhF)||1;
+const hkF=Math.sqrt(Math.max(0,Lf*Lf-(dF/2)*(dF/2)));
+let nuF=-dhF/nlF, nhF=duF/nlF; if(nuF<0){nuF=-nuF;nhF=-nhF;}
+const kuF=duF/2+nuF*hkF, khF=y0+dhF/2+nhF*hkF;
+const kneeY=khF+kuF*PZf*syF+(Y_GENOU_F-(Y_HANCHE+Lf)), ankleY=fhF+fuF*PZf*syF;
+const lev=Math.max(0,Math.round(-3-ankleY)), yGen=Math.round(kneeY), yChev=Math.round(ankleY-2), yPied=Math.round(ankleY+3);
 const col=(r)=>r<yGen?c:(court?sk:c), colO=(r)=>r<yGen?cO:(court?skO:cO), colC=(r)=>r<yGen?cc:(court?skC:cc);
 const J=SX.jambe;
 /* LE GENOU PLIE, DE FACE AUSSI. La jambe levée n'était qu'une colonne
    raccourcie : elle montait d'un bloc. Le genou part maintenant vers
    l'extérieur et le pied revient sous le corps — la jambe dessine un
    chevron, et on lit enfin une jambe qui se plie au lieu d'un piston. */
-const kOut=(lev>=2&&bouge)?Math.min(3,Math.round(lev*0.4)):0, sensK=(cx<0)?-1:1;
+const kOut=bouge?Math.min(2,Math.round((Lf*2-dF)*0.35)):0, sensK=(cx<0)?-1:1;
 const decK=(r)=>!kOut?0:sensK*Math.round(r<yGen?kOut*(r-y0)/Math.max(1,yGen-y0):kOut*(yChev-r)/Math.max(1,yChev-yGen));
 for(let r=y0;r<yChev;r++){
 let w=r<y0+6?J+(SX.ventre?1:0):J;                                               /* le haut de la cuisse */
@@ -16108,7 +16195,7 @@ if(!court&&basT==='treillis'){R(cx-3,-18,3,4,cO);R(cx-3,-18,3,1,cc);}           
 if(!court&&!jupe)R(cx+(cx<0?2:-3),yChev-2,2,1,cO);                                /* le pli du bas de pantalon */
 if(p._docker&&!court&&!jupe){for(const t of [0.3,0.68]){const yb=Math.round(yGen+(yChev-yGen)*t), xb=cx-Math.floor(J/2)+decK(yb);
   R(xb,yb,J,2,'#e9eef2');R(xb,yb,J,1,'#ffffff');R(xb+J-1,yb,1,2,'#aab4bd');}}   /* les bandes réfléchissantes */
-soulierDe(cx,-lev+prof,fonce);
+soulierDe(cx,yPied,fonce);
 };
 function soulierDe(cx,by,fonce,pp){
 if(p.patin){const b='#f4f1ea', bO='#c8c2b4', lame='#c4ccd2';                /* LE PATIN : bottine blanche lacée, lame d'acier */
@@ -16418,10 +16505,16 @@ if(cote){
    seize unites sous l'epaule au lieu de vingt-deux. */
 /* LE COUDE EST A MI-CHEMIN, un rien plus haut que la ligne epaule-main :
    c'est ce qui donne le bras TENDU plutot que le bras raide. */
-const ex=TROT?(fonce?8:9):(PEDALE?(fonce?3:4):(COURSE?-1+balance*7:2+balance*7*AMPL)),   /* en course, le coude part loin derriere puis revient devant */
-      ey=TROT?yEp+6:yEp+11-(COURSE?1:0);
-const hx=TROT?(fonce?TROT_AVANT-2:TROT_AVANT):(PEDALE?(fonce?5:6):(COURSE?ex+6+Math.max(0,balance)*2:2+balance*12*AMPL+Math.round(Math.max(0,balance)*4))),
-      hy=TROT?yEp+TROT_MAIN+(fonce?1:0):(PEDALE?yEp+22:(COURSE?ey-3-Math.round(balance*5):yEp+20-Math.round(Math.abs(balance)*2)-Math.round(Math.max(0,balance)*4)));   /* devant, l'avant-bras remonte : le coude se plie */   /* au bout du balancement, la main remonte un peu : le bras decrit un arc */
+/* LE BRAS DU SQUELETTE : l'épaule fléchit, le coude plie, et la main
+   suit — bras du fond sur la jambe du fond. On garde les formules d'avant
+   pour le vélo et la trottinette, où le bras tient un guidon. */
+const AS=(SQM&&!PEDALE&&!TROT)?(fonce?SQM.brasD:SQM.brasG):null;
+const asE=AS?{x:1+Math.sin(AS.a*Math.PI/180)*11, y:yEp+3+Math.cos(AS.a*Math.PI/180)*11}:null;
+const asM=AS?{x:asE.x+Math.sin((AS.a+AS.coude)*Math.PI/180)*10, y:asE.y+Math.cos((AS.a+AS.coude)*Math.PI/180)*10}:null;
+const ex=AS?asE.x:TROT?(fonce?8:9):(PEDALE?(fonce?3:4):(COURSE?-1+balance*7:2+balance*7*AMPL)),   /* en course, le coude part loin derriere puis revient devant */
+      ey=AS?asE.y:TROT?yEp+6:yEp+11-(COURSE?1:0);
+const hx=AS?asM.x:TROT?(fonce?TROT_AVANT-2:TROT_AVANT):(PEDALE?(fonce?5:6):(COURSE?ex+6+Math.max(0,balance)*2:2+balance*12*AMPL+Math.round(Math.max(0,balance)*4))),
+      hy=AS?asM.y:TROT?yEp+TROT_MAIN+(fonce?1:0):(PEDALE?yEp+22:(COURSE?ey-3-Math.round(balance*5):yEp+20-Math.round(Math.abs(balance)*2)-Math.round(Math.max(0,balance)*4)));   /* devant, l'avant-bras remonte : le coude se plie */   /* au bout du balancement, la main remonte un peu : le bras decrit un arc */
 const hautC=manches>0?c:sk, basC=manches>=1?c:sk;
 R(-3,yEp,7,4,manches>0?cC:sk);R(-3,yEp+3,7,1,manches>0?c:skO);          /* l'épaule, arrondie */
 /* LE BRAS SE DETACHE DU BUSTE. De la meme etoffe que la veste, le bras
@@ -18482,9 +18575,23 @@ if(ecart<Math.PI/8*0.8||!joueur.dir8)joueur.dir8=D8;
 }
 }else{
 vx=vy=0;bloqueBord=false;
-joueur.pas=0;
 }
-joueur.marche=v>4&&!bloqueBord;
+/* ================= LE DERNIER PAS =================
+   À l'arrêt, le corps sautait de n'importe quelle image de la foulée à
+   la pose de repos : une jambe en l'air retombait d'un coup. Personne ne
+   s'arrête comme ça — on finit le pas, on pose le pied, et c'est
+   seulement quand les deux pieds portent qu'on se redresse.
+   On laisse donc la foulée courir jusqu'au prochain double appui (une
+   demi-foulée = six de `pas`), au rythme d'une marche lente, et on ne
+   rend la main au repos qu'à ce moment-là. Plafonné à un tiers de
+   seconde : un arrêt reste un arrêt. */
+let finitPas=false;
+if(v<=4&&joueur.marche&&!bloqueBord&&!joueur._finPas){joueur._finPas={cible:Math.ceil((joueur.pas+0.01)/6)*6,t:0};}
+if(joueur._finPas){
+if(v>4||bloqueBord)joueur._finPas=null;
+else{const fp=joueur._finPas;fp.t+=dt;joueur.pas=Math.min(fp.cible,joueur.pas+70*dt*CADENCE_PAS);
+if(joueur.pas>=fp.cible-1e-6||fp.t>0.34){joueur.pas=fp.cible;joueur._finPas=null;}else finitPas=true;}}
+joueur.marche=(v>4||finitPas)&&!bloqueBord;
 if(joueur.marche&&SOL){
 for(const o of DECOR){
 if(o.t!=='buisson')continue;
