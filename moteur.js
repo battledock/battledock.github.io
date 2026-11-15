@@ -15661,10 +15661,10 @@ SQ_CACHE.set(k,r);return r;}
    ====================================================================== */
 const A2={
 marche:[
- {bob:0,  sw:0,  D:{z:9, l:0,  ta:1, po:0}, G:{z:-9,l:0,  ta:0, po:1},  bD:{s:-17,e:10}, bG:{s:19,e:26}},   // le contact
- {bob:1.6,sw:.8, D:{z:5, l:0,  ta:0, po:0}, G:{z:-7,l:3,  ta:0, po:.7}, bD:{s:-11,e:10}, bG:{s:12,e:20}},   // l'amorti
+ {bob:0,  sw:0,  D:{z:9, l:0,  ta:1, po:0}, G:{z:-9,l:0,  ta:0, po:1},  bD:{s:-24,e:6}, bG:{s:24,e:30}},   // le contact
+ {bob:1.6,sw:.8, D:{z:5, l:0,  ta:0, po:0}, G:{z:-7,l:3,  ta:0, po:.7}, bD:{s:-16,e:6}, bG:{s:16,e:24}},   // l'amorti
  {bob:.2, sw:1.4,D:{z:0, l:0,  ta:0, po:0}, G:{z:0, l:5.5,ta:0, po:0},  bD:{s:0,  e:12}, bG:{s:0, e:14}},   // le passage
- {bob:-1.4,sw:.7,D:{z:-5,l:0,  ta:0, po:.6},G:{z:7, l:2.5,ta:.4,po:0},  bD:{s:11, e:18}, bG:{s:-11,e:10}}], // l'envol
+ {bob:-1.4,sw:.7,D:{z:-5,l:0,  ta:0, po:.6},G:{z:7, l:2.5,ta:.4,po:0},  bD:{s:16, e:24}, bG:{s:-16,e:6}}], // l'envol
 course:[
  {bob:0,  sw:0,  D:{z:8, l:0,  ta:.5,po:0}, G:{z:-5,l:9,  ta:0, po:.3}, bD:{s:-36,e:84}, bG:{s:30,e:96}},
  {bob:2.6,sw:.8, D:{z:2, l:0,  ta:0, po:0}, G:{z:-1,l:14, ta:0, po:0},  bD:{s:-16,e:84}, bG:{s:14,e:92}},
@@ -18030,12 +18030,18 @@ if(NV){
 const yaw=(cote?90:(dos?(diag?180-45*tourne:180):(diag?45*tourne:0)))*Math.PI/180;
 const ca=Math.cos(yaw), sa=Math.sin(yaw), PZ=0.23;
 const swX=A2P&&!cote?A2P.sw:0;
-const pj=(q)=>{const X=-q[0]*ca+q[2]*sa, Dp=q[0]*sa+q[2]*ca;return {x:X+swX,y:q[1]+Dp*PZ,d:Dp};};
+const pj=(q,pz)=>{const X=-q[0]*ca+q[2]*sa, Dp=q[0]*sa+q[2]*ca;return {x:X+swX,y:q[1]+Dp*(pz||PZ),d:Dp};};
+/* LE BRAS VU DE FACE OU DE BIAIS : son balancement part vers nous ou s'en
+   éloigne — la perspective seule le réduisait à un demi-pixel, la main
+   semblait clouée à la hanche. On appuie la profondeur des bras (comme un
+   dessinateur appuie un raccourci) : la main qui vient vers nous descend
+   franchement, celle qui recule remonte. De profil, rien ne change. */
+const PZB=cote?PZ:0.9;
 /* la pose : en marche celle de la foulée, au repos celle du report de poids */
 const PJ=A2P?{D:A2P.D,G:A2P.G}:{D:{z:pD.x*PAS_U,l:pD.lift*6,ta:pD.talon,po:pD.pointe},G:{z:pG.x*PAS_U,l:pG.lift*6,ta:pG.talon,po:pG.pointe}};
 const PB=A2P?{D:A2P.bD,G:A2P.bG}:{D:{s:2+souffle*.6,e:9},G:{s:2+souffle*.6,e:9}};
 const peindre=(A,B,r0,r1,teinte,bandes)=>{
- const cL=T(teinte,16), cS=T(teinte,-20), cR=T(teinte,-42), cRl=T(teinte,-26);
+ const cL=T(teinte,16), cS=T(teinte,-18), cR=T(teinte,-40), cRl=T(teinte,-10);
  const x0=Math.floor(Math.min(A.x,B.x)-Math.max(r0,r1))-1, x1=Math.ceil(Math.max(A.x,B.x)+Math.max(r0,r1))+1;
  const y0=Math.floor(Math.min(A.y,B.y)-Math.max(r0,r1))-1, y1=Math.ceil(Math.max(A.y,B.y)+Math.max(r0,r1))+1;
  const vx=B.x-A.x, vy=B.y-A.y, L2=vx*vx+vy*vy||1;
@@ -18062,7 +18068,7 @@ const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
  const el=[sh[0]+sx*Math.sin(ab)*os.bras, sh[1]+Math.cos(s1)*Math.cos(ab)*os.bras, sh[2]+Math.sin(s1)*Math.cos(ab)*os.bras];
  const wr=[el[0]-sx*(COURSE?1.6:0.3), el[1]+Math.cos(s2)*os.avbras, el[2]+Math.sin(s2)*os.avbras];
  const mn=[wr[0], wr[1]+Math.cos(s2)*2.2, wr[2]+Math.sin(s2)*2.2];
- return {S:pj(sh),E:pj(el),W:pj(wr),M:pj(mn),cote2,d:pj(el).d};};
+ return {S:pj(sh,PZB),E:pj(el,PZB),W:pj(wr,PZB),M:pj(mn,PZB),cote2,d:pj(el).d};};
 const dessinerJambe=(J,fonce)=>{
  const haut=pant, bas=court?peau:pant;
  peindre(J.H,J.K,8,6.6,haut,null);
@@ -18089,11 +18095,11 @@ g.save();g.translate((leanX+(cote?0:swX))*u,0);
    buste, on n'en voit plus que l'épaule. On le peignait par-dessus, et la
    main venait se promener dans le dos du personnage. De face, les bras
    restent tous après le buste : il ombre le dessous des épaules. */
-for(const B of brs)if(fond(B)&&(cote||diag||dos)){if(dos&&!diag)dessinerBras(B,false);else auFond(()=>dessinerBras(B,true));}
+for(const B of brs)if(fond(B)){if(!cote&&!diag)dessinerBras(B,false);else auFond(()=>dessinerBras(B,true));}   /* le bras qui s'éloigne de nous passe derrière le buste, de face comme de dos */
 if(cote||!dos)sac(false);
 torse();
 if(cote){cheveuxDerriere();tete();echarpeDe();barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();chapeauDe();masqueDe();}
-for(const B of brs)if(!fond(B)||!(cote||diag||dos))dessinerBras(B,false);
+for(const B of brs)if(!fond(B))dessinerBras(B,false);
 if(!cote){if(dos)sac(false);else sac(true);
  tete();echarpeDe();if(!dos)barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();
  if(diag&&dos){const cx2=tourne>0?9:-12;R(cx2,yTete+9,3,9,peau);R(cx2+(tourne>0?1:0),yTete+11,2,4,peauO);R(tourne>0?11:-13,yTete+14,2,3,peau);}
