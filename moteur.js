@@ -16111,7 +16111,7 @@ return {C,sym};})();
    Repère des cheveux (y=0 aux yeux). De face la mâchoire fait ±12 jusqu'à
    y=9 puis se referme sur le menton (y=13). */
 const HAIR2B=(()=>{
-const jw=y=>y<=9?12:y<=10?11.5:y<=11?10.5:y<=12?9:y<=13?7:y<=14?5:0;          /* demi-largeur du visage */
+const jw=y=>y<=9?12:y<=10?11:y<=11?9.5:y<=12?8:y<=13?6:y<=14?4:0;          /* demi-largeur du visage */
 const haut=x=>4.6+Math.max(0,7-Math.abs(x+0.5))*0.28;                          /* le haut de la barbe sur la joue */
 const bouche=(x,y)=>Math.abs(x+0.5)<3.6&&y>=8&&y<=9;
 const mous=(x,y)=>Math.abs(x+0.5)<5.2&&y>=6&&y<8;
@@ -16199,7 +16199,7 @@ const SILN='fine';
 const SIL=DESIGN.sil;   /* LES PROPORTIONS : épaules, taille, hanches — élargies d'une unité : sous une tête de cette taille, un buste de onze faisait un corps en fil de fer */
 
 const dGab=DESIGN.jambe+DESIGN.buste;const Y_EPAULE=-64-dGab, Y_COU=-68-dGab, Y_TETE=-91-dGab;       /* l'ancien -54 / -58 / -81, remonté de 10 */
-const SX={bras:[4,3],jambe:7,cou:6,ventre:0,pec:0};
+const SX={bras:[4,3],jambe:7,cou:9,ventre:0,pec:0};
 const EP=SIL[0], TA=SIL[1], HA=SIL[2], N='#1b1712';
 const F=bouge?(Math.floor(pas*2)%PASM):-1, ph=bouge?F/PASM*Math.PI*2:0;
 const COURSE=!!p.court&&bouge, tC=bouge?F/PASM:0;
@@ -17181,12 +17181,14 @@ const melangeF=(a,b,k)=>{const A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),1
 const c=(sh)=>Math.round(((A>>sh)&255)*(1-k)+((B>>sh)&255)*k);return '#'+((1<<24)+(c(16)<<16)+(c(8)<<8)+c(0)).toString(16).slice(1);};
 const levre=melangeF(peau,'#a8404c',0.38), levreC=melangeF(peau,'#d07884',0.30), fente=T(peau,-78), creux=T(peau,-16);
 const oreille=(cx,hy,cote2,dosV)=>{
-const x=cote2<0?cx-3:cx;
-R(x,hy+9,3,7,peau);R(cote2<0?x:x+2,hy+9,1,7,peauO);                       /* l'ourlet et son ombre */
-if(!dosV){R(cote2<0?x+1:x+1,hy+10,1,4,peauO);R(cote2<0?x+1:x+1,hy+11,1,2,peauT);}   /* le creux */
-else R(cote2<0?x+1:x+1,hy+10,1,4,T(peau,-12));
-R(cote2<0?x+2:x,hy+9,1,1,peauC);                                             /* le haut éclairé */
-R(x+(cote2<0?1:0),hy+16,2,1,peauO);                                           /* le lobe */
+/* L'OREILLE DE FACE : un C ourlé, plus large en haut, avec son creux et
+   son lobe — plus un rectangle collé à la tempe. Dessinée pour l'oreille
+   droite, retournée pour la gauche. */
+const lit=cote2<0;                                         /* l'oreille gauche est du côté de la lumière */
+const O=T(peau,-40), rim=lit?peauC:T(peau,4), ombre=peauO, fond=peauT;
+const M=dosV?['.OO.','sppO','sooO','sooO','sopO','sppO','.ppO','..O.']:['.OO.','srrO','sfpO','sfoO','sopO','sprO','.ppO','..O.'];
+const col={O:O,r:rim,p:peau,o:ombre,f:fond,s:T(peau,-22)};
+for(let r=0;r<M.length;r++)for(let c=0;c<4;c++){const ch=M[r][c];if(ch==='.')continue;const xx=cote2<0?cx-1-c:cx+c;R(xx,hy+8+r,1,1,col[ch]);}
 };
 const tete=()=>{
 const hy=yTete;
@@ -17196,14 +17198,13 @@ const cx1=-Math.floor(SX.cou/2);
    l'ombre que le menton y porte, au creux entre les clavicules et aux
    trapèzes qui montent vers les épaules. */
 R(cx1,yCou-1,SX.cou,6,peau);
-R(cx1,yCou-1,SX.cou,1,peauT);                                   /* l'ombre portée du menton */
-R(cx1,yCou,SX.cou,1,peauO);
-R(cx1,yCou-1,1,6,peauO);
-R(cx1+SX.cou-1,yCou+1,1,4,peauC);                               /* le côté éclairé */
+R(cx1,yCou+1,SX.cou,1,peauT);                                   /* l'ombre portée du menton, juste sous la mâchoire */
+R(cx1,yCou+2,SX.cou,1,T(peau,-34));R(cx1+1,yCou+3,SX.cou-2,1,T(peau,-12));
+R(cx1,yCou-1,1,6,peauO);R(cx1+1,yCou+3,1,2,T(peau,-16));          /* le côté dans l'ombre, arrondi */
+R(cx1+SX.cou-1,yCou+3,1,2,peauC);                               /* le côté éclairé */
 if(!cote&&!dos){
-R(-1,yCou+2,1,2,peauO);R(1,yCou+2,1,2,peauO);                   /* les tendons */
-R(-1,yCou+3,2,1,peauO);R(0,yCou+4,1,1,peauT);                   /* le creux des clavicules */
-R(cx1,yCou+4,2,1,peau);R(cx1+SX.cou-2,yCou+4,2,1,peauO);}       /* les trapèzes */
+R(cx1+2,yCou+4,1,1,T(peau,-14));R(cx1+SX.cou-3,yCou+4,1,1,T(peau,-8));   /* les muscles du cou, à peine */
+}
 else if(dos){R(cx1+1,yCou+1,SX.cou-2,1,peauO);}                 /* la nuque, de dos */
 if(cote){
 /* LE CRÂNE DE PROFIL. Il mesurait 21 px de long pour 24 de large de face :
@@ -17233,8 +17234,8 @@ const bout=NZ.reduce((m,[a,b,l])=>Math.max(m,a+l),10);
 R(bout-1,hy+(nez==='retrousse'?12:13),1,1,peauC);                               /* la pointe éclairée */
 R(10,hy+14,2,1,peauO);R(11,hy+14,1,1,peauT);                                   /* l'aile, la narine */
 /* L'OREILLE, ronde : un C ouvert vers l'avant, plus un carre */
-R(-2,hy+9,3,1,peauC);R(-3,hy+10,1,5,peauO);R(-2,hy+10,3,5,peau);R(1,hy+10,1,4,T(peau,-6));
-R(-1,hy+11,1,3,peauO);R(0,hy+12,1,1,peauT);R(-2,hy+15,2,1,peauO);R(0,hy+15,1,1,T(peau,-8));
+{const O=T(peau,-40),M=['.OOO.','OrrpO','Orfo.','Orff.','Oroop','Orp..','.OO..'];const col={O:O,r:peauC,p:peau,o:peauO,f:peauT};
+for(let r=0;r<M.length;r++)for(let c=0;c<5;c++){const ch=M[r][c];if(ch==='.')continue;R(-3+c,hy+9+r,1,1,col[ch]);}}
 R(2,hy+15,3,3,T(peau,-7));R(4,hy+17,2,2,T(peau,-11));   /* sous la pommette, la joue qui creuse */
 if(boucle!=='aucune')R(-2,hy+16,2,2,boucle==='perle'?'#f2efe4':(boucle==='plume'?'#c0392b':'#e8c06a'));
 oeilDe(4,hy+10,true);sourcilDe(3,hy+7,true);
@@ -17258,7 +17259,7 @@ oreille(-12,hy,-1,true);oreille(12,hy,1,true);
    de trois quarts c'est `vis` qui commande, de face et de dos c'est la
    tête tournée. Un seul nombre, trois décalages proportionnels — sinon
    le visage glisse sans que le crâne suive, et la tête se dévisse. */
-for(let r=0;r<24;r++){let w=r<2?18:(r>19?22-(r-20)*2:24);
+for(let r=0;r<24;r++){let w=r<2?18:(r>19?[22,19,16,12][r-20]:24);
 if(diag)w=Math.round(w*0.93);
 R(-Math.round(w/2)+dT,hy+r,w,1,r>19?peauO:peau);}
 R(-12+dT,hy+2,1,18,peauO);R(11+dT,hy+2,1,18,peauC);
@@ -17276,7 +17277,7 @@ R(-11+m,hy+6,1,5,creux2);R(10+m,hy+6,1,4,T(peau,-6));                          /
 R(-8+m,hy+9,5,1,T(peau,-7));R(3+m,hy+9,5,1,T(peau,-5));                       /* le creux des orbites */
 R(-9+m,hy+14,3,1,peauC);R(6+m,hy+14,4,1,peauC);R(7+m,hy+13,2,1,T(peau,24));    /* les pommettes */
 R(-10+m,hy+16,2,3,creux2);R(8+m,hy+16,2,3,ombre);                             /* les joues, dessous */
-for(let r=18;r<23;r++){const hw=r>19?11-(r-20):12;R(-hw+m,hy+r,2,1,creux2);R(hw-2+m,hy+r,1,1,ombre);}   /* la mâchoire */
+for(let r=18;r<23;r++){const hw=r>19?[11,9.5,8,6][r-20]:12;R(-hw+m,hy+r,2,1,creux2);R(hw-2+m,hy+r,1,1,ombre);}   /* la mâchoire */
 R(-2+m,hy+22,4,1,peauC);R(-1+m,hy+23,2,1,T(peau,-6));                         /* le menton éclairé */
 R(-3+m,hy+2,7,2,T(peau,8));}                                                   /* le front, éclairé */
 if(!diag||vis<0)oreille(12,hy,1,false);if(!diag||vis>0)oreille(-12,hy,-1,false);   /* les oreilles */
@@ -17397,7 +17398,8 @@ R(x0,ey-2,w,1,T(peau,-26));
    vers dehors, pendant que l'autre regardait vers le nez — il louchait.
    Quand l'iris touche le coin, le cil s'efface. */
 const irisAuCoin=gauche?(ix<=x0):(ix+iw>=x0+w);
-if(!profil){if(!irisAuCoin)R(coinExt,ey-1,1,2,N);else R(coinExt,ey-1,1,1,lid);}else R(x0+w,ey-1,1,2,N);
+if(!profil){if(!irisAuCoin)R(coinExt,ey-1,1,2,N);else R(coinExt,ey-1,1,1,lid);R(coinExt+(gauche?-1:1),ey-2,1,1,T(N,30));}else{R(x0+w,ey-1,1,2,N);R(x0+w+1,ey-2,1,1,T(N,30));}
+R(x0+(gauche?0:1),ey-1,w-1,1,T(lid,-26));                    /* la ligne des cils, plus noire que la paupière */
 R(coinInt,ey+h-2,1,1,T(peau,-30));                          /* le coin intérieur, rosé */
 if(fy==='fatigues'){R(x0,ey+h,w,1,T(peau,-24));R(x0+1,ey+h+1,w-2,1,T(peau,-14));
 R(x0,ey-1,w,1,T(peau,-38));}
