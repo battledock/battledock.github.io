@@ -19035,18 +19035,27 @@ let dernierAppui=-1;
 let dernierAmbiance=0;
 const PENCHE={x:0,v:0};
 const ORDRE8=['droite','bas-droite','bas','bas-gauche','gauche','haut-gauche','haut','haut-droite'];
+/* LA ROTATION FLUIDE : le corps passe par chaque direction intermédiaire,
+   un huitième de tour toutes les 58 ms, en prenant le plus court chemin.
+   Un demi-tour dure ainsi un peu moins d'un quart de seconde — assez pour
+   qu'on voie le personnage pivoter, pas assez pour qu'il paraisse mou.
+   Sert au joueur ET aux autres joueurs, qui sautaient d'une direction à
+   l'autre. */
+const PAS_ROTATION=0.058;
+function tournerVue(o,cible,dt){
+if(!o.dirVue||ORDRE8.indexOf(o.dirVue)<0||ORDRE8.indexOf(cible)<0){o.dirVue=cible;o.tVue=0;return;}
+if(o.dirVue===cible){o.tVue=0;return;}
+o.tVue=(o.tVue||0)+dt;
+while(o.tVue>=PAS_ROTATION&&o.dirVue!==cible){o.tVue-=PAS_ROTATION;
+ const a=ORDRE8.indexOf(o.dirVue), b=ORDRE8.indexOf(cible), d=(b-a+8)%8;
+ o.dirVue=ORDRE8[(a+(d<=4?1:-1)+8)%8];}
+if(o.dirVue===cible)o.tVue=0;}
 function tournerEnDouceur(dt){
 if(joueur._dirPrec!==joueur.dir){if(!joueur.marche)joueur.dir8=joueur.dir;joueur._dirPrec=joueur.dir;}
 const cible=joueur.dir8||joueur.dir;
 if(!joueur.dirVue){joueur.dirVue=cible;return;}
 if(joueur.dirVue===cible){joueur.tVue=0;joueur._cibleVue=cible;return;}
-joueur.tVue=(joueur.tVue||0)+dt;
-if(joueur.tVue<0.042)return;
-joueur.tVue=0;
-const a=ORDRE8.indexOf(joueur.dirVue), b=ORDRE8.indexOf(cible);
-if(a<0||b<0){joueur.dirVue=cible;return;}
-const d=(b-a+8)%8;
-joueur.dirVue=ORDRE8[(a+(d<=4?1:-1)+8)%8];
+tournerVue(joueur,cible,dt);
 }
 /* ================= LE SOUFFLE =================
    Pousser le pouce à fond fait sprinter : plus vite, mais la jauge de souffle
@@ -21837,7 +21846,8 @@ if(Math.abs(dx)>Math.abs(dy)*1.2)a.dir=dx>0?'droite':'gauche';
 else a.dir=dy>0?'bas':'haut';
 }
 }else{a.marche=false;a.pas=0;a.court=false;}
-if(now-(a.recu||0)>3000){a.vx=0;a.vy=0;}  /* plus de nouvelles : on ne devine plus */
+if(now-(a.recu||0)>3000){a.vx=0;a.vy=0;}
+tournerVue(a,a.dir||'bas',dt);  /* plus de nouvelles : on ne devine plus */
 if(a.gesteT>0){
 const E2=EMOTE_DE(String(a.geste||'').slice(3));
 a.gesteT=Math.max(0,a.gesteT-dt*(E2?(1/E2.duree):2.3));
@@ -21917,7 +21927,7 @@ if(a.assis){
 const h=Math.round(a.hanche-camY);
 assis(g,x,h,Object.assign({},DEF_AP,a.ap));
 yNom=h-36;
-}else personne(g,x,y,Object.assign({},DEF_AP,a.ap),a.dir||'bas',a.pas,!!a.marche,!!a.court);
+}else personne(g,x,y,Object.assign({},DEF_AP,a.ap),(a.gesteT>0?a.dir:(a.dirVue||a.dir))||'bas',a.pas,!!a.marche,!!a.court);
 GESTE=sauve;
 g.font='700 7px ui-monospace,monospace';g.textAlign='center';
 g.fillStyle='rgba(10,16,10,.55)';g.fillText(a.pseudo,x+1,yNom+1);
