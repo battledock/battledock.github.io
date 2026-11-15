@@ -15674,6 +15674,14 @@ course:[
    (?anim2=1 dans l'adresse, retenu sur l'appareil ; ?anim2=0 l'éteint).
    Les autres joueurs gardent l'ancienne tant qu'elle n'est pas validée. */
 const ANIM2_ON=(()=>{try{const q=new URLSearchParams(location.search);if(q.has('anim2'))localStorage.setItem('bd_anim2',q.get('anim2')==='0'?'0':'1');return localStorage.getItem('bd_anim2')==='1';}catch(x){return false;}})();
+const SOMBRE_CACHE=new Map();
+function sombrir(c,k){const cle=k+c;let r=SOMBRE_CACHE.get(cle);if(r)return r;
+ const m=/^#([0-9a-f]{6})$/i.exec(c);if(!m){SOMBRE_CACHE.set(cle,c);return c;}
+ const n=parseInt(m[1],16),f=k===1?0.68:0.84,sat=k===1?0.85:0.92;
+ let rr=(n>>16)&255,gg=(n>>8)&255,bb=n&255;const l=(rr+gg+bb)/3;
+ rr=(l+(rr-l)*sat)*f;gg=(l+(gg-l)*sat)*f;bb=(l+(bb-l)*sat)*f;
+ r='#'+[rr,gg,bb].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
+ SOMBRE_CACHE.set(cle,r);return r;}
 const A2_JAMBE=33;   /* de la hanche à la cheville, comme le dessin : Y_PIED − Y_HANCHE */
 function poseA2(action,t){
  const K=A2[action];t=((t%1)+1)%1;
@@ -15694,7 +15702,12 @@ const diag=String(dir).indexOf('-')>0, tourne=diag?(String(dir).endsWith('droite
 if(diag)dir=String(dir).startsWith('bas')?'bas':'haut';
 const u=0.5, cote=dir==='gauche'||dir==='droite', dos=dir==='haut', s=dir==='gauche'?-1:1;
 const vis=dos?-tourne:tourne;                  /* le visage glisse vers le côté où l'on regarde */
-const R=(a,b,w,h,c)=>{if(w<=0||h<=0)return;g.fillStyle=c;
+/* LE MEMBRE DU FOND s'assombrit ICI, couleur par couleur, et plus par un
+   filtre de toile : le filtre se recalculait à chaque petit rectangle — des
+   milliers par pose — et la gravure d'une pose de profil prenait cinquante
+   millisecondes. Une couleur assombrie se calcule une fois et se garde. */
+let SOMBRE=0;
+const R=(a,b,w,h,c)=>{if(w<=0||h<=0)return;g.fillStyle=SOMBRE?sombrir(c,SOMBRE):c;
 const ax=cote&&s<0?-(a+w):a;g.fillRect(x+ax*u,y+b*u,w*u,h*u);};
 const seg=(x1,y1,x2,y2,ep,c)=>{const n=Math.max(1,Math.ceil(Math.hypot(x2-x1,y2-y1)));
 for(let i=0;i<=n;i++){const t=i/n;R(Math.round(x1+(x2-x1)*t-ep/2),Math.round(y1+(y2-y1)*t-ep/2),ep,ep,c);}};
@@ -17998,7 +18011,7 @@ const lean=frG>0?Math.round(pencheG*1.3):(PEDALE&&cote?9:(COURSE&&cote?4:(bouge&
    par foulée : le balancement semblait battre au double du pas.
    Un humain vu de côté, c'est un bras clair et un bras dans l'ombre. On
    assombrit donc tout ce que le membre du fond peint, bandes comprises. */
-const auFond=(f)=>{const ok=typeof g.filter==='string';const av=ok?g.filter:'';if(ok)g.filter=cote?'brightness(0.68) saturate(0.85)':'brightness(0.84) saturate(0.92)';try{f();}finally{if(ok)g.filter=av||'none';}};
+const auFond=(f)=>{const av=SOMBRE;SOMBRE=cote?1:2;try{f();}finally{SOMBRE=av;}};
 const penche=(f)=>{if(!lean)return f();g.save();g.translate(s*lean*u,0);f();g.restore();};
 if(!dos&&!cote)skisDe();                                                        /* de face, les skis passent derrière le corps */
 /* ================= LES MEMBRES 2 =================
