@@ -755,8 +755,7 @@ const dansPorte=(a,l)=>PORTES_A.some(p=>{let d=Math.abs(a-p);if(d>Math.PI)d=2*Ma
 /* toutes les plantes, en coordonnées du monde : la haie de buis autour, l'anneau de graminées autour du banc */
 const PLANTES=(()=>{const L=[];
   for(let i=0;i<520;i++){const a=hA(i,77,1)*Math.PI*2,r=Math.sqrt(hA(i,77,2)*(1-(166/178)**2)+(166/178)**2);if(dansPorte(Math.atan2(Math.sin(a),Math.cos(a))))continue;L.push({x:CX+Math.cos(a)*178*r,y:CY+Math.sin(a)*112*r,i,f:'buis',a});}
-  for(let i=0;i<260;i++){const a=hA(i,2,1)*Math.PI*2,r=.82+Math.sqrt(hA(i,2,2))*.18;if(dansPorte(Math.atan2(Math.sin(a),Math.cos(a))))continue;
-    const f=r>.93?'buis':(i%3?'herbe':'blanc');L.push({x:CX+Math.cos(a)*106*r,y:CY+Math.sin(a)*64*r,i:i+1000,f,a});}
+  /* l'anneau intérieur de graminées a été retiré : on circule librement autour de la fontaine */
   for(const p of L){let a=Math.atan2(p.y-CY,p.x-CX);p.seg=((((a+Math.PI)/(2*Math.PI))*NSEG)|0)%NSEG+(p.i>=1000?NSEG:0);}
   return L;})();
 function segments(){const S={};for(const p of PLANTES)(S[p.seg]=S[p.seg]||[]).push(p);
@@ -771,7 +770,7 @@ function solFin(SOL){const c=document.createElement('canvas');c.width=SOL.width*
   g.imageSmoothingEnabled=true;g.setTransform(2,0,0,2,0,0);const cx=CX,cy=CY;
   anneaux(g,cx,cy,160,100,9,['#e6dac2','#dccfb4','#e0d3b8'],'rgba(140,120,90,.4)',4);bord(g,cx,cy,160,100,5,'#bfa982','#e8dcc4');
   const terre=(a0,b0,a1,b1)=>{g.fillStyle='#5a4a36';g.beginPath();g.ellipse(cx,cy,a1,b1,0,0,Math.PI*2);g.closePath();g.moveTo(cx+a0,cy);g.ellipse(cx,cy,a0,b0,0,0,Math.PI*2);g.closePath();g.fill('evenodd');};
-  terre(166,104,178,112);terre(84,50,106,64);
+  terre(166,104,178,112);
   /* les quatre passages dans la haie et dans l'anneau, dallés */
   g.save();g.beginPath();g.ellipse(cx,cy,180,114,0,0,Math.PI*2);g.closePath();g.moveTo(cx+160,cy);g.ellipse(cx,cy,160,100,0,0,Math.PI*2);g.closePath();g.moveTo(cx+108,cy);g.ellipse(cx,cy,108,66,0,0,Math.PI*2);g.closePath();g.moveTo(cx+84,cy);g.ellipse(cx,cy,84,50,0,0,Math.PI*2);g.closePath();g.clip('evenodd');
   for(const a of PORTES_A){g.fillStyle='#ddd0b6';g.beginPath();g.moveTo(cx,cy);g.ellipse(cx,cy,190,120,0,a-.30,a+.30);g.closePath();g.fill();}g.restore();
@@ -801,7 +800,6 @@ function dessinerFontaine(g,o,x,y){const t=graverFontaine();const X0=x-t.W/2,Y0=
   g.strokeStyle='rgba(255,255,255,.35)';g.lineWidth=.5;for(let i=0;i<3;i++){const k=((ph*.05+i/3)%1);g.beginPath();g.ellipse(cx,by,18+k*30,6+k*13,0,0,Math.PI*2);g.globalAlpha=1-k;g.stroke();g.globalAlpha=1;}}
 function bloquePlace(x,y){const ex=(x-CX),ey=(y-CY),a=Math.atan2(ey/112,ex/178);
   const r1=Math.hypot(ex/178,ey/112);if(r1<1.01&&r1>.925&&!dansPorte(a,.22))return true;
-  const a2=Math.atan2(ey/64,ex/106),r2=Math.hypot(ex/106,ey/64);if(r2<1.02&&r2>.76&&!dansPorte(a2,.22))return true;
   if(Math.hypot((x-CX)/60,(y-BY-6)/37)<1)return true;   /* le bassin, avec sa margelle de devant */return false;}
 return {solFin,graverSegment,graverFontaine,dessinerFontaine,bloquePlace,SEGS,FY,CX};
 })();
