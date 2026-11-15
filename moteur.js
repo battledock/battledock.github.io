@@ -14342,6 +14342,13 @@ const camXf=CAM.x, camYf=CAM.y;
 const camX=Math.floor(camXf), camY=Math.floor(camYf);CAM_IMG.x=camX;CAM_IMG.y=camY;
 const fx=Math.round((camXf-camX)*ECH)/ECH;      /* la part fractionnaire, calée sur l'écran */
 const fy=Math.round((camYf-camY)*ECH)/ECH;
+/* LE JOUEUR SE POSE CONTRE LA CAMÉRA RÉELLE, pas contre son arrondi :
+   arrondir deux fois (le joueur au pixel d'écran depuis camX, puis la
+   caméra de son côté) laissait un pixel d'écran de flottement qui
+   changeait d'une image à l'autre — le personnage frémissait en marchant.
+   Mesuré en simulation à 110 px/s : 1,3 px d'écran d'écart-type avant,
+   zéro après. */
+const JX_=(Math.round((joueur.x-camXf)*ECH)/ECH)+fx, JY_=(Math.round((joueur.y-camYf)*ECH)/ECH)+fy;
 const sx=SECOUSSE>0.01?Math.round((Math.random()-.5)*SECOUSSE*4)*ECH:0;
 const sy=SECOUSSE>0.01?Math.round((Math.random()-.5)*SECOUSSE*4)*ECH:0;
 ctx.setTransform(ECH,0,0,ECH,Math.round(-fx*ECH)+sx,Math.round(-fy*ECH)+sy);
@@ -14357,7 +14364,7 @@ if(CHAMPS_SEULS&&CARTE==='village'){
 if(!SOL)return;
 ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
 /* LA FERME VIERGE : la prairie, le joueur, et la lumière de l'heure. Rien d'autre. */
-if(FERME_VIERGE){const pxV=Math.round((joueur.x-camX)*ECH)/ECH, pyV=Math.round((joueur.y-camY)*ECH)/ECH;nettoyerBulles();
+if(FERME_VIERGE){const pxV=JX_, pyV=JY_;nettoyerBulles();
 const pileV=[{y:joueur.y,f:()=>{try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*pxV+m.e,y:m.d*(pyV-18)+m.f,sc:m.a/3};}catch(x){}
 return personne(ctx,pxV,pyV,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche);}}];
 for(const [,a] of AUTRES){const ax2=a.x-camX, ay2=a.y-camY;if(ax2<-40||ay2<-70||ax2>VW+40||ay2>VH+40)continue;pileV.push({y:a.y,f:()=>dessinerUnAutre(ctx,a,camX,camY)});}
@@ -14412,8 +14419,8 @@ if(st===3)vergerArbres.push({y:P.y+1,f:()=>{try{const t2=Date.now()/300;
 PX(ctx,P.x+24-camX,P.y-46-camY+Math.sin(t2)*0.5,1,1,'#fff6c0');
 PX(ctx,P.x+23.5-camX,P.y-45.75-camY,2,0.5,'#fff6c0');}catch(x){}}});}
 }}}catch(x){}
-const pxF=Math.round((joueur.x-camX)*ECH)/ECH;
-const pyF=Math.round((joueur.y-camY)*ECH)/ECH;
+const pxF=JX_;
+const pyF=JY_;
 nettoyerBulles();
 const acteursF=[{y:joueur.y,f:()=>{
 try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*pxF+m.e,y:m.d*(pyF-18)+m.f,sc:m.a/3};}catch(x){}
@@ -14626,8 +14633,8 @@ else ctx.drawImage(SOL,camX,camY,lw,lh,0,0,lw,lh);
 if(CHEMIN)ctx.drawImage(CHEMIN,camX,camY,lw,lh,0,0,lw,lh);   /* la couche du chemin */
 if(CARTE==='village'&&FIN_OK()&&!FERME_SEULE)dessinerLaPlaceFin(ctx,camX,camY);    /* la grand-place en dalles fines */
 if(CARTE==='extramar'){scintillerLaMer(ctx,camX,camY);eauVivante(ctx,camX,camY);}
-const px=Math.round((joueur.x-camX)*ECH)/ECH;
-const py=Math.round((joueur.y-camY)*ECH)/ECH;
+const px=JX_;
+const py=JY_;
 flechesVersLesAutres(camX,camY);
 if(QUALITE>=0.5&&CARTE!=='extramar')dessinerNuages(ctx,camX,camY);   /* l'ombre des nuages (pas au port : des taches sombres qui glissent sur le granit, sous un ciel peint ailleurs) */
 if(QUALITE>=1)dessinerPapillons(ctx,camX,camY);
@@ -15534,7 +15541,14 @@ else if(((Date.now()+((ap.peau|0)*431+(ap.cheveux|0)*97))%3600)<130)i+=300;
 const c=discoPose(poseDe(ap,dir||'bas',i),ap);
 if(ap&&ap._accFait)try{const a=hautDePose(c),r=hautDePose(poseDe(ap,dir||'bas',STYLE_FIN()?100:0));ACC_DXY=[a[0]-r[0]+((ap===e.ap&&!aVelo)?Math.round(PENCHE.x*2)/2:0),a[1]-r[1]];}catch(z){}
 if(enTrot)dessinerUneTrottinette(g,x,yV,dir||'bas',(pas||0)*2.2,vTrot,0);
-const px0=Math.round(x-CASE_L/2), py0=Math.round(y-CASE_H+10);
+/* LE JOUEUR GLISSE AU PIXEL D'ÉCRAN, plus au pixel du monde. L'appelant
+   le pose déjà au pixel d'écran près, et cet arrondi-ci le ramenait au
+   pixel du monde — trois ou quatre pixels d'écran d'un coup. La caméra,
+   elle, défile au pixel d'écran : le personnage tremblait d'un pixel
+   contre le décor à chaque pas, un coup deux, un coup un. Les autres
+   arrivent en entiers, l'arrondi ne change rien pour eux. */
+const ECHp=(typeof ECH==='number'&&ECH>1)?ECH:1;
+const px0=Math.round((x-CASE_L/2)*ECHp)/ECHp, py0=Math.round((y-CASE_H+10)*ECHp)/ECHp;
 const lean=(ap===e.ap&&!aVelo)?Math.round(PENCHE.x*2)/2:0;
 if(lean===0)g.drawImage(c,px0,py0,CASE_L,CASE_H);
 else{
@@ -16061,7 +16075,7 @@ const prof=Math.round(av*3);
    assez pour qu'on voie les jambes se croiser, pas assez pour qu'elles
    se traversent. */
 cx+=Math.round(passage*(leve>0.2?4:2))*((cx<0)?1:-1);
-const lev=Math.round(leve*4*(COURSE?1.3:1)), y0=Y_HANCHE+bob, yGen=Y_GENOU_F-Math.round(lev*0.6)+prof, yChev=-5-lev+prof;
+const lev=Math.round(leve*(COURSE?5.2:5)), y0=Y_HANCHE+bob, yGen=Y_GENOU_F-Math.round(lev*0.6)+prof, yChev=-5-lev+prof;
 const col=(r)=>r<yGen?c:(court?sk:c), colO=(r)=>r<yGen?cO:(court?skO:cO), colC=(r)=>r<yGen?cc:(court?skC:cc);
 const J=SX.jambe;
 for(let r=y0;r<yChev;r++){
@@ -16434,7 +16448,7 @@ return;
    conducteur avait l'air de descendre un escalier derriere sa machine.
    Les chiffres sont en demi-pixels, comme tout l'interieur du sprite. */
 const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1+(PEDALE?2:0)+(TROT?5:0))+vrille,
-      dy=(PEDALE||TROT)?0:Math.round(balance*(COURSE?7:5)),
+      dy=(PEDALE||TROT)?0:Math.round(balance*(COURSE?7:6)),
       hCoude=TROT?8:(PEDALE?10:(COURSE?9:11)),
       hPoignet=TROT?TROT_MAIN:(PEDALE?21:(COURSE?14:19)),
       yC=yEp+hCoude+Math.round(dy/2), yM=yEp+hPoignet+dy;
@@ -16445,7 +16459,7 @@ const lb=SX.bras[0]+1;R(bx-Math.floor(lb/2),yEp,lb,3,manches>0?c:sk);R(bx-2,yEp-
    restaient collés au corps et le balancement ne se lisait pas. Elle
    glisse maintenant aussi vers l'axe du corps quand le bras part en
    avant, et vers l'extérieur quand il part en arrière. */
-const dxS=TROT?cote2*4:(PEDALE?cote2*3:(diag?Math.round(balance*4*tourne*(dos?-1:1)):Math.round(balance*3*-cote2)));
+const dxS=TROT?cote2*4:(PEDALE?cote2*3:(diag?Math.round(balance*4*tourne*(dos?-1:1)):Math.round(balance*4*-cote2)));
 /* ================= LE PONT DE L'ÉPAULE =================
    Il restait un coin de fond entre le bras et le buste. Le trapèze
    descend en pente vers le cou sur les quatre premières lignes — de onze
