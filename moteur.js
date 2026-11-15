@@ -18085,11 +18085,15 @@ const leanX=cote?s*lean:0;
 if(!dos&&!cote)cheveuxDerriere();
 for(const J of jambes){if(fond(J)&&(cote||diag))auFond(()=>dessinerJambe(J,true));else dessinerJambe(J,false);}
 g.save();g.translate((leanX+(cote?0:swX))*u,0);
-for(const B of brs)if(fond(B)&&(cote||diag))auFond(()=>dessinerBras(B,true));   /* de face et de dos, les bras passent tous après le buste : il ombre le dessous des épaules */
+/* DE DOS, LE BRAS QUI PART DEVANT S'ÉLOIGNE DE NOUS : il passe derrière le
+   buste, on n'en voit plus que l'épaule. On le peignait par-dessus, et la
+   main venait se promener dans le dos du personnage. De face, les bras
+   restent tous après le buste : il ombre le dessous des épaules. */
+for(const B of brs)if(fond(B)&&(cote||diag||dos)){if(dos&&!diag)dessinerBras(B,false);else auFond(()=>dessinerBras(B,true));}
 if(cote||!dos)sac(false);
 torse();
 if(cote){cheveuxDerriere();tete();echarpeDe();barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();chapeauDe();masqueDe();}
-for(const B of brs)if(!fond(B)||!(cote||diag))dessinerBras(B,false);
+for(const B of brs)if(!fond(B)||!(cote||diag||dos))dessinerBras(B,false);
 if(!cote){if(dos)sac(false);else sac(true);
  tete();echarpeDe();if(!dos)barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();
  if(diag&&dos){const cx2=tourne>0?9:-12;R(cx2,yTete+9,3,9,peau);R(cx2+(tourne>0?1:0),yTete+11,2,4,peauO);R(tourne>0?11:-13,yTete+14,2,3,peau);}
