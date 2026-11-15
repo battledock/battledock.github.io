@@ -15661,15 +15661,15 @@ SQ_CACHE.set(k,r);return r;}
    ====================================================================== */
 const A2={
 marche:[
- {bob:0,  sw:0,  D:{z:9, l:0,  ta:1, po:0}, G:{z:-9,l:0,  ta:0, po:1},  bD:{s:-24,e:6}, bG:{s:24,e:30}},   // le contact
- {bob:1.6,sw:.8, D:{z:5, l:0,  ta:0, po:0}, G:{z:-7,l:3,  ta:0, po:.7}, bD:{s:-16,e:6}, bG:{s:16,e:24}},   // l'amorti
- {bob:.2, sw:1.4,D:{z:0, l:0,  ta:0, po:0}, G:{z:0, l:5.5,ta:0, po:0},  bD:{s:0,  e:12}, bG:{s:0, e:14}},   // le passage
- {bob:-1.4,sw:.7,D:{z:-5,l:0,  ta:0, po:.6},G:{z:7, l:2.5,ta:.4,po:0},  bD:{s:16, e:24}, bG:{s:-16,e:6}}], // l'envol
+ {bob:0,  sw:0,  pc:0,   D:{z:9, l:0,  ta:1, po:0}, G:{z:-9,l:0,  ta:0, po:1},  bD:{s:-24,e:6}, bG:{s:24,e:30}},   // le contact
+ {bob:1.6,sw:.8, pc:1,   D:{z:5, l:0,  ta:0, po:0}, G:{z:-7,l:3,  ta:0, po:.7}, bD:{s:-16,e:6}, bG:{s:16,e:24}},   // l'amorti
+ {bob:.2, sw:1.4,pc:.5,  D:{z:0, l:0,  ta:0, po:0}, G:{z:0, l:5.5,ta:0, po:0},  bD:{s:0,  e:12}, bG:{s:0, e:14}},   // le passage
+ {bob:-1.4,sw:.7,pc:-.4, D:{z:-5,l:0,  ta:0, po:.6},G:{z:7, l:2.5,ta:.4,po:0},  bD:{s:16, e:24}, bG:{s:-16,e:6}}], // l'envol
 course:[
- {bob:0,  sw:0,  D:{z:8, l:0,  ta:.5,po:0}, G:{z:-5,l:9,  ta:0, po:.3}, bD:{s:-36,e:84}, bG:{s:30,e:96}},
- {bob:2.6,sw:.8, D:{z:2, l:0,  ta:0, po:0}, G:{z:-1,l:14, ta:0, po:0},  bD:{s:-16,e:84}, bG:{s:14,e:92}},
- {bob:0,  sw:.5, D:{z:-7,l:0,  ta:0, po:1}, G:{z:9, l:8,  ta:0, po:0},  bD:{s:16, e:92}, bG:{s:-24,e:84}},
- {bob:-3, sw:0,  D:{z:-10,l:5, ta:0, po:.6},G:{z:11,l:3,  ta:.5,po:0},  bD:{s:32, e:96}, bG:{s:-38,e:84}}]};
+ {bob:0,  sw:0,  pc:0,  D:{z:8, l:0,  ta:.5,po:0}, G:{z:-5,l:9,  ta:0, po:.3}, bD:{s:-36,e:84}, bG:{s:30,e:96}},
+ {bob:2.6,sw:.8, pc:1.5,D:{z:2, l:0,  ta:0, po:0}, G:{z:-1,l:14, ta:0, po:0},  bD:{s:-16,e:84}, bG:{s:14,e:92}},
+ {bob:0,  sw:.5, pc:.5, D:{z:-7,l:0,  ta:0, po:1}, G:{z:9, l:8,  ta:0, po:0},  bD:{s:16, e:92}, bG:{s:-24,e:84}},
+ {bob:-3, sw:0,  pc:-.5,D:{z:-10,l:5, ta:0, po:.6},G:{z:11,l:3,  ta:.5,po:0},  bD:{s:32, e:96}, bG:{s:-38,e:84}}]};
 /* L'ESSAI : la nouvelle animation ne s'allume que pour qui le demande
    (?anim2=1 dans l'adresse, retenu sur l'appareil ; ?anim2=0 l'éteint).
    Les autres joueurs gardent l'ancienne tant qu'elle n'est pas validée. */
@@ -15687,14 +15687,19 @@ function poseA2(action,t){
  const K=A2[action];t=((t%1)+1)%1;
  const f=t*8, i=Math.floor(f)%8, k0=f-Math.floor(f), k=k0*k0*(3-2*k0);
  const cle=(n)=>{const c=K[n%4];if(n%8<4)return c;
-  return {bob:c.bob,sw:-c.sw,D:c.G,G:c.D,bD:c.bG,bG:c.bD};};
+  return {bob:c.bob,sw:-c.sw,pc:c.pc,D:c.G,G:c.D,bD:c.bG,bG:c.bD};};
  const a=cle(i), b=cle(i+1), m=(x,y)=>x+(y-x)*k;
  const j=(p,q)=>({z:m(p.z,q.z),l:m(p.l,q.l),ta:m(p.ta,q.ta),po:m(p.po,q.po)});
- const r={bob:m(a.bob,b.bob),sw:m(a.sw,b.sw),D:j(a.D,b.D),G:j(a.G,b.G),
+ const r={bob:m(a.bob,b.bob),sw:m(a.sw,b.sw),pc:m(a.pc,b.pc),D:j(a.D,b.D),G:j(a.G,b.G),
   bD:{s:m(a.bD.s,b.bD.s),e:m(a.bD.e,b.bD.e)},bG:{s:m(a.bG.s,b.bG.s),e:m(a.bG.e,b.bG.e)}};
  /* le bassin descend pour que la jambe au sol l'atteigne sans s'étirer */
  let auto=0;for(const q of [r.D,r.G])if(q.l<0.6)auto=Math.max(auto,A2_JAMBE-Math.sqrt(Math.max(0,A2_JAMBE*A2_JAMBE-q.z*q.z)));
- r.bob+=auto;return r;}
+ r.bob+=auto;
+ /* LA TORSION : le bassin tourne avec la jambe qui avance, les épaules
+    tournent à l'opposé. C'est ce contre-mouvement qui fait qu'un corps
+    marche au lieu d'être porté. En unités d'avance de la hanche. */
+ r.tw=(r.D.z-r.G.z)/18*(action==='course'?2.4:1.8);
+ return r;}
 function spriteFin(g,x,y,ap0,dir,pas,bouge){
 const p=Object.assign({},DEF_AP,ap0||{}), P=PALETTES;
 appliquerDeguisement(p);
@@ -18029,8 +18034,8 @@ const NV=ANIM2_ON&&!PEDALE&&!TROT&&!DZ_POSE&&frG<=0&&(A2P||!bouge);
 if(NV){
 const yaw=(cote?90:(dos?(diag?180-45*tourne:180):(diag?45*tourne:0)))*Math.PI/180;
 const ca=Math.cos(yaw), sa=Math.sin(yaw), PZ=0.23;
-const swX=A2P&&!cote?A2P.sw:0;
-const pj=(q,pz)=>{const X=-q[0]*ca+q[2]*sa, Dp=q[0]*sa+q[2]*ca;return {x:X+swX,y:q[1]+Dp*(pz||PZ),d:Dp};};
+const swX=A2P&&!cote?Math.round(A2P.sw):0;
+const pj=(q,pz,haut)=>{const X=-q[0]*ca+q[2]*sa, Dp=q[0]*sa+q[2]*ca;return {x:X+(haut?0:swX),y:q[1]+Dp*(pz||PZ),d:Dp};};   /* le haut du corps reçoit le report de poids par la translation du buste */
 /* LE BRAS VU DE FACE OU DE BIAIS : son balancement part vers nous ou s'en
    éloigne — la perspective seule le réduisait à un demi-pixel, la main
    semblait clouée à la hanche. On appuie la profondeur des bras (comme un
@@ -18055,7 +18060,7 @@ const peindre=(A,B,r0,r1,teinte,bandes)=>{
   R(xx,yy,1,1,c);}};
 const os={cuisse:A2_JAMBE/2, tibia:A2_JAMBE/2, bras:10.5, avbras:9.5};
 const jambe2=(cote2)=>{const q=PJ[cote2], sx=cote2==='D'?1:-1;
- const hip=[sx*5.5,yHan,0], ank=[sx*(A2P?4:5.5),-3-q.l,q.z];
+ const tw=A2P?A2P.tw:0;const hip=[sx*5.5,yHan,sx*tw], ank=[sx*(A2P?4:5.5),-3-q.l,q.z];
  let dx=ank[0]-hip[0], dy=ank[1]-hip[1], dz=ank[2]-hip[2];let dist=Math.hypot(dx,dy,dz);
  const M=os.cuisse+os.tibia-0.05;if(dist>M){const k=M/dist;dx*=k;dy*=k;dz*=k;dist=M;ank[0]=hip[0]+dx;ank[1]=hip[1]+dy;ank[2]=hip[2]+dz;}
  /* le genou plie toujours vers l'avant */
@@ -18064,11 +18069,11 @@ const jambe2=(cote2)=>{const q=PJ[cote2], sx=cote2==='D'?1:-1;
  const knee=[hip[0]+dx/2+bx/bl*h, hip[1]+dy/2+by/bl*h, hip[2]+dz/2+bz/bl*h];
  return {H:pj(hip),K:pj(knee),A:pj(ank),q,cote2,d:pj(knee).d};};
 const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
- const sh=[sx*13,yEp+3,0], ab=(COURSE?0.06:0.11), s1=q.s*Math.PI/180, s2=(q.s+q.e)*Math.PI/180;
+ const sh=[sx*13,yEp+3,-sx*(A2P?A2P.tw*1.5:0)], ab=(COURSE?0.06:0.11), s1=q.s*Math.PI/180, s2=(q.s+q.e)*Math.PI/180;
  const el=[sh[0]+sx*Math.sin(ab)*os.bras, sh[1]+Math.cos(s1)*Math.cos(ab)*os.bras, sh[2]+Math.sin(s1)*Math.cos(ab)*os.bras];
  const wr=[el[0]-sx*(COURSE?1.6:0.3), el[1]+Math.cos(s2)*os.avbras, el[2]+Math.sin(s2)*os.avbras];
  const mn=[wr[0], wr[1]+Math.cos(s2)*2.2, wr[2]+Math.sin(s2)*2.2];
- return {S:pj(sh,PZB),E:pj(el,PZB),W:pj(wr,PZB),M:pj(mn,PZB),cote2,d:pj(el).d};};
+ return {S:pj(sh,PZB,1),E:pj(el,PZB,1),W:pj(wr,PZB,1),M:pj(mn,PZB,1),cote2,d:pj(el).d};};
 const dessinerJambe=(J,fonce)=>{
  const haut=pant, bas=court?peau:pant;
  peindre(J.H,J.K,8,6.6,haut,null);
@@ -18087,10 +18092,14 @@ const dessinerBras=(B,fonce)=>{
 const jambes=[jambe2('D'),jambe2('G')].sort((a,b)=>a.d-b.d);
 const brs=[bras2('D'),bras2('G')].sort((a,b)=>a.d-b.d);
 const fond=(o)=>o.d<-0.5;
-const leanX=cote?s*lean:0;
+/* LE DOS : à l'amorti le buste plonge d'une unité devant les hanches, à la
+   poussée il se redresse et passe un rien en arrière. De biais, l'avant
+   pointe en diagonale : on n'en garde que la part qui se voit. */
+const pc=A2P?A2P.pc:0;
+const leanX=cote?s*(lean+pc):(diag?tourne*pc*0.7:0);
 if(!dos&&!cote)cheveuxDerriere();
 for(const J of jambes){if(fond(J)&&(cote||diag))auFond(()=>dessinerJambe(J,true));else dessinerJambe(J,false);}
-g.save();g.translate((leanX+(cote?0:swX))*u,0);
+g.save();g.translate(Math.round(leanX+(cote?0:swX))*u,0);   /* au demi-pixel entier : un décalage fractionnaire floutait tout le buste */
 /* DE DOS, LE BRAS QUI PART DEVANT S'ÉLOIGNE DE NOUS : il passe derrière le
    buste, on n'en voit plus que l'épaule. On le peignait par-dessus, et la
    main venait se promener dans le dos du personnage. De face, les bras
