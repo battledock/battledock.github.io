@@ -16907,7 +16907,11 @@ R(x0,ey,w,1,T(blanc,-14));
 R(coinInt+(gauche?-1:1),ey,1,h,T(blanc,-10));
 /* L'IRIS : anneau sombre en haut, éclairci en bas — la lumière traverse
    l'œil et rebondit au fond. */
-const iw=profil?2:3, ix=Math.max(x0,Math.min(x0+w-iw,x0+1+regard));
+/* DE TROIS QUARTS, L'IRIS SE CENTRE dans son œil. Poussé au bord par le
+   regard, il tombait au coin extérieur d'un œil et au coin intérieur de
+   l'autre — juste en théorie, mais à cinq pixels de large le personnage
+   avait l'air de loucher. La tête tournée dit déjà où il regarde. */
+const iw=profil?2:3, ix=diag?Math.max(x0,Math.min(x0+w-iw,x0+Math.floor((w-iw)/2)+(F?(F.regard||0):0))):Math.max(x0,Math.min(x0+w-iw,x0+1+regard));
 /* LA COULEUR DES YEUX NE SE VOYAIT PAS. La teinte par défaut est très
    sombre (#26241f) et l'iris n'était éclairci que de seize points en
    bas : à l'écran, l'œil lisait comme un trou noir, et personne ne
@@ -17087,7 +17091,7 @@ R(g0,r,1,1,H5.o);R(g1-1,r,1,1,H5.o);}
 };
 const meches=(x0,x1,y0,y1,pas2,c)=>{for(let x2=x0+1;x2<x1-1;x2+=pas2)for(let r=y0+1;r<y1;r++){if((r+x2)%5===0)continue;
 const xx=x2+Math.round(Math.sin((r-y0)*0.25)*0.6);R(xx,r,1,1,c||((r+x2)%7===0?H5.oo:H5.o));if((r+x2)%6===0)R(xx+1,r,1,1,H5.c);}};
-const phH=bouge?ph:(typeof BRISE_PH==='number'?BRISE_PH:0), ampH=bouge?1:0.55;
+const phH=bouge?ph:(typeof BRISE_PH==='number'?BRISE_PH:0), ampH=bouge?0.7:0.25;   /* à l'arrêt, une brise, pas un coup de vent : les mèches longues s'ouvraient en ailes */
 /* ================= L'INERTIE =================
    Jusqu'ici tout ce qui pendait suivait le corps instantanément : une seule
    sinusoïde pour les cheveux, les pans de veste et le sac. Or une masse
@@ -17105,12 +17109,12 @@ const phH=bouge?ph:(typeof BRISE_PH==='number'?BRISE_PH:0), ampH=bouge?1:0.55;
    qu'une mèche courte, un pan de manteau davantage qu'un ourlet de chemise. */
 const INERTIE={
 courts:  {ret:0.06, amp:0.13, sur:0.18, max:3},
-longs:   {ret:0.16, amp:0.20, sur:0.34, max:5},
-queue:   {ret:0.22, amp:0.26, sur:0.42, max:6},
+longs:   {ret:0.16, amp:0.14, sur:0.22, max:3},
+queue:   {ret:0.22, amp:0.18, sur:0.28, max:3.5},
 veste:   {ret:0.10, amp:0.10, sur:0.22, max:3},
 manteau: {ret:0.18, amp:0.16, sur:0.30, max:5},
 jupe:    {ret:0.14, amp:0.15, sur:0.26, max:4},
-echarpe: {ret:0.24, amp:0.28, sur:0.46, max:6},
+echarpe: {ret:0.24, amp:0.20, sur:0.30, max:4},
 sac:     {ret:0.12, amp:0.09, sur:0.20, max:3}};
 /* la masse de la coupe décide de son inertie */
 const INER_CH=(cf.lg>=22||cf.sp==='queue'||cf.sp==='tresse')?INERTIE.queue
@@ -18102,11 +18106,18 @@ const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
  /* L'ÉPAULE BOUGE : elle tourne avec la torsion, et elle se soulève d'un
     rien quand son bras part devant — le bras tire l'omoplate. */
  const leve=A2P?Math.max(0,q.s)/(COURSE?40:24)*(COURSE?1.6:1):0;
+ /* DE TROIS QUARTS, le buste est dessiné presque aussi large que de face :
+    l'épaule raccourcie par la perspective tombait DANS le buste — le bras
+    du fond disparaissait, celui de devant n'en sortait qu'un filet. On
+    garde donc l'écart latéral entier, et la perspective ne joue que sur
+    l'avancée. */
  const sh=[sx*13,yEp+3-leve,-sx*(A2P?A2P.tw*1.5:0)], ab=(COURSE?0.06:0.11), s1=q.s*Math.PI/180, s2=(q.s+q.e)*Math.PI/180;
  const el=[sh[0]+sx*Math.sin(ab)*os.bras, sh[1]+Math.cos(s1)*Math.cos(ab)*os.bras, sh[2]+Math.sin(s1)*Math.cos(ab)*os.bras];
  const wr=[el[0]-sx*(COURSE?1.6:0.3), el[1]+Math.cos(s2)*os.avbras, el[2]+Math.sin(s2)*os.avbras];
  const mn=[wr[0], wr[1]+Math.cos(s2)*2.2, wr[2]+Math.sin(s2)*2.2];
- return {S:pj(sh,PZB,1),E:pj(el,PZB,1),W:pj(wr,PZB,1),M:pj(mn,PZB,1),cote2,d:pj(el).d,recule:q.s<-6};};
+  const P={S:pj(sh,PZB,1),E:pj(el,PZB,1),W:pj(wr,PZB,1),M:pj(mn,PZB,1)};
+ if(diag){const loin=(sh[0]*sa+sh[2]*ca)<0;const ec=Math.sign(-sx*ca||1)*13*(1-Math.abs(ca))*(loin?0.3:1);for(const k in P)P[k].x+=ec;}   /* le bras du fond, lui, reste collé au flanc qui fuit */
+ return {S:P.S,E:P.E,W:P.W,M:P.M,cote2,d:pj(el).d,recule:q.s<-6};};
 const dessinerJambe=(J,fonce)=>{
  const haut=pant, bas=court?peau:pant;
  peindre(J.H,J.K,8,6.6,haut,null);
