@@ -15804,7 +15804,7 @@ const hautT=HAUTS[p.haut]||'veste', basT=BAS[p.bas]||'pantalon', soulier=SOULIER
    les gestes sont calés sur un crâne unique : plus de dessin qui va sur une
    morphologie et déborde sur une autre. Le classique garde les cinq. */
 const SILN='fine';
-const SIL=[11,9,11];
+const SIL=[12,10,12];   /* LES PROPORTIONS : épaules, taille, hanches — élargies d'une unité : sous une tête de cette taille, un buste de onze faisait un corps en fil de fer */
 
 const Y_EPAULE=-64, Y_COU=-68, Y_TETE=-91;       /* l'ancien -54 / -58 / -81, remonté de 10 */
 const SX={bras:[4,3],jambe:7,cou:6,ventre:0,pec:0};
@@ -18168,7 +18168,7 @@ const mainS=(B,fonce,recule)=>{
  R(Math.round(C.x-uy*px*1.8-ux*.6),Math.round(C.y+ux*px*1.8-uy*.6),1,2,peau);};
 const os={cuisse:A2_JAMBE/2, tibia:A2_JAMBE/2, bras:10.5, avbras:9.5};
 const jambe2=(cote2)=>{const q=PJ[cote2], sx=cote2==='D'?1:-1;
- const tw=A2P?A2P.tw:0;const hip=[sx*5.5,yHan,sx*tw], ank=[sx*(A2P?4:5.5),-3-q.l,q.z];
+ const tw=A2P?A2P.tw:0;const hip=[sx*HA/2,yHan,sx*tw], ank=[sx*(A2P?HA/2-1.2:HA/2),-3-q.l,q.z];
  let dx=ank[0]-hip[0], dy=ank[1]-hip[1], dz=ank[2]-hip[2];let dist=Math.hypot(dx,dy,dz);
  const M=os.cuisse+os.tibia-0.05;if(dist>M){const k=M/dist;dx*=k;dy*=k;dz*=k;dist=M;ank[0]=hip[0]+dx;ank[1]=hip[1]+dy;ank[2]=hip[2]+dz;}
  /* le genou plie toujours vers l'avant */
@@ -18185,7 +18185,7 @@ const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
     du fond disparaissait, celui de devant n'en sortait qu'un filet. On
     garde donc l'écart latéral entier, et la perspective ne joue que sur
     l'avancée. */
- const sh=[sx*13,yEp+3-leve,-sx*(A2P?A2P.tw*1.5:0)], ab=(COURSE?0.06:0.11), s1=q.s*Math.PI/180, s2=(q.s+q.e)*Math.PI/180;
+ const sh=[sx*(EP+1.6),yEp+3-leve,-sx*(A2P?A2P.tw*1.5:0)], ab=(COURSE?0.06:0.11), s1=q.s*Math.PI/180, s2=(q.s+q.e)*Math.PI/180;
  const el=[sh[0]+sx*Math.sin(ab)*os.bras, sh[1]+Math.cos(s1)*Math.cos(ab)*os.bras, sh[2]+Math.sin(s1)*Math.cos(ab)*os.bras];
  const wr=[el[0]-sx*(COURSE?1.6:0.3), el[1]+Math.cos(s2)*os.avbras, el[2]+Math.sin(s2)*os.avbras];
  const mn=[wr[0], wr[1]+Math.cos(s2)*2.2, wr[2]+Math.sin(s2)*2.2];
@@ -18198,15 +18198,15 @@ const dessinerJambe=(J,fonce)=>{
  const special=p.patin||(p._pieds&&p._pieds.st);
  /* la chaussure d'abord : le bas du pantalon vient tomber dessus */
  if(!special)chaussure2(J);
- peindre(J.H,J.K,8,6.6,haut,null);
+ peindre(J.H,J.K,9.6,7.8,haut,null);
  const bandes=(p._docker&&!court)?(t=>(t>.30&&t<.40)||(t>.62&&t<.72)):null;
  /* l'ourlet s'arrête au-dessus de la cheville : il recouvre le haut de la
     chaussure sans l'avaler. Plus haut sur une botte, qui monte. */
  const ourlet=special?0:((soulier==='bottes'||soulier==='bottillons')?(cote?5.2:6.6):(cote?4.2:5.8));   /* l'ourlet au-dessus de la cheville : on voit le lacet */
  const kx=J.K.x-J.A.x, ky=J.K.y-J.A.y, kl=Math.hypot(kx,ky)||1;
  const fin={x:J.A.x+kx/kl*ourlet,y:J.A.y+ky/kl*ourlet};
- peindre(J.K,fin,6.4,court?4.2:5.4,bas,bandes);
- if(court)peindre(J.H,{x:J.H.x+(J.K.x-J.H.x)*.55,y:J.H.y+(J.K.y-J.H.y)*.55},8.6,7.4,pant,null);   /* le short */
+ peindre(J.K,fin,7.6,court?5.4:6.4,bas,bandes);
+ if(court)peindre(J.H,{x:J.H.x+(J.K.x-J.H.x)*.55,y:J.H.y+(J.K.y-J.H.y)*.55},10.2,9,pant,null);   /* le short */
  if(special)soulierDe(Math.round(J.A.x),Math.round(J.A.y)+3,fonce,(cote||diag)?pp:null);};
 /* ================= LA CHAUSSURE 2 =================
    Un pied, c'est un volume qui a une longueur : talon, cou-de-pied,
@@ -18270,10 +18270,10 @@ const chaussure2=(J)=>{
 };
 const dessinerBras=(B,fonce)=>{
  const sl=manches>0?vest:peau, sl2=manches>=1?vest:peau;
- ovale({x:B.S.x,y:B.S.y-0.5},3.3,3.0,manches>0?vest:peau,0);                   /* l'épaule : un deltoïde rond, qui suit le bras */
- peindre(B.S,B.E,5.2,4.6,sl,null);
+ ovale({x:B.S.x,y:B.S.y-0.5},3.6,3.2,manches>0?vest:peau,0);                   /* l'épaule : un deltoïde rond, qui suit le bras */
+ peindre(B.S,B.E,6.2,5.4,sl,null);
  if(manches>0&&manches<1&&manches>=0.5)peindre(B.S,{x:B.S.x+(B.E.x-B.S.x)*.92,y:B.S.y+(B.E.y-B.S.y)*.92},5.8,5.4,vest,null);
- peindre(B.E,B.W,4.6,4,sl2,null);
+ peindre(B.E,B.W,5.4,4.6,sl2,null);
  mainS(B,fonce,B.recule);};
 const jambes=[jambe2('D'),jambe2('G')].sort((a,b)=>a.d-b.d);
 /* LE BASSIN EN VOLUME : un ovale entre les deux hanches, qui tourne avec
