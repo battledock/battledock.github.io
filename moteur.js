@@ -16799,10 +16799,12 @@ if(soulier==='bottillons'){R(cx-3,by-h+1,1,1,'#c9a24a');R(cx+1,by-h+1,1,1,'#c9a2
 }
 const torse=()=>{
 const bas=yHan+2+long, peauH=hautT==='débardeur';
-for(let r=yEp;r<bas;r++){
-const k=(r-yEp)/(yHan-yEp);
+for(let r=yEp-(cote?0:3);r<bas;r++){
+const k=Math.max(0,(r-yEp)/(yHan-yEp));
 let demi=Math.round(r<yHan?EP+(TA-EP)*Math.min(1,k*1.4):HA+(r>yHan?1:0));
-if(!cote&&r<yEp+4)demi=Math.round(5+(EP-5)*(r-yEp+1)/4);            /* les trapèzes, en pente depuis le cou */
+/* LES TRAPÈZES : du cou à l'épaule, une courbe qui part douce et s'arrondit
+   — plus la marche de quatre lignes qui faisait des épaules en équerre. */
+if(!cote&&r<yEp+4){const t=(r-(yEp-3))/7;demi=Math.round(4.5+(EP-4.5)*Math.pow(Math.sin(Math.max(0,t)*Math.PI/2),1.3));}
 if(souffle&&r>=yEp+4&&r<yEp+11)demi+=1;                              /* la poitrine, au souffle */
 /* DE TROIS QUARTS, le corps est plus étroit : on en voit la tranche.
    0,86 laissait des épaules presque aussi larges que de face. */
@@ -18689,7 +18691,7 @@ const chaussure2=(J)=>{
 };
 const dessinerBras=(B,fonce)=>{
  const sl=manches>0?vest:peau, sl2=manches>=1?vest:peau;
- ovale({x:B.S.x,y:B.S.y-0.5},3.6,3.2,manches>0?vest:peau,0);                   /* l'épaule : un deltoïde rond, qui suit le bras */
+ ovale({x:B.S.x-(cote?0:Math.sign(B.S.x)*0.4),y:B.S.y-0.1},4.2,4,manches>0?vest:peau,0);    /* l'épaule : un deltoïde rond qui coiffe le haut du bras */
  peindre(B.S,B.E,6.2*DESIGN.membres,5.4*DESIGN.membres,sl,null);
  if(manches>0&&manches<1&&manches>=0.5)peindre(B.S,{x:B.S.x+(B.E.x-B.S.x)*.92,y:B.S.y+(B.E.y-B.S.y)*.92},5.8,5.4,vest,null);
  peindre(B.E,B.W,5.4*DESIGN.membres,4.6*DESIGN.membres,sl2,null);
