@@ -18546,12 +18546,13 @@ const PJ=A2P?{D:A2P.D,G:A2P.G}:{D:{z:pD.x*PAS_U,l:pD.lift*6,ta:pD.talon,po:pD.po
 const PB=A2P?{D:A2P.bD,G:A2P.bG}:{D:{s:2+souffle*.6,e:9},G:{s:2+souffle*.6,e:9}};
 const peindre=(A,B,r0,r1,teinte,bandes)=>{
  const cL=T(teinte,16), cS=T(teinte,-18), cR=T(teinte,-40), cRl=T(teinte,-10);
- const x0=Math.floor(Math.min(A.x,B.x)-Math.max(r0,r1))-1, x1=Math.ceil(Math.max(A.x,B.x)+Math.max(r0,r1))+1;
- const y0=Math.floor(Math.min(A.y,B.y)-Math.max(r0,r1))-1, y1=Math.ceil(Math.max(A.y,B.y)+Math.max(r0,r1))+1;
+ const RM=typeof r0==='function'?8:Math.max(r0,r1);
+ const x0=Math.floor(Math.min(A.x,B.x)-RM)-1, x1=Math.ceil(Math.max(A.x,B.x)+RM)+1;
+ const y0=Math.floor(Math.min(A.y,B.y)-RM)-1, y1=Math.ceil(Math.max(A.y,B.y)+RM)+1;
  const vx=B.x-A.x, vy=B.y-A.y, L2=vx*vx+vy*vy||1;
  for(let yy=y0;yy<=y1;yy++)for(let xx=x0;xx<=x1;xx++){
   const px=xx+.5, py=yy+.5;let t=((px-A.x)*vx+(py-A.y)*vy)/L2;t=Math.max(0,Math.min(1,t));
-  const qx=A.x+vx*t, qy=A.y+vy*t, dx=px-qx, dy=py-qy, dd=Math.hypot(dx,dy), r=(r0+(r1-r0)*t)/2;
+  const qx=A.x+vx*t, qy=A.y+vy*t, dx=px-qx, dy=py-qy, dd=Math.hypot(dx,dy), r=(typeof r0==='function'?r0(t):(r0+(r1-r0)*t))/2;
   if(dd>r)continue;
   const nl=(-0.6*dx-0.8*dy)/Math.max(dd,.001)*(dd/Math.max(r,.001));
   let c=dd>r-1.05?(nl<0.05?cR:cRl):(nl>0.42?cL:(nl<-0.22?cS:teinte));
@@ -18580,13 +18581,21 @@ const mainS=(B,fonce,recule)=>{
  const poing=COURSE&&bouge;
  const C={x:B.W.x+ux*(poing?1.8:1.9), y:B.W.y+uy*(poing?1.8:1.9)};
  const paume=cote&&recule&&!poing;
- ovale(C,poing?2.3:2.2,poing?2.3:2.5,peau,rot,paume?T(peau,24):null);
- const ts=T(peau,-30);
- if(poing){R(Math.round(C.x+ux*1.6-1),Math.round(C.y+uy*1.6),2,1,ts);}               /* les jointures */
- else{R(Math.round(C.x+ux*1.7),Math.round(C.y+uy*1.7),1,1,ts);}                       /* le bout des doigts, replié */
+ /* LA MAIN : le poignet, la paume, les doigts serrés au bout (avec leurs
+    séparations), et le pouce qui se détache devant. */
+ const px=cote?1:(B.S.x<0?1:-1), ts=T(peau,-34), tl=T(peau,14);
+ peindre({x:B.W.x-ux*0.4,y:B.W.y-uy*0.4},{x:C.x-ux*0.6,y:C.y-uy*0.6},3.9,4.3,peau,null);       /* le poignet qui s'élargit en paume */
+ ovale(C,poing?2.4:2.25,poing?2.3:2.3,peau,rot,paume?T(peau,24):null);
+ if(poing){const K={x:C.x+ux*1.3,y:C.y+uy*1.3};
+  for(const k of [-1,0,1])R(Math.round(K.x-uy*k*1.1-0.5),Math.round(K.y+ux*k*1.1-0.5),1,1,k?tl:T(peau,6));
+  R(Math.round(C.x+ux*2.2-uy*0.6-0.5),Math.round(C.y+uy*2.2+ux*0.6-0.5),1,1,ts);R(Math.round(C.x+ux*2.2+uy*0.6-0.5),Math.round(C.y+uy*2.2-ux*0.6-0.5),1,1,ts);}   /* les jointures */
+ else{const F0={x:C.x+ux*1.1,y:C.y+uy*1.1},F1={x:C.x+ux*3.1,y:C.y+uy*3.1};
+  peindre(F0,F1,3.7,2.9,peau,null);                                                         /* les doigts, serrés */
+  if(!cote)for(const k of [-0.75,0.75])R(Math.round(C.x+ux*2.6-uy*k-0.5),Math.round(C.y+uy*2.6+ux*k-0.5),1,1,T(peau,-24));   /* leurs séparations */
+  R(Math.round(F1.x-0.5),Math.round(F1.y-0.5),1,1,T(peau,-14));}
  /* le pouce, du côté qui regarde devant */
- const px=cote?1:(B.S.x<0?1:-1);
- R(Math.round(C.x-uy*px*1.8-ux*.6),Math.round(C.y+ux*px*1.8-uy*.6),1,2,peau);};
+ const P0={x:C.x-uy*px*1.5-ux*0.5,y:C.y+ux*px*1.5-uy*0.5},P1={x:C.x-uy*px*1.9+ux*1.3,y:C.y+ux*px*1.9+uy*1.3};
+ peindre(P0,P1,1.9,1.5,peau,null);};
 const os={cuisse:A2_JAMBE/2, tibia:A2_JAMBE/2, bras:10.5+DESIGN.bras*0.55, avbras:9.5+DESIGN.bras*0.45};
 const jambe2=(cote2)=>{const q=PJ[cote2], sx=cote2==='D'?1:-1;
  const tw=A2P?A2P.tw:0;const hip=[sx*HA/2,yHan,sx*tw], ank=[sx*(A2P?HA/2-1.2:HA/2),-3-q.l,q.z];
@@ -18697,9 +18706,22 @@ const chaussure2=(J)=>{
 const dessinerBras=(B,fonce)=>{
  const sl=manches>0?vest:peau, sl2=manches>=1?vest:peau;
  ovale({x:B.S.x-(cote?0:Math.sign(B.S.x)*0.4),y:B.S.y-0.1},4.2,4,manches>0?vest:peau,0);    /* l'épaule : un deltoïde rond qui coiffe le haut du bras */
- peindre(B.S,B.E,6.2*DESIGN.membres,5.4*DESIGN.membres,sl,null);
+ /* LE BRAS A DES MUSCLES : le biceps gonfle au premier tiers, le bras
+    s'affine au coude ; l'avant-bras est plein près du coude et fin au
+    poignet. Deux tubes de largeur constante faisaient des bras de pantin. */
+ const DM=DESIGN.membres, nu=manches<=0;
+ const bicep=t=>(6.1+(nu?0.75:0.45)*Math.sin(Math.PI*Math.min(1,t/0.75))-0.7*t)*DM;
+ const avbras=t=>(5.3+(nu?0.55:0.35)*Math.sin(Math.PI*Math.min(1,t/0.55))-(nu?1.4:0.8)*t)*DM;
+ peindre(B.S,B.E,bicep,null,sl,null);
  if(manches>0&&manches<1&&manches>=0.5)peindre(B.S,{x:B.S.x+(B.E.x-B.S.x)*.92,y:B.S.y+(B.E.y-B.S.y)*.92},5.8,5.4,vest,null);
- peindre(B.E,B.W,5.4*DESIGN.membres,4.6*DESIGN.membres,sl2,null);
+ peindre(B.E,B.W,avbras,null,sl2,null);
+ /* LE COUDE : le pli du côté où l'avant-bras se replie, l'os éclairé de l'autre */
+ {const ax=B.E.x-B.S.x, ay=B.E.y-B.S.y, bx=B.W.x-B.E.x, by=B.W.y-B.E.y, cr=ax*by-ay*bx, la=Math.hypot(ax,ay)||1;
+  const nx=-ay/la, ny=ax/la, sg=Math.abs(cr)>2?Math.sign(cr):0;
+  const c2=sl2;
+  if(sg){R(Math.round(B.E.x+nx*sg*1.6-0.5),Math.round(B.E.y+ny*sg*1.6-0.5),1,1,T(c2,-30));
+   R(Math.round(B.E.x-nx*sg*1.8-0.5),Math.round(B.E.y-ny*sg*1.8-0.5),1,1,T(c2,14));}
+  else if(nu)R(Math.round(B.E.x-0.5),Math.round(B.E.y-0.5),1,1,T(c2,-12));}
  mainS(B,fonce,B.recule);};
 const jambes=[jambe2('D'),jambe2('G')].sort((a,b)=>a.d-b.d);
 /* LE BASSIN EN VOLUME : un ovale entre les deux hanches, qui tourne avec
