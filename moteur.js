@@ -14738,7 +14738,14 @@ const PASM=24;
    TOUT CE QUI EST CALÉ SUR LA HANCHE lit ces deux constantes : le dessin
    de profil, celui de face, celui de trois quarts et le modèle de pose.
    Les vêtements, eux, sont calés sur yHan et yEp, donc ils suivent. */
-const Y_HANCHE=-36, Y_PIED=-3;
+/* LE GABARIT : jambes et buste allongés (en unités), largeurs, épaisseur
+   des membres. Les réglages par défaut sont ceux du jeu ; on les change
+   pour essayer d'autres silhouettes sans redessiner. */
+/* LE GABARIT « GRAND », choisi : 4,5 pixels de plus, gagnés sur les jambes
+   (3), le buste (1,5), et des bras qui suivent. La tête garde sa taille,
+   elle paraît donc plus petite : une allure plus adulte. */
+const DESIGN={jambe:6,buste:3,sil:[12.5,10,12],membres:1,bras:4};
+let Y_HANCHE=-36-DESIGN.jambe;const Y_PIED=-3;
 /* LE GENOU DE FACE était à -14 pour une hanche à -26 et une cheville à
    -5 : douze unités de cuisse pour neuf de mollet. On garde ce rapport
    sur la jambe allongée, sinon le mollet devient plus long que la cuisse. */
@@ -15343,7 +15350,8 @@ function galerieAcc(g,x,y,ap,dir,dxy){const d=dir||'bas',R=(px,py,w,h,c)=>{g.fil
   if(S.ailes){for(const fx of (prof?[sx*-1.5]:[-5,5])){const s2=fx<0?-1:1,f=Math.sin(t*9)*.6;g.fillStyle='#f2c84a';g.beginPath();g.moveTo(x+fx,y-4);g.lineTo(x+fx+s2*4,y-7-f);g.lineTo(x+fx+s2*3.4,y-5.4);g.lineTo(x+fx+s2*4.4,y-5-f*.6);g.lineTo(x+fx+s2*3,y-3.6);g.lineTo(x+fx+s2*3.6,y-3);g.closePath();g.fill();g.fillStyle='#fff4c0';g.fillRect(x+fx+s2*1.2-.3,y-5.6,1,.6);}}
   if(S.lame){R(-6,.4,5.4,.8,'#e8ecf2');R(.6,.4,5.4,.8,'#e8ecf2');R(-6,1.2,5.4,.4,'#8a8e9a');R(.6,1.2,5.4,.4,'#8a8e9a');}
   if(S.brille)for(let k=0;k<2;k++)etincelle(g,x+(k?4:-4)+Math.sin(k*3)*1,y-3,t,k+5);}
- const DX=dxy?dxy[0]:0,DY=dxy?dxy[1]:0;g.save();g.translate(DX,DY);try{
+ /* LE GABARIT : les accessoires de tête et de cou suivent la tête, montée avec le corps */
+ const DX=dxy?dxy[0]:0,DY=(dxy?dxy[1]:0)-(DESIGN.jambe+DESIGN.buste)/2;g.save();g.translate(DX,DY);try{
  const b=ap._bij;if(b){
   const or=['bij_montre_or','bij_chaine_or','bij_medaillon','bij_grillz','bij_etoile'].includes(b),fl=b==='bij_flocon_diamant',glace=b==='bij_montre_glace'||b==='bij_chaine_glace';
   const c=glace?'#eef6ff':or?'#f2c84a':'#dfe3ea',c2=glace?'#9ad8ff':or?'#b8862a':'#9aa0ac';
@@ -15392,7 +15400,7 @@ function galerieAcc(g,x,y,ap,dir,dxy){const d=dir||'bas',R=(px,py,w,h,c)=>{g.fil
  if(ap._discoK&&DISCO_T[ap._discoK])discoAcc(g,x,y,DISCO_T[ap._discoK],d,t);
  }finally{g.restore();}
  if(ap._discoK&&DISCO_T[ap._discoK])try{discoPieds(g,x,y,DISCO_T[ap._discoK],t);}catch(z){}
- const mn=ap._main;if(mn){const hx=prof?sx*4.4:(dos?7.4:-7.4),hy=-20;
+ const mn=ap._main;if(mn){const hx=prof?sx*4.4:(dos?7.4:-7.4),hy=-20-(DESIGN.jambe+DESIGN.buste-DESIGN.bras)/2;   /* la main monte avec le gabarit */
   if(mn==='main_sucre'){for(let k=0;k<6;k++)R(hx-.7,hy-k*1.6,1.4,1.6,k%2?'#ffffff':'#d8262c');g.strokeStyle='#d8262c';g.lineWidth=1.4;g.beginPath();g.arc(x+hx+1.6,y+hy-9.6,1.6,Math.PI,0);g.stroke();R(hx+2.5,hy-9.6,1.4,2,'#ffffff');}
   else if(mn==='main_boule'){R(hx-2.4,hy,4.8,2,'#8a5a32');g.fillStyle='rgba(200,235,255,.75)';g.beginPath();g.arc(x+hx,y+hy-2.6,3.2,0,7);g.fill();g.fillStyle='#2e7a3a';g.beginPath();g.moveTo(x+hx,y+hy-5);g.lineTo(x+hx+1.6,y+hy-1.4);g.lineTo(x+hx-1.6,y+hy-1.4);g.fill();for(let k=0;k<3;k++){g.fillStyle='#fff';g.fillRect(x+hx-2+((t*2+k*.7)%1)*4,y+hy-5+((t*1.3+k*.4)%1)*4,.5,.5);}g.fillStyle='rgba(255,255,255,.7)';g.fillRect(x+hx-2,y+hy-4.4,.8,.8);}
   else if(mn==='main_renne'){R(hx-2,hy-3,4,4.4,'#a86a3a');R(hx-1.6,hy-6,3.2,3,'#a86a3a');R(hx-.5,hy-4.6,1,1,'#e8262c');R(hx-1.2,hy-5.6,.6,.6,'#1a1a1a');R(hx+.6,hy-5.6,.6,.6,'#1a1a1a');g.strokeStyle='#6a4024';g.lineWidth=.6;g.beginPath();g.moveTo(x+hx-1,y+hy-6);g.lineTo(x+hx-2.4,y+hy-8.6);g.moveTo(x+hx+1,y+hy-6);g.lineTo(x+hx+2.4,y+hy-8.6);g.stroke();}
@@ -15750,7 +15758,8 @@ const SH_DOS_H=[
 "osssssssso",
 "ogsgsgsgso",
 ".gggggggg."];
-const A2_JAMBE=33;   /* de la hanche à la cheville, comme le dessin : Y_PIED − Y_HANCHE */
+let PEINTURE_DECOR=false;
+let A2_JAMBE=Y_PIED-Y_HANCHE;   /* de la hanche à la cheville, comme le dessin : Y_PIED − Y_HANCHE */
 function poseA2(action,t){
  const K=A2[action];t=((t%1)+1)%1;
  const f=t*8, i=Math.floor(f)%8, k0=f-Math.floor(f), k=k0*k0*(3-2*k0);
@@ -15804,9 +15813,9 @@ const hautT=HAUTS[p.haut]||'veste', basT=BAS[p.bas]||'pantalon', soulier=SOULIER
    les gestes sont calés sur un crâne unique : plus de dessin qui va sur une
    morphologie et déborde sur une autre. Le classique garde les cinq. */
 const SILN='fine';
-const SIL=[12,10,12];   /* LES PROPORTIONS : épaules, taille, hanches — élargies d'une unité : sous une tête de cette taille, un buste de onze faisait un corps en fil de fer */
+const SIL=DESIGN.sil;   /* LES PROPORTIONS : épaules, taille, hanches — élargies d'une unité : sous une tête de cette taille, un buste de onze faisait un corps en fil de fer */
 
-const Y_EPAULE=-64, Y_COU=-68, Y_TETE=-91;       /* l'ancien -54 / -58 / -81, remonté de 10 */
+const dGab=DESIGN.jambe+DESIGN.buste;const Y_EPAULE=-64-dGab, Y_COU=-68-dGab, Y_TETE=-91-dGab;       /* l'ancien -54 / -58 / -81, remonté de 10 */
 const SX={bras:[4,3],jambe:7,cou:6,ventre:0,pec:0};
 const EP=SIL[0], TA=SIL[1], HA=SIL[2], N='#1b1712';
 const F=bouge?(Math.floor(pas*2)%PASM):-1, ph=bouge?F/PASM*Math.PI*2:0;
@@ -18166,7 +18175,7 @@ const mainS=(B,fonce,recule)=>{
  /* le pouce, du côté qui regarde devant */
  const px=cote?1:(B.S.x<0?1:-1);
  R(Math.round(C.x-uy*px*1.8-ux*.6),Math.round(C.y+ux*px*1.8-uy*.6),1,2,peau);};
-const os={cuisse:A2_JAMBE/2, tibia:A2_JAMBE/2, bras:10.5, avbras:9.5};
+const os={cuisse:A2_JAMBE/2, tibia:A2_JAMBE/2, bras:10.5+DESIGN.bras*0.55, avbras:9.5+DESIGN.bras*0.45};
 const jambe2=(cote2)=>{const q=PJ[cote2], sx=cote2==='D'?1:-1;
  const tw=A2P?A2P.tw:0;const hip=[sx*HA/2,yHan,sx*tw], ank=[sx*(A2P?HA/2-1.2:HA/2),-3-q.l,q.z];
  let dx=ank[0]-hip[0], dy=ank[1]-hip[1], dz=ank[2]-hip[2];let dist=Math.hypot(dx,dy,dz);
@@ -18198,14 +18207,14 @@ const dessinerJambe=(J,fonce)=>{
  const special=p.patin||(p._pieds&&p._pieds.st);
  /* la chaussure d'abord : le bas du pantalon vient tomber dessus */
  if(!special)chaussure2(J);
- peindre(J.H,J.K,9.6,7.8,haut,null);
+ const mb=DESIGN.membres;peindre(J.H,J.K,9.6*mb,7.8*mb,haut,null);
  const bandes=(p._docker&&!court)?(t=>(t>.30&&t<.40)||(t>.62&&t<.72)):null;
  /* l'ourlet s'arrête au-dessus de la cheville : il recouvre le haut de la
     chaussure sans l'avaler. Plus haut sur une botte, qui monte. */
  const ourlet=special?0:((soulier==='bottes'||soulier==='bottillons')?(cote?5.2:6.6):(cote?4.2:5.8));   /* l'ourlet au-dessus de la cheville : on voit le lacet */
  const kx=J.K.x-J.A.x, ky=J.K.y-J.A.y, kl=Math.hypot(kx,ky)||1;
  const fin={x:J.A.x+kx/kl*ourlet,y:J.A.y+ky/kl*ourlet};
- peindre(J.K,fin,7.6,court?5.4:6.4,bas,bandes);
+ peindre(J.K,fin,7.6*mb,(court?5.4:6.4)*mb,bas,bandes);
  if(court)peindre(J.H,{x:J.H.x+(J.K.x-J.H.x)*.55,y:J.H.y+(J.K.y-J.H.y)*.55},10.2,9,pant,null);   /* le short */
  if(special)soulierDe(Math.round(J.A.x),Math.round(J.A.y)+3,fonce,(cote||diag)?pp:null);};
 /* ================= LA CHAUSSURE 2 =================
@@ -18271,9 +18280,9 @@ const chaussure2=(J)=>{
 const dessinerBras=(B,fonce)=>{
  const sl=manches>0?vest:peau, sl2=manches>=1?vest:peau;
  ovale({x:B.S.x,y:B.S.y-0.5},3.6,3.2,manches>0?vest:peau,0);                   /* l'épaule : un deltoïde rond, qui suit le bras */
- peindre(B.S,B.E,6.2,5.4,sl,null);
+ peindre(B.S,B.E,6.2*DESIGN.membres,5.4*DESIGN.membres,sl,null);
  if(manches>0&&manches<1&&manches>=0.5)peindre(B.S,{x:B.S.x+(B.E.x-B.S.x)*.92,y:B.S.y+(B.E.y-B.S.y)*.92},5.8,5.4,vest,null);
- peindre(B.E,B.W,5.4,4.6,sl2,null);
+ peindre(B.E,B.W,5.4*DESIGN.membres,4.6*DESIGN.membres,sl2,null);
  mainS(B,fonce,B.recule);};
 const jambes=[jambe2('D'),jambe2('G')].sort((a,b)=>a.d-b.d);
 /* LE BASSIN EN VOLUME : un ovale entre les deux hanches, qui tourne avec
@@ -18495,6 +18504,19 @@ const g=c.getContext('2d',{willReadFrequently:true});g.imageSmoothingEnabled=fal
 spriteFin(g,CASE_L/2,CASE_H-10,ap,dir,pas,bouge);
 g.setTransform(1,0,0,1,0,0);
 const im=g.getImageData(0,0,L,H), d=im.data, plein=new Uint8Array(L*H);
+/* ================= LA PEINTURE DU DÉCOR =================
+   Le personnage était peint plus vif et plus froid que la place : des
+   couleurs pleines, un contour seulement côté ombre. Le décor, lui, a des
+   teintes chaudes un peu passées et un cerne sombre et doux tout autour
+   (les pigeons, les bancs). On rapproche le personnage de cette peinture
+   sans toucher au dessin : un rien de saturation en moins, une lumière
+   plus chaude, et un cerne complet. */
+if(PEINTURE_DECOR){for(let i=0;i<L*H;i++){if(d[i*4+3]<=200)continue;
+ const r=d[i*4],gg=d[i*4+1],b=d[i*4+2],l=r*.3+gg*.59+b*.11;
+ const k=0.80;let R2=l+(r-l)*k,G2=l+(gg-l)*k,B2=l+(b-l)*k;
+ R2=R2*1.04+6;G2=G2*1.0+3;B2=B2*0.90;
+ d[i*4]=Math.max(0,Math.min(255,R2));d[i*4+1]=Math.max(0,Math.min(255,G2));d[i*4+2]=Math.max(0,Math.min(255,B2));}
+ g.putImageData(im,0,0);}
 for(let i=0;i<L*H;i++)plein[i]=d[i*4+3]>200?1:0;
 const sortie=g.createImageData(L,H), o=sortie.data;
 /* ================= LE CONTOUR SÉLECTIF =================
@@ -18526,14 +18548,16 @@ const ombre=b1||g1;                 /* (le voisin plein est en bas ou à gauche
                                        veut dire qu'on borde son flanc droit) */
 const sombre=lum(v)<86;             /* un bord déjà sombre a besoin d'aide */
 let a;
-if(ombre)a=228;                     /* le contour franc */
+if(PEINTURE_DECOR)a=ombre?235:190;  /* le cerne du décor : partout, plus léger côté lumière */
+else if(ombre)a=228;                /* le contour franc */
 else if(sombre)a=150;               /* le contour discret, pour décoller du fond */
 else continue;                      /* la lumière mange le bord : rien du tout */
 /* le coin inférieur droit, là où deux ombres se rejoignent : un peu plus dense */
 if(b1&&g1)a=Math.min(242,a+14);
-o[i*4]=Math.round(d[v*4]*0.30);
+if(PEINTURE_DECOR){o[i*4]=Math.round(d[v*4]*0.28+30);o[i*4+1]=Math.round(d[v*4+1]*0.26+22);o[i*4+2]=Math.round(d[v*4+2]*0.26+30);}   /* un brun-prune sombre, comme le cerne des pigeons */
+else{o[i*4]=Math.round(d[v*4]*0.30);
 o[i*4+1]=Math.round(d[v*4+1]*0.30);
-o[i*4+2]=Math.round(d[v*4+2]*0.32);
+o[i*4+2]=Math.round(d[v*4+2]*0.32);}
 o[i*4+3]=a;}
 const tmp=document.createElement('canvas');tmp.width=L;tmp.height=H;tmp.getContext('2d',{willReadFrequently:true}).putImageData(sortie,0,0);
 g.drawImage(tmp,0,0);
