@@ -15682,6 +15682,57 @@ function sombrir(c,k){const cle=k+c;let r=SOMBRE_CACHE.get(cle);if(r)return r;
  rr=(l+(rr-l)*sat)*f;gg=(l+(gg-l)*sat)*f;bb=(l+(bb-l)*sat)*f;
  r='#'+[rr,gg,bb].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
  SOMBRE_CACHE.set(cle,r);return r;}
+/* LES MODÈLES DE CHAUSSURE (voir LA CHAUSSURE, DESSINÉE À LA MAIN) */
+const SH_PROFIL=[
+"...ooooo....",
+"..olbbbdo...",
+".olbbkkbboo.",
+"olhbbbbbbbdo",
+"olbbbbbbbbdo",
+"osssssssssso",
+".SSSSSSSSSS."];
+const SH_PROFIL_H=[
+"..oooooo....",
+"..olbbbo....",
+"..olbbdo....",
+".olbbbbdoo..",
+"olhbbbbbbboo",
+"olbbbbbbbbdo",
+"odbbbbbbbbdo",
+"osssssssssso",
+".SSSSSSSSSS."];
+const SH_FACE=[
+"..oooooo..",
+".olbkkbdo.",
+"olhbbbbddo",
+"olbbbbbbdo",
+"osssssssso",
+".SSSSSSSS."];
+const SH_FACE_H=[
+"..oooooo..",
+"..olbbdo..",
+"..olbbdo..",
+".olbbbbdo.",
+"olhbbbbddo",
+"olbbbbbbdo",
+"osssssssso",
+".SSSSSSSS."];
+const SH_DOS=[
+"..oooooo..",
+".olbbbbdo.",
+"olbbbbbbdo",
+"olbdbbddoo",
+"osssssssso",
+".SSSSSSSS."];
+const SH_DOS_H=[
+"..oooooo..",
+"..olbbdo..",
+"..olbbdo..",
+".olbbbbdo.",
+"olbbbbbbdo",
+"olbdbbddoo",
+"osssssssso",
+".SSSSSSSS."];
 const A2_JAMBE=33;   /* de la hanche à la cheville, comme le dessin : Y_PIED − Y_HANCHE */
 function poseA2(action,t){
  const K=A2[action];t=((t%1)+1)%1;
@@ -18120,13 +18171,20 @@ const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
  return {S:P.S,E:P.E,W:P.W,M:P.M,cote2,d:pj(el).d,recule:q.s<-6};};
 const dessinerJambe=(J,fonce)=>{
  const haut=pant, bas=court?peau:pant;
+ const pp={pointe:J.q.po,talon:J.q.ta};
+ const special=p.patin||(p._pieds&&p._pieds.st);
+ /* la chaussure d'abord : le bas du pantalon vient tomber dessus */
+ if(!special)chaussure2(J);
  peindre(J.H,J.K,8,6.6,haut,null);
  const bandes=(p._docker&&!court)?(t=>(t>.30&&t<.40)||(t>.62&&t<.72)):null;
- peindre(J.K,J.A,6.4,4.6,bas,bandes);
+ /* l'ourlet s'arrête au-dessus de la cheville : il recouvre le haut de la
+    chaussure sans l'avaler. Plus haut sur une botte, qui monte. */
+ const ourlet=special?0:((soulier==='bottes'||soulier==='bottillons')?(cote?4.6:5.4):(cote?3.4:4.2));
+ const kx=J.K.x-J.A.x, ky=J.K.y-J.A.y, kl=Math.hypot(kx,ky)||1;
+ const fin={x:J.A.x+kx/kl*ourlet,y:J.A.y+ky/kl*ourlet};
+ peindre(J.K,fin,6.4,court?4.2:5.4,bas,bandes);
  if(court)peindre(J.H,{x:J.H.x+(J.K.x-J.H.x)*.55,y:J.H.y+(J.K.y-J.H.y)*.55},8.6,7.4,pant,null);   /* le short */
- const pp={pointe:J.q.po,talon:J.q.ta};
- if(p.patin||(p._pieds&&p._pieds.st))soulierDe(Math.round(J.A.x),Math.round(J.A.y)+3,fonce,(cote||diag)?pp:null);
- else chaussure2(J);};
+ if(special)soulierDe(Math.round(J.A.x),Math.round(J.A.y)+3,fonce,(cote||diag)?pp:null);};
 /* ================= LA CHAUSSURE 2 =================
    Un pied, c'est un volume qui a une longueur : talon, cou-de-pied,
    pointe. L'ancien soulier était un bloc posé sous la cheville, le même
@@ -18139,38 +18197,44 @@ const dessinerJambe=(J,fonce)=>{
    Le patin, la moon boot, l'après-ski et la chaussure de ski gardent
    leur dessin à eux. */
 const chaussure2=(J)=>{
- const A=J.A3, q=J.q, pitch=(q.ta*0.42-q.po*0.75);
- const fy=-Math.sin(pitch), fz=Math.cos(pitch);              /* l'avant du pied */
- const sx=J.cote2==='D'?1:-1;
- const P=(av,haut,lat)=>pj([A[0]+(lat||0), A[1]+fy*av+2.2-haut, A[2]+fz*av],cote?PZ:0.3);
- const basket=soulier==='baskets', sandale=soulier==='sandales', haute=soulier==='bottes'||soulier==='bottillons';
- const semelle=basket?(p._snkS||'#f2efe4'):(sandale?'#7a5638':T(chau,-46));
- const corps=sandale?peau:chau;
- /* UN PIED EST PLUS LARGE QUE HAUT. Les volumes ronds le dessinaient en
-    tube vu de face ; on pose donc la pointe et le talon en TRAVERS, d'un
-    bord du pied à l'autre : de face ils font une chaussure large et
-    basse, de profil ils se réduisent à deux arrondis aux deux bouts. */
- if(!cote&&!diag){
-  /* DE FACE ET DE DOS, le pied se voit par le bout (ou par le talon) :
-     un ovale large et bas, la semelle en liseré dessous, le dessus éclairé.
-     La pointe qui vient vers nous descend et s'élargit d'un rien. */
-  const v=dos?-1:1, C=P(dos?-0.6:3.2,0.9), av=Math.max(0,Math.min(1,(A[2]*v)/9));
-  ovale({x:C.x,y:C.y+1.6},4.2+av*0.4,1.6,semelle,0);
-  ovale({x:C.x,y:C.y+0.2},3.8+av*0.4,2.5,corps,0);
-  if(haute)ovale({x:C.x,y:C.y-1.6},3.0,2.0,corps,0);
-  ovale({x:C.x-0.4,y:C.y-0.5},2.2,1.0,T(corps,16),0);
-  if(basket&&!dos)R(Math.round(C.x),Math.round(C.y)-1,1,1,'#f2efe4');
-  if(sandale)R(Math.round(C.x)-2,Math.round(C.y)-1,4,1,'#6b4a30');
-  return;}
- peindre(P(-1.6,-0.7),P(5.4,-0.7),3.2,3.0,semelle,null);                    /* la semelle, au ras du sol */
- peindre(P(-0.9,0.7,-1.3),P(-0.9,0.7,1.3),3.6,3.6,corps,null);              /* le talon */
- peindre(P(4.0,0.5,-1.7),P(4.0,0.5,1.7),3.6,3.6,corps,null);                /* la pointe, la boîte à orteils */
- peindre(P(-0.9,0.7),P(4.0,0.5),3.8,3.6,corps,null);                        /* le corps de la chaussure */
- peindre(P(0.4,haute?2.4:1.3),P(2.4,0.9),3.8,3.4,corps,null);               /* le cou-de-pied, plus haut pour une botte */
- {const t=P(3.0,1.3);ovale({x:t.x,y:t.y},1.8,0.9,T(corps,14),0);}            /* le dessus du pied prend la lumière */
- if(sandale){const b=P(2.2,1.2);R(Math.round(b.x)-2,Math.round(b.y),4,1,'#6b4a30');}   /* la bride */
- else if(basket){const b=P(1.8,1.6);R(Math.round(b.x),Math.round(b.y),1,1,'#f2efe4');}    /* le lacet */
- else{const b=P(4.6,1.0);R(Math.round(b.x)-1,Math.round(b.y),2,1,T(chau,24));}            /* le reflet de la pointe */
+/* ================= LA CHAUSSURE, DESSINÉE À LA MAIN =================
+   Les volumes calculés donnaient des galets. Une chaussure de trois
+   pixels de haut se dessine pixel par pixel, comme le reste du pixel art :
+   un modèle par vue — de profil, de face (par la pointe), de dos (par le
+   talon) —, avec son liseré, sa lumière en haut à gauche, sa semelle et
+   son ombre portée. Le squelette ne fait que le POSER : il le place sous
+   la cheville, le fait basculer autour du talon quand la pointe se lève,
+   autour de la pointe quand le talon pousse, et le raccourcit en biais.
+   o liseré · d ombre · b teinte · l lumière · h reflet · k lacet/bride
+   s semelle · S dessous de la semelle */
+ const q=J.q, A=J.A, haute=soulier==='bottes'||soulier==='bottillons', basket=soulier==='baskets', sandale=soulier==='sandales';
+ const M=cote||diag?(haute?SH_PROFIL_H:SH_PROFIL):(dos?(haute?SH_DOS_H:SH_DOS):(haute?SH_FACE_H:SH_FACE));
+ const base=sandale?peau:chau;
+ const semelle=basket?(p._snkS||'#f2efe4'):(sandale?'#7a5638':T(chau,-42));
+ const PAL={o:T(base,-58),d:T(base,-22),b:base,l:T(base,18),h:T(base,42),
+  k:sandale?'#6b4a30':(basket?'#f2efe4':T(base,-34)),s:semelle,S:T(semelle,-34)};
+ const H=M.length, W=M[0].length;
+ const sol=Math.round(A.y+3+(!cote&&!diag&&!dos?1.5:0));   /* le dessous de la semelle ; de face, la pointe vient vers nous, donc plus bas */
+ let ax, piv, ang=0;
+ if(cote||diag){
+  ax=Math.round(A.x)-4;                                 /* la cheville tombe sur la 5e colonne */
+  if(q.ta>0.05){ang=q.ta*0.24;piv=[1,H-1];}             /* la pointe se lève : on pivote sur le talon */
+  else if(q.po>0.05){ang=-q.po*0.42;piv=[W-2,H-1];}     /* le talon décolle : on pivote sur la pointe */
+  else piv=[0,H-1];
+ }else{ax=Math.round(A.x)-Math.floor(W/2);piv=[0,H-1];}
+ const mir=diag&&tourne<0, kx=diag?0.78:1, pente=diag?(dos?-0.22:0.22):0;
+ const co=Math.cos(ang), si=Math.sin(ang);
+ const px0=ax+(mir?W-1-piv[0]:piv[0]), py0=sol-1;
+ const Rm=Math.max(W,H)+2;
+ for(let ty=-Rm;ty<=Rm;ty++)for(let tx=-Rm;tx<=Rm;tx++){
+  /* on remonte du pixel d'écran au pixel du modèle : jamais de trou */
+  const X=tx/kx, Y=ty-pente*X*(mir?-1:1);
+  let dx=X*co-Y*si, dy=X*si+Y*co;
+  if(mir)dx=-dx;
+  const mx=Math.round(piv[0]+dx), my=Math.round(piv[1]+dy);
+  if(mx<0||my<0||mx>=W||my>=H)continue;
+  const c=M[my][mx];if(c==='.')continue;
+  R(px0+tx,py0+ty,1,1,PAL[c]);}
 };
 const dessinerBras=(B,fonce)=>{
  const sl=manches>0?vest:peau, sl2=manches>=1?vest:peau;
