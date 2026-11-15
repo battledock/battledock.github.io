@@ -15598,12 +15598,12 @@ marche:{
 hanche:[[0,25],[.10,23],[.30,5],[.50,-15],[.62,-7],[.76,17],[.88,28],[1,25]],
 genou :[[0,4],[.12,17],[.38,4],[.56,32],[.71,62],[.84,40],[.96,5],[1,4]],
 chev  :[[0,4],[.07,-6],[.40,10],[.58,-20],[.68,-6],[.86,3],[1,4]],
-bras:30, coude:[12,26], vol:0},
+bras:22, brasArr:32, coude:[4,26], vol:0},
 course:{
 hanche:[[0,32],[.17,8],[.36,-20],[.48,-12],[.65,30],[.82,50],[1,32]],
 genou :[[0,22],[.13,42],[.34,18],[.52,88],[.67,118],[.83,72],[.95,30],[1,22]],
 chev  :[[0,8],[.12,18],[.34,-30],[.50,-14],[.80,6],[1,8]],
-bras:42, coude:[82,22], vol:2.6}};
+bras:40, brasArr:58, coude:[52,52], vol:2.6}};
 /* la courbe se lit en Catmull-Rom, bouclée : pas d'angle aux poses clés */
 function sqLire(K,t){t=((t%1)+1)%1;const n=K.length-1;let i=0;while(i<n-1&&t>K[i+1][0])i++;
 const a=K[i],b=K[i+1],u=(t-a[0])/Math.max(1e-6,b[0]-a[0]);
@@ -15630,7 +15630,7 @@ return {x:j.u, lift, pointe:lift<0.05&&pointe<0.25?0:pointe, talon:lift>0.6?0:ta
 const hm=(M.hanche.reduce((a,b)=>Math.max(a,b[1]),-99)+M.hanche.reduce((a,b)=>Math.min(a,b[1]),99))/2,
       ha=(M.hanche.reduce((a,b)=>Math.max(a,b[1]),-99)-M.hanche.reduce((a,b)=>Math.min(a,b[1]),99))/2;
 /* le bras : à l'opposé de la hanche de son côté, avec un vingtième de retard */
-const bras=(f)=>{const n=-(sqLire(M.hanche,f-0.05)-hm)/ha;return {n, a:n*M.bras, coude:M.coude[0]+M.coude[1]*Math.max(0,n)};};
+const bras=(f)=>{const n=-(sqLire(M.hanche,f-0.05)-hm)/ha;return {n, a:n*(n<0&&M.brasArr?M.brasArr:M.bras), coude:M.coude[0]+M.coude[1]*(n+1)/2};};   /* coude ouvert quand le bras recule, fermé quand il revient devant */
 r={G:pied(jG),D:pied(jD),bob,brasG:bras(phi),brasD:bras(phi+0.5)};
 SQ_CACHE.set(k,r);return r;}
 function spriteFin(g,x,y,ap0,dir,pas,bouge){
@@ -16162,9 +16162,16 @@ const hkF=Math.sqrt(Math.max(0,Lf*Lf-(dF/2)*(dF/2)));
 let nuF=-dhF/nlF, nhF=duF/nlF; if(nuF<0){nuF=-nuF;nhF=-nhF;}
 const kuF=duF/2+nuF*hkF, khF=y0+dhF/2+nhF*hkF;
 const kneeY=khF+kuF*PZf*syF+(Y_GENOU_F-(Y_HANCHE+Lf)), ankleY=fhF+fuF*PZf*syF;
-const lev=Math.max(0,Math.round(-3-ankleY)), yGen=Math.round(kneeY), yChev=Math.round(ankleY-2), yPied=Math.round(ankleY+3);
+const lev=Math.max(0,Math.round(-3-ankleY)), yGen=Math.round(kneeY), yPied=Math.round(ankleY+3);let yChev=Math.round(ankleY-2);
 const col=(r)=>r<yGen?c:(court?sk:c), colO=(r)=>r<yGen?cO:(court?skO:cO), colC=(r)=>r<yGen?cc:(court?skC:cc);
 const J=SX.jambe;
+/* LE TALON QUI REMONTE PASSE DERRIÈRE LA JAMBE. De face, quand le pied
+   part en arrière vers les fesses, c'est la cuisse qui le cache : on ne
+   voit qu'un bout de semelle dépasser. On peignait le soulier par-dessus
+   la jambe, flottant à hauteur du genou. De dos, au contraire, c'est la
+   semelle qu'on voit venir vers soi : là, il reste devant. */
+const piedCache=!dos&&fuF<-3&&leve>0.6;
+if(piedCache&&yChev<yGen+4)yChev=yGen+4;   /* le tibia part derrière : on voit la cuisse jusqu'au genou, et c'est tout */
 /* LE GENOU PLIE, DE FACE AUSSI. La jambe levée n'était qu'une colonne
    raccourcie : elle montait d'un bloc. Le genou part maintenant vers
    l'extérieur et le pied revient sous le corps — la jambe dessine un
@@ -16193,9 +16200,9 @@ else R(cx-2+decK(yGen),yGen,4,1,court?skO:cO);                                  
 if(court)R(cx-4,yGen-3,8,1,cO);                                                   /* le bas du short */
 if(!court&&basT==='treillis'){R(cx-3,-18,3,4,cO);R(cx-3,-18,3,1,cc);}             /* la poche du treillis */
 if(!court&&!jupe)R(cx+(cx<0?2:-3),yChev-2,2,1,cO);                                /* le pli du bas de pantalon */
-if(p._docker&&!court&&!jupe){for(const t of [0.3,0.68]){const yb=Math.round(yGen+(yChev-yGen)*t), xb=cx-Math.floor(J/2)+decK(yb);
+if(p._docker&&!court&&!jupe&&!piedCache){for(const t of [0.3,0.68]){const yb=Math.round(yGen+(yChev-yGen)*t), xb=cx-Math.floor(J/2)+decK(yb);
   R(xb,yb,J,2,'#e9eef2');R(xb,yb,J,1,'#ffffff');R(xb+J-1,yb,1,2,'#aab4bd');}}   /* les bandes réfléchissantes */
-soulierDe(cx,yPied,fonce);
+if(!piedCache)soulierDe(cx,yPied,fonce);
 };
 function soulierDe(cx,by,fonce,pp){
 if(p.patin){const b='#f4f1ea', bO='#c8c2b4', lame='#c4ccd2';                /* LE PATIN : bottine blanche lacée, lame d'acier */
@@ -16547,7 +16554,13 @@ return;
    conducteur avait l'air de descendre un escalier derriere sa machine.
    Les chiffres sont en demi-pixels, comme tout l'interieur du sprite. */
 const bx=cote2*(EP+Math.ceil(SX.bras[0]/2)+1+(PEDALE?2:0)+(TROT?5:0))+vrille,
-      dy=(PEDALE||TROT)?0:Math.round(balance>0?balance*(COURSE?8:6):balance*(COURSE?5:3)),   /* devant, la main descend vers nous ; derrière, elle remonte à peine */
+      dy=(PEDALE||TROT)?0:Math.round(COURSE?(balance>0?-balance*6:-balance*2):(balance>0?balance*4:balance*2)),
+/* EN COURSE, LE BRAS QUI VIENT DEVANT MONTE. Le coude est plié à angle
+   droit : quand l'épaule part en avant, l'avant-bras pointe vers nous et
+   la main remonte vers la poitrine. On la faisait descendre, comme en
+   marche — le coureur pompait à l'envers. Derrière, le coude recule et la
+   main retombe sur la hanche. En marche, le bras reste presque tendu : la
+   main ne fait que descendre un peu vers nous en avançant. */
       hCoude=TROT?8:(PEDALE?10:(COURSE?9:11)),
       hPoignet=TROT?TROT_MAIN:(PEDALE?21:(COURSE?14:19)),
       yC=yEp+hCoude+Math.round(dy/2), yM=yEp+hPoignet+dy;
@@ -16558,7 +16571,7 @@ const lb=SX.bras[0]+1;R(bx-Math.floor(lb/2),yEp,lb,3,manches>0?c:sk);R(bx-2,yEp-
    restaient collés au corps et le balancement ne se lisait pas. Elle
    glisse maintenant aussi vers l'axe du corps quand le bras part en
    avant, et vers l'extérieur quand il part en arrière. */
-const dxS=TROT?cote2*4:(PEDALE?cote2*3:(diag?Math.round(balance*5*tourne*(dos?-1:1)):-cote2*Math.round(balance>0?balance*3:-balance*1)));
+const dxS=TROT?cote2*4:(PEDALE?cote2*3:(diag?Math.round(balance*5*tourne*(dos?-1:1)):-cote2*Math.round(balance>0?balance*(COURSE?4:3):-balance*1)));
 /* LE BRAS NE S'ÉCARTE PLUS EN ARRIÈRE. Le balancement était symétrique :
    devant la main rentrait vers l'axe, derrière elle partait autant vers
    l'extérieur — le bras faisait une aile, cassé au coude. Un bras qui
@@ -17921,6 +17934,16 @@ if(snow){R(xs,yTete-12,6,62,c);R(xs,yTete-12,1,62,T(c,26));R(xs+5,yTete-12,1,62,
 else{[0,3].forEach(o=>{R(xs+o,yTete-14,2,64,c);R(xs+o,yTete-14,1,64,T(c,26));R(xs+o-1,yTete-16,2,2,c);R(xs+o,yEp+6,2,5,c2);});}
 };
 const lean=frG>0?Math.round(pencheG*1.3):(PEDALE&&cote?9:(COURSE&&cote?4:(bouge&&cote?1:0)));   /* (en course : deux pixels, le corps part devant ses pieds) le buste se penche vers ce qu'on frappe, en avant quand on court, et sur le guidon à vélo */
+/* ================= LE MEMBRE DU FOND =================
+   De profil, le bras et la jambe du fond étaient peints presque comme
+   ceux de devant — et en tenue de docker exactement pareil : mêmes
+   bandes blanches, même bleu. L'œil ne pouvait pas les distinguer. Or
+   quand le bras du fond passe devant la poitrine pendant que celui de
+   devant recule, on croyait voir UN seul bras partir en avant deux fois
+   par foulée : le balancement semblait battre au double du pas.
+   Un humain vu de côté, c'est un bras clair et un bras dans l'ombre. On
+   assombrit donc tout ce que le membre du fond peint, bandes comprises. */
+const auFond=(f)=>{const ok=typeof g.filter==='string';const av=ok?g.filter:'';if(ok)g.filter=cote?'brightness(0.68) saturate(0.85)':'brightness(0.84) saturate(0.92)';try{f();}finally{if(ok)g.filter=av||'none';}};
 const penche=(f)=>{if(!lean)return f();g.save();g.translate(s*lean*u,0);f();g.restore();};
 if(!dos&&!cote)skisDe();                                                        /* de face, les skis passent derrière le corps */
 if(cote){
@@ -17936,9 +17959,9 @@ if(cote){
 
    Vérifié en débardeur, où les deux bras se voient : avant, un bras ;
    après, deux bras qui se croisent. */
-if(DZ_POSE)penche(()=>brasDZ(0,DZ_POSE.aG,true));else if(frG>0)penche(()=>brasGeste(true,true));else penche(()=>bras(0,-avD,true));     /* à l'opposé de SA jambe, voir LES DEUX BRAS */
+if(DZ_POSE)penche(()=>brasDZ(0,DZ_POSE.aG,true));else if(frG>0)penche(()=>brasGeste(true,true));else penche(()=>auFond(()=>bras(0,-avD,true)));     /* à l'opposé de SA jambe, voir LES DEUX BRAS */
 penche(()=>sac(false));
-jambe(0,avD,lvD,true);
+auFond(()=>jambe(0,avD,lvD,true));
 penche(()=>torse());
 jambe(0,avG,lvG,false);
 penche(()=>{cheveuxDerriere();tete();echarpeDe();barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();chapeauDe();masqueDe();});
@@ -18046,8 +18069,8 @@ soulierDe(Math.round(fX),Math.round(fY)+3,fonce,pp);};
    à l'écran. Le signe sort de la projection elle-même, on ne le devine
    plus. */
 const loinEstD=sx>0;
-if(loinEstD){jd(1,pD,true);jd(-1,pG,false);}
-else{jd(-1,pG,true);jd(1,pD,false);}
+if(loinEstD){auFond(()=>jd(1,pD,true));jd(-1,pG,false);}
+else{auFond(()=>jd(-1,pG,true));jd(1,pD,false);}
 }else{
 /* DE TROIS QUARTS, l'écart entre les jambes se réduit et l'ensemble
    glisse dans le sens du pivot. */
@@ -18071,7 +18094,7 @@ const avanceD=diag&&bouge?tourne*(COURSE?2:1):0;              /* de trois-quarts
    se penchait du côté où il n'y avait plus personne. */
 const swayX=balance+avanceD-(rpA?rpA.sway[rpF]:0)+trVire, swayY=diag&&COURSE?1:0;
 if(swayX||swayY){g.save();g.translate(swayX*u,swayY*u);}           /* le poids passe d'un pied sur l'autre */
-if(diag){const loin=vis;bras(loin,loin>0?(dos?hancheB:-hancheB):(dos?-hancheB:hancheB),true);}
+if(diag){const loin=vis;auFond(()=>bras(loin,loin>0?(dos?hancheB:-hancheB):(dos?-hancheB:hancheB),true));}
 torse();
 if(diag){const loin=vis, pres=-vis;
 bras(pres,loin>0?(dos?-hancheB:hancheB):(dos?hancheB:-hancheB),false);}
