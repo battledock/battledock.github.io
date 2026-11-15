@@ -15633,6 +15633,60 @@ const hm=(M.hanche.reduce((a,b)=>Math.max(a,b[1]),-99)+M.hanche.reduce((a,b)=>Ma
 const bras=(f)=>{const n=-(sqLire(M.hanche,f-0.05)-hm)/ha;return {n, a:n*(n<0&&M.brasArr?M.brasArr:M.bras), coude:M.coude[0]+M.coude[1]*(n+1)/2};};   /* coude ouvert quand le bras recule, fermé quand il revient devant */
 r={G:pied(jG),D:pied(jD),bob,brasG:bras(phi),brasD:bras(phi+0.5)};
 SQ_CACHE.set(k,r);return r;}
+/* ======================================================================
+   L'ANIMATION 2 — DES POSES, PAS DES FORMULES
+   ----------------------------------------------------------------------
+   Tout ce qui précède calculait la marche : des courbes de laboratoire,
+   des tables de rebond, puis une logique différente pour chaque vue. Le
+   résultat était mou, et chaque correction en cassait une autre.
+
+   Ici, on fait comme un animateur. La foulée tient en QUATRE POSES CLÉS
+   par pas — le contact, l'amorti, le passage, l'envol — posées à la main,
+   un peu appuyées pour se lire à quarante-cinq pixels. Le second pas est
+   le premier, gauche et droite échangés. Entre deux clés on glisse en
+   douceur.
+
+   Une pose ne dit que des choses simples, communes à toutes les vues :
+     — pour chaque jambe : z (le pied devant + / derrière −), l (la levée),
+       ta (la pointe relevée au contact), po (le talon décollé qui pousse) ;
+     — pour chaque bras : s (l'épaule, en degrés, devant +), e (le coude) ;
+     — pour le corps : bob (il descend +), sw (il passe au-dessus du pied).
+   La hauteur du bassin se déduit en plus des jambes au sol : une jambe
+   tendue en compas abaisse la hanche. Les os ont une longueur FIXE — une
+   jambe ne s'étire jamais, un bras ne s'amincit jamais.
+
+   Le dessin (plus bas, dans spriteFin : LES MEMBRES 2) projette cette
+   pose sur la vue demandée par UNE seule règle, la même pour les huit
+   directions. Plus de cas particuliers par vue.
+   ====================================================================== */
+const A2={
+marche:[
+ {bob:0,  sw:0,  D:{z:9, l:0,  ta:1, po:0}, G:{z:-9,l:0,  ta:0, po:1},  bD:{s:-17,e:10}, bG:{s:19,e:26}},   // le contact
+ {bob:1.6,sw:.8, D:{z:5, l:0,  ta:0, po:0}, G:{z:-7,l:3,  ta:0, po:.7}, bD:{s:-11,e:10}, bG:{s:12,e:20}},   // l'amorti
+ {bob:.2, sw:1.4,D:{z:0, l:0,  ta:0, po:0}, G:{z:0, l:5.5,ta:0, po:0},  bD:{s:0,  e:12}, bG:{s:0, e:14}},   // le passage
+ {bob:-1.4,sw:.7,D:{z:-5,l:0,  ta:0, po:.6},G:{z:7, l:2.5,ta:.4,po:0},  bD:{s:11, e:18}, bG:{s:-11,e:10}}], // l'envol
+course:[
+ {bob:0,  sw:0,  D:{z:8, l:0,  ta:.5,po:0}, G:{z:-5,l:9,  ta:0, po:.3}, bD:{s:-36,e:84}, bG:{s:30,e:96}},
+ {bob:2.6,sw:.8, D:{z:2, l:0,  ta:0, po:0}, G:{z:-1,l:14, ta:0, po:0},  bD:{s:-16,e:84}, bG:{s:14,e:92}},
+ {bob:0,  sw:.5, D:{z:-7,l:0,  ta:0, po:1}, G:{z:9, l:8,  ta:0, po:0},  bD:{s:16, e:92}, bG:{s:-24,e:84}},
+ {bob:-3, sw:0,  D:{z:-10,l:5, ta:0, po:.6},G:{z:11,l:3,  ta:.5,po:0},  bD:{s:32, e:96}, bG:{s:-38,e:84}}]};
+/* L'ESSAI : la nouvelle animation ne s'allume que pour qui le demande
+   (?anim2=1 dans l'adresse, retenu sur l'appareil ; ?anim2=0 l'éteint).
+   Les autres joueurs gardent l'ancienne tant qu'elle n'est pas validée. */
+const ANIM2_ON=(()=>{try{const q=new URLSearchParams(location.search);if(q.has('anim2'))localStorage.setItem('bd_anim2',q.get('anim2')==='0'?'0':'1');return localStorage.getItem('bd_anim2')==='1';}catch(x){return false;}})();
+const A2_JAMBE=33;   /* de la hanche à la cheville, comme le dessin : Y_PIED − Y_HANCHE */
+function poseA2(action,t){
+ const K=A2[action];t=((t%1)+1)%1;
+ const f=t*8, i=Math.floor(f)%8, k0=f-Math.floor(f), k=k0*k0*(3-2*k0);
+ const cle=(n)=>{const c=K[n%4];if(n%8<4)return c;
+  return {bob:c.bob,sw:-c.sw,D:c.G,G:c.D,bD:c.bG,bG:c.bD};};
+ const a=cle(i), b=cle(i+1), m=(x,y)=>x+(y-x)*k;
+ const j=(p,q)=>({z:m(p.z,q.z),l:m(p.l,q.l),ta:m(p.ta,q.ta),po:m(p.po,q.po)});
+ const r={bob:m(a.bob,b.bob),sw:m(a.sw,b.sw),D:j(a.D,b.D),G:j(a.G,b.G),
+  bD:{s:m(a.bD.s,b.bD.s),e:m(a.bD.e,b.bD.e)},bG:{s:m(a.bG.s,b.bG.s),e:m(a.bG.e,b.bG.e)}};
+ /* le bassin descend pour que la jambe au sol l'atteigne sans s'étirer */
+ let auto=0;for(const q of [r.D,r.G])if(q.l<0.6)auto=Math.max(auto,A2_JAMBE-Math.sqrt(Math.max(0,A2_JAMBE*A2_JAMBE-q.z*q.z)));
+ r.bob+=auto;return r;}
 function spriteFin(g,x,y,ap0,dir,pas,bouge){
 const p=Object.assign({},DEF_AP,ap0||{}), P=PALETTES;
 appliquerDeguisement(p);
@@ -15768,6 +15822,7 @@ return lireFoulee(COURSE?FOULEE.course:FOULEE.marche,phi);};
 /* LE SQUELETTE fournit les deux pieds ; l'avance repasse dans l'unité du dessin */
 const SQM=(bouge&&!(typeof VELO_FIN==='object'&&VELO_FIN)&&!(typeof TROT_FIN!=='undefined'&&TROT_FIN===true))?squelette(tC,COURSE):null, AMsq=(COURSE?1.35:1)*PAS_U;
 const sqPied=(q)=>({x:q.x/AMsq, lift:q.lift, pointe:q.pointe, talon:q.talon});
+const A2P=(SQM&&ANIM2_ON)?poseA2(COURSE?'course':'marche',tC):null;   /* L'ANIMATION 2 : la pose de la foulée */
 let pG=SQM?sqPied(SQM.G):(bouge?pied(tC):{x:0,lift:0,pointe:0,talon:0}), pD=SQM?sqPied(SQM.D):(bouge?pied(tC+0.5):{x:0,lift:0,pointe:0,talon:0});
 /* LE REPORT DE POIDS passe par les pieds : la jambe libre glisse de deux
    unités et sa pointe se relève, la jambe porteuse reste plantée. Un
@@ -15940,7 +15995,7 @@ const BOB_M=[ 0, 1, 2, 1, 1, 0,-1,-1,-2,-1, 0, 0,   /* un demi-pixel de plus en 
               0, 1, 2, 1, 1, 0,-1,-1,-2,-1, 0, 0];
 const BOB_C=[ 1, 0, 0,-1,-1,-1, 0, 1, 1, 2, 1, 1,
               1, 0, 0,-1,-1,-1, 0, 1, 1, 2, 1, 1];
-const bobPas=SQM?Math.round(SQM.bob):(COURSE?BOB_C:BOB_M)[((F%PASM)+PASM)%PASM];   /* le bassin du squelette */
+const bobPas=A2P?Math.round(A2P.bob):SQM?Math.round(SQM.bob):(COURSE?BOB_C:BOB_M)[((F%PASM)+PASM)%PASM];   /* le bassin du squelette */
 /* L'AMORTI DU TALON : au moment où le pied se pose, le corps s'enfonce
    d'un pixel de plus. Une seule image sur seize, mais c'est elle qui donne
    le poids. */
@@ -17946,7 +18001,89 @@ const lean=frG>0?Math.round(pencheG*1.3):(PEDALE&&cote?9:(COURSE&&cote?4:(bouge&
 const auFond=(f)=>{const ok=typeof g.filter==='string';const av=ok?g.filter:'';if(ok)g.filter=cote?'brightness(0.68) saturate(0.85)':'brightness(0.84) saturate(0.92)';try{f();}finally{if(ok)g.filter=av||'none';}};
 const penche=(f)=>{if(!lean)return f();g.save();g.translate(s*lean*u,0);f();g.restore();};
 if(!dos&&!cote)skisDe();                                                        /* de face, les skis passent derrière le corps */
-if(cote){
+/* ================= LES MEMBRES 2 =================
+   Le dessin des bras et des jambes, à partir de la pose (A2P en marche,
+   une pose neutre au repos). UNE seule projection pour les huit vues :
+   on tourne le squelette, on le regarde de biais (un pas vers nous
+   descend de PROF_Z), et c'est tout.
+
+   Les épaisseurs sont FIXES et pensées ensemble : une cuisse de huit
+   unités qui s'affine à six et demie au genou, un tibia de six qui finit
+   à quatre et demie, un bras de cinq qui finit à quatre. Le bras de
+   l'ancien dessin faisait trois unités au poignet — un pixel et demi :
+   c'est lui qu'on voyait « tout fin ». */
+const NV=ANIM2_ON&&!PEDALE&&!TROT&&!DZ_POSE&&frG<=0&&(A2P||!bouge);
+if(NV){
+const yaw=(cote?90:(dos?(diag?180-45*tourne:180):(diag?45*tourne:0)))*Math.PI/180;
+const ca=Math.cos(yaw), sa=Math.sin(yaw), PZ=0.23;
+const swX=A2P&&!cote?A2P.sw:0;
+const pj=(q)=>{const X=-q[0]*ca+q[2]*sa, Dp=q[0]*sa+q[2]*ca;return {x:X+swX,y:q[1]+Dp*PZ,d:Dp};};
+/* la pose : en marche celle de la foulée, au repos celle du report de poids */
+const PJ=A2P?{D:A2P.D,G:A2P.G}:{D:{z:pD.x*PAS_U,l:pD.lift*6,ta:pD.talon,po:pD.pointe},G:{z:pG.x*PAS_U,l:pG.lift*6,ta:pG.talon,po:pG.pointe}};
+const PB=A2P?{D:A2P.bD,G:A2P.bG}:{D:{s:2+souffle*.6,e:9},G:{s:2+souffle*.6,e:9}};
+const peindre=(A,B,r0,r1,teinte,bandes)=>{
+ const cL=T(teinte,16), cS=T(teinte,-20), cR=T(teinte,-42), cRl=T(teinte,-26);
+ const x0=Math.floor(Math.min(A.x,B.x)-Math.max(r0,r1))-1, x1=Math.ceil(Math.max(A.x,B.x)+Math.max(r0,r1))+1;
+ const y0=Math.floor(Math.min(A.y,B.y)-Math.max(r0,r1))-1, y1=Math.ceil(Math.max(A.y,B.y)+Math.max(r0,r1))+1;
+ const vx=B.x-A.x, vy=B.y-A.y, L2=vx*vx+vy*vy||1;
+ for(let yy=y0;yy<=y1;yy++)for(let xx=x0;xx<=x1;xx++){
+  const px=xx+.5, py=yy+.5;let t=((px-A.x)*vx+(py-A.y)*vy)/L2;t=Math.max(0,Math.min(1,t));
+  const qx=A.x+vx*t, qy=A.y+vy*t, dx=px-qx, dy=py-qy, dd=Math.hypot(dx,dy), r=(r0+(r1-r0)*t)/2;
+  if(dd>r)continue;
+  const nl=(-0.6*dx-0.8*dy)/Math.max(dd,.001)*(dd/Math.max(r,.001));
+  let c=dd>r-1.05?(nl<0.05?cR:cRl):(nl>0.42?cL:(nl<-0.22?cS:teinte));
+  if(bandes&&bandes(t))c=dd>r-1.05?(nl<0.05?'#9aa5ae':'#c9d2d9'):(nl>0.3?'#ffffff':'#e3e9ee');
+  R(xx,yy,1,1,c);}};
+const os={cuisse:A2_JAMBE/2, tibia:A2_JAMBE/2, bras:10.5, avbras:9.5};
+const jambe2=(cote2)=>{const q=PJ[cote2], sx=cote2==='D'?1:-1;
+ const hip=[sx*5.5,yHan,0], ank=[sx*(A2P?4:5.5),-3-q.l,q.z];
+ let dx=ank[0]-hip[0], dy=ank[1]-hip[1], dz=ank[2]-hip[2];let dist=Math.hypot(dx,dy,dz);
+ const M=os.cuisse+os.tibia-0.05;if(dist>M){const k=M/dist;dx*=k;dy*=k;dz*=k;dist=M;ank[0]=hip[0]+dx;ank[1]=hip[1]+dy;ank[2]=hip[2]+dz;}
+ /* le genou plie toujours vers l'avant */
+ let bx=0,by=0,bz=1;const dl=dist||1;const pr=(bx*dx+by*dy+bz*dz)/(dl*dl);bx-=dx*pr;by-=dy*pr;bz-=dz*pr;const bl=Math.hypot(bx,by,bz)||1;
+ const h=Math.sqrt(Math.max(0,os.cuisse*os.cuisse-dist*dist/4));
+ const knee=[hip[0]+dx/2+bx/bl*h, hip[1]+dy/2+by/bl*h, hip[2]+dz/2+bz/bl*h];
+ return {H:pj(hip),K:pj(knee),A:pj(ank),q,cote2,d:pj(knee).d};};
+const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
+ const sh=[sx*13,yEp+3,0], ab=(COURSE?0.06:0.11), s1=q.s*Math.PI/180, s2=(q.s+q.e)*Math.PI/180;
+ const el=[sh[0]+sx*Math.sin(ab)*os.bras, sh[1]+Math.cos(s1)*Math.cos(ab)*os.bras, sh[2]+Math.sin(s1)*Math.cos(ab)*os.bras];
+ const wr=[el[0]-sx*(COURSE?1.6:0.3), el[1]+Math.cos(s2)*os.avbras, el[2]+Math.sin(s2)*os.avbras];
+ const mn=[wr[0], wr[1]+Math.cos(s2)*2.2, wr[2]+Math.sin(s2)*2.2];
+ return {S:pj(sh),E:pj(el),W:pj(wr),M:pj(mn),cote2,d:pj(el).d};};
+const dessinerJambe=(J,fonce)=>{
+ const haut=pant, bas=court?peau:pant;
+ peindre(J.H,J.K,8,6.6,haut,null);
+ const bandes=(p._docker&&!court)?(t=>(t>.30&&t<.40)||(t>.62&&t<.72)):null;
+ peindre(J.K,J.A,6.4,4.6,bas,bandes);
+ if(court)peindre(J.H,{x:J.H.x+(J.K.x-J.H.x)*.55,y:J.H.y+(J.K.y-J.H.y)*.55},8.6,7.4,pant,null);   /* le short */
+ const pp={pointe:J.q.po,talon:J.q.ta};
+ soulierDe(Math.round(J.A.x),Math.round(J.A.y)+3,fonce,(cote||diag)?pp:null);};
+const dessinerBras=(B,fonce)=>{
+ const sl=manches>0?vest:peau, sl2=manches>=1?vest:peau;
+ R(Math.round(B.S.x)-3,Math.round(B.S.y)-2,6,4,manches>0?vest:peau);          /* l'épaule, arrondie */
+ peindre(B.S,B.E,5.2,4.6,sl,null);
+ if(manches>0&&manches<1&&manches>=0.5)peindre(B.S,{x:B.S.x+(B.E.x-B.S.x)*.92,y:B.S.y+(B.E.y-B.S.y)*.92},5.8,5.4,vest,null);
+ peindre(B.E,B.W,4.6,4,sl2,null);
+ main(Math.round(B.M.x),Math.round(B.M.y)-1,cote?(s>0?1:-1):(B.S.x<0?-1:1),cote,fonce,dos);};
+const jambes=[jambe2('D'),jambe2('G')].sort((a,b)=>a.d-b.d);
+const brs=[bras2('D'),bras2('G')].sort((a,b)=>a.d-b.d);
+const fond=(o)=>o.d<-0.5;
+const leanX=cote?s*lean:0;
+if(!dos&&!cote)cheveuxDerriere();
+for(const J of jambes){if(fond(J)&&(cote||diag))auFond(()=>dessinerJambe(J,true));else dessinerJambe(J,false);}
+g.save();g.translate((leanX+(cote?0:swX))*u,0);
+for(const B of brs)if(fond(B)&&(cote||diag))auFond(()=>dessinerBras(B,true));   /* de face et de dos, les bras passent tous après le buste : il ombre le dessous des épaules */
+if(cote||!dos)sac(false);
+torse();
+if(cote){cheveuxDerriere();tete();echarpeDe();barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();chapeauDe();masqueDe();}
+for(const B of brs)if(!fond(B)||!(cote||diag))dessinerBras(B,false);
+if(!cote){if(dos)sac(false);else sac(true);
+ tete();echarpeDe();if(!dos)barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();
+ if(diag&&dos){const cx2=tourne>0?9:-12;R(cx2,yTete+9,3,9,peau);R(cx2+(tourne>0?1:0),yTete+11,2,4,peauO);R(tourne>0?11:-13,yTete+14,2,3,peau);}
+ chapeauDe();masqueDe();}
+g.restore();
+}
+else if(cote){
 /* ================= LES DEUX BRAS =================
    De profil, le bras du fond recevait l'avance de SA PROPRE jambe. Or un
    bras s'oppose toujours à la jambe de son côté — c'est ce qui équilibre
