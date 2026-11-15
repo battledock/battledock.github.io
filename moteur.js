@@ -15682,57 +15682,74 @@ function sombrir(c,k){const cle=k+c;let r=SOMBRE_CACHE.get(cle);if(r)return r;
  rr=(l+(rr-l)*sat)*f;gg=(l+(gg-l)*sat)*f;bb=(l+(bb-l)*sat)*f;
  r='#'+[rr,gg,bb].map(v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0')).join('');
  SOMBRE_CACHE.set(cle,r);return r;}
-/* LES MODÈLES DE CHAUSSURE (voir LA CHAUSSURE, DESSINÉE À LA MAIN) */
+/* LES MODÈLES DE CHAUSSURE (voir LA CHAUSSURE, DESSINÉE À LA MAIN)
+   À la taille d'un vrai pied : sept pixels de long pour un corps de
+   cinquante-deux. o liseré · l lumière · b cuir/toile · d ombre · h reflet
+   t languette · k lacet · e œillet · r bande latérale · c bout renforcé
+   w semelle intermédiaire · g semelle d'usure · s semelle de botte */
 const SH_PROFIL=[
-"...ooooo....",
-"..olbbbdo...",
-".olbbkkbboo.",
-"olhbbbbbbbdo",
-"olbbbbbbbbdo",
-"osssssssssso",
-".SSSSSSSSSS."];
+"...ooooo.......",
+"..olbbbdo......",
+"..oltkkkoo.....",
+".olbekekkboo...",
+"olbrrrrbbbbbbo.",
+"olbbbbbbbbbccdo",
+"owwwwwwwwwwwwwo",
+".ggggggggggggg."];
 const SH_PROFIL_H=[
-"..oooooo....",
-"..olbbbo....",
-"..olbbdo....",
-".olbbbbdoo..",
-"olhbbbbbbboo",
-"olbbbbbbbbdo",
-"odbbbbbbbbdo",
-"osssssssssso",
-".SSSSSSSSSS."];
+"..oooooo.......",
+"..olbkbdo......",
+"..olekedo......",
+"..olbkbdo......",
+"..olekebdoo....",
+".olbbbbbbbbboo.",
+"olbbbbbbbbbbbdo",
+"olbbbbbbbbbccdo",
+"ossssssssssssso",
+"ogsgsgsgsgsgsgo",
+".ggggggggggggg."];
 const SH_FACE=[
 "..oooooo..",
-".olbkkbdo.",
-"olhbbbbddo",
+".oltkktdo.",
+"olbekkebdo",
+"olbbkkbbdo",
 "olbbbbbbdo",
-"osssssssso",
-".SSSSSSSS."];
+"olccccccdo",
+"owwwwwwwwo",
+".gggggggg."];
 const SH_FACE_H=[
 "..oooooo..",
-"..olbbdo..",
-"..olbbdo..",
-".olbbbbdo.",
-"olhbbbbddo",
+"..olkkdo..",
+"..olkkdo..",
+".olbkkbdo.",
+".olekkedo.",
+"olbbkkbbdo",
 "olbbbbbbdo",
+"olccccccdo",
 "osssssssso",
-".SSSSSSSS."];
+"ogsgsgsgso",
+".gggggggg."];
 const SH_DOS=[
 "..oooooo..",
-".olbbbbdo.",
+".olbhhbdo.",
 "olbbbbbbdo",
-"olbdbbddoo",
-"osssssssso",
-".SSSSSSSS."];
+"olbbbbbbdo",
+"olrrrrrrdo",
+"olbbbbbbdo",
+"owwwwwwwwo",
+".gggggggg."];
 const SH_DOS_H=[
 "..oooooo..",
 "..olbbdo..",
 "..olbbdo..",
+".olbhhbdo.",
 ".olbbbbdo.",
 "olbbbbbbdo",
-"olbdbbddoo",
+"olrrrrrrdo",
+"olbbbbbbdo",
 "osssssssso",
-".SSSSSSSS."];
+"ogsgsgsgso",
+".gggggggg."];
 const A2_JAMBE=33;   /* de la hanche à la cheville, comme le dessin : Y_PIED − Y_HANCHE */
 function poseA2(action,t){
  const K=A2[action];t=((t%1)+1)%1;
@@ -18179,7 +18196,7 @@ const dessinerJambe=(J,fonce)=>{
  const bandes=(p._docker&&!court)?(t=>(t>.30&&t<.40)||(t>.62&&t<.72)):null;
  /* l'ourlet s'arrête au-dessus de la cheville : il recouvre le haut de la
     chaussure sans l'avaler. Plus haut sur une botte, qui monte. */
- const ourlet=special?0:((soulier==='bottes'||soulier==='bottillons')?(cote?4.6:5.4):(cote?3.4:4.2));
+ const ourlet=special?0:((soulier==='bottes'||soulier==='bottillons')?(cote?5.2:6.6):(cote?4.2:5.8));   /* l'ourlet au-dessus de la cheville : on voit le lacet */
  const kx=J.K.x-J.A.x, ky=J.K.y-J.A.y, kl=Math.hypot(kx,ky)||1;
  const fin={x:J.A.x+kx/kl*ourlet,y:J.A.y+ky/kl*ourlet};
  peindre(J.K,fin,6.4,court?4.2:5.4,bas,bandes);
@@ -18211,13 +18228,22 @@ const chaussure2=(J)=>{
  const M=cote||diag?(haute?SH_PROFIL_H:SH_PROFIL):(dos?(haute?SH_DOS_H:SH_DOS):(haute?SH_FACE_H:SH_FACE));
  const base=sandale?peau:chau;
  const semelle=basket?(p._snkS||'#f2efe4'):(sandale?'#7a5638':T(chau,-42));
- const PAL={o:T(base,-58),d:T(base,-22),b:base,l:T(base,18),h:T(base,42),
-  k:sandale?'#6b4a30':(basket?'#f2efe4':T(base,-34)),s:semelle,S:T(semelle,-34)};
+ /* UN CUIR TRÈS SOMBRE (la botte noire du docker) n'a presque plus de
+    tons : sa lumière et ses lacets s'écrasaient dans le noir. On ouvre
+    l'écart pour lui. */
+ const lum=(()=>{const m=/^#([0-9a-f]{6})$/i.exec(base);if(!m)return 128;const n=parseInt(m[1],16);return ((n>>16&255)*.3+(n>>8&255)*.59+(n&255)*.11);})();
+ const sombre=lum<70;
+ const lacet=sandale?'#6b4a30':(basket?'#f2efe4':T(base,sombre?42:-40));
+ const mi=basket?(p._snkS||'#f2efe4'):(sandale?'#7a5638':T(chau,-30));
+ const PAL={o:T(base,sombre?-30:-58),d:T(base,sombre?-10:-22),b:base,l:T(base,sombre?30:18),h:T(base,sombre?62:42),
+  t:sandale?base:T(base,sombre?14:-10),k:lacet,e:sandale?lacet:T(base,sombre?-30:-62),
+  r:sandale?lacet:(basket?'#f2efe4':T(base,-14)),c:sandale?T(base,-16):(haute?T(base,10):T(base,-12)),
+  w:mi,g:T(mi,-46),s:T(chau,-40)};
  const H=M.length, W=M[0].length;
  const sol=Math.round(A.y+3+(!cote&&!diag&&!dos?1.5:0));   /* le dessous de la semelle ; de face, la pointe vient vers nous, donc plus bas */
  let ax, piv, ang=0;
  if(cote||diag){
-  ax=Math.round(A.x)-4;                                 /* la cheville tombe sur la 5e colonne */
+  ax=Math.round(A.x)-5;                                 /* la cheville tombe sur la 6e colonne */
   if(q.ta>0.05){ang=q.ta*0.24;piv=[1,H-1];}             /* la pointe se lève : on pivote sur le talon */
   else if(q.po>0.05){ang=-q.po*0.42;piv=[W-2,H-1];}     /* le talon décolle : on pivote sur la pointe */
   else piv=[0,H-1];
