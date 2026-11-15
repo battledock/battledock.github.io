@@ -18485,7 +18485,7 @@ const MARCHE_HUMAINE=0.6;
    compétition, tenu aussi longtemps que le souffle. Elle descend à un
    peu moins de quatre : une course franche, qu'on peut tenir. Les
    souliers la font toujours monter. */
-const COURSE_HUMAINE=0.72;
+const COURSE_HUMAINE=0.6;
 const allureS=allure*(court&&SOUF.v>0?1.22:1)*(SOUF.vide?0.82:1)*(court?COURSE_HUMAINE:MARCHE_HUMAINE);   /* le sprint, et le souffle court quand la jauge est vide */
 /* ================= LE VIRAGE =================
    Le pivot ne se déclenchait que sur un cas : le renversement
