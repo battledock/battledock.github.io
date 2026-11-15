@@ -16979,7 +16979,8 @@ R(coinInt+(gauche?-1:1),ey,1,h,T(blanc,-10));
    regard, il tombait au coin extérieur d'un œil et au coin intérieur de
    l'autre — juste en théorie, mais à cinq pixels de large le personnage
    avait l'air de loucher. La tête tournée dit déjà où il regarde. */
-const iw=profil?2:3, ix=diag?Math.max(x0,Math.min(x0+w-iw,x0+Math.floor((w-iw)/2)+(F?(F.regard||0):0))):Math.max(x0,Math.min(x0+w-iw,x0+1+regard));
+const regard1=Math.max(-1,Math.min(1,regard));   /* le regard ne pousse l'iris que d'un pixel : à deux, les deux yeux partaient chacun de leur côté */
+const iw=profil?2:3, ix=diag?Math.max(x0,Math.min(x0+w-iw,x0+Math.floor((w-iw)/2)+(F?(F.regard||0):0))):Math.max(x0,Math.min(x0+w-iw,x0+1+regard1));
 /* LA COULEUR DES YEUX NE SE VOYAIT PAS. La teinte par défaut est très
    sombre (#26241f) et l'iris n'était éclairci que de seize points en
    bas : à l'écran, l'œil lisait comme un trou noir, et personne ne
@@ -16999,7 +17000,12 @@ R(ix+iw-1,ey+h-1,1,1,T(oeil,46));
 /* LA PAUPIÈRE a une épaisseur, et ses cils tombent au coin extérieur. */
 R(x0,ey-1,w,1,lid);
 R(x0,ey-2,w,1,T(peau,-26));
-if(!profil)R(coinExt,ey-1,1,2,N);else R(x0+w,ey-1,1,2,N);
+/* LE CIL DU COIN EXTÉRIEUR se collait à l'iris quand le regard l'y
+   poussait : l'œil de ce côté devenait une grosse tache sombre tournée
+   vers dehors, pendant que l'autre regardait vers le nez — il louchait.
+   Quand l'iris touche le coin, le cil s'efface. */
+const irisAuCoin=gauche?(ix<=x0):(ix+iw>=x0+w);
+if(!profil){if(!irisAuCoin)R(coinExt,ey-1,1,2,N);else R(coinExt,ey-1,1,1,lid);}else R(x0+w,ey-1,1,2,N);
 R(coinInt,ey+h-2,1,1,T(peau,-30));                          /* le coin intérieur, rosé */
 if(fy==='fatigues'){R(x0,ey+h,w,1,T(peau,-24));R(x0+1,ey+h+1,w-2,1,T(peau,-14));
 R(x0,ey-1,w,1,T(peau,-38));}
