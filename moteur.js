@@ -18540,7 +18540,7 @@ const pj=(q,pz,haut)=>{const X=-q[0]*ca+q[2]*sa, Dp=q[0]*sa+q[2]*ca;return {x:X+
    semblait clouée à la hanche. On appuie la profondeur des bras (comme un
    dessinateur appuie un raccourci) : la main qui vient vers nous descend
    franchement, celle qui recule remonte. De profil, rien ne change. */
-const PZB=cote?PZ:0.9;
+const PZB=cote?PZ:(dos?0.45:0.9);   /* de dos le bras qui part devant monte : trop appuyé, il se mettait à l horizontale */
 /* la pose : en marche celle de la foulée, au repos celle du report de poids */
 const PJ=A2P?{D:A2P.D,G:A2P.G}:{D:{z:pD.x*PAS_U,l:pD.lift*6,ta:pD.talon,po:pD.pointe},G:{z:pG.x*PAS_U,l:pG.lift*6,ta:pG.talon,po:pG.pointe}};
 const PB=A2P?{D:A2P.bD,G:A2P.bG}:{D:{s:2+souffle*.6,e:9},G:{s:2+souffle*.6,e:9}};
@@ -18610,7 +18610,12 @@ const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
  const el=[sh[0]+sx*Math.sin(ab)*os.bras, sh[1]+Math.cos(s1)*Math.cos(ab)*os.bras, sh[2]+Math.sin(s1)*Math.cos(ab)*os.bras];
  const wr=[el[0]-sx*(COURSE?1.6:0.3), el[1]+Math.cos(s2)*os.avbras, el[2]+Math.sin(s2)*os.avbras];
  const mn=[wr[0], wr[1]+Math.cos(s2)*2.2, wr[2]+Math.sin(s2)*2.2];
-  const P={S:pj(sh,PZB,1),E:pj(el,PZB,1),W:pj(wr,PZB,1),M:pj(mn,PZB,1)};
+  /* L'ÉPAULE RESTE SUR LE BUSTE : la profondeur appuyée (PZB) ne vaut que pour
+     le balancement du bras autour de l'épaule. Appliquée à l'épaule elle-même,
+     elle la faisait monter de neuf unités de trois quarts — l'épaule du fond
+     flottait à hauteur du menton, détachée du corps. */
+  const S0=pj(sh,0.12,1),Sb=pj(sh,PZB,1),kx=(dos&&diag)?0.5:1,rel=v=>{const p=pj(v,PZB,1);return {x:S0.x+(p.x-Sb.x)*kx,y:S0.y+p.y-Sb.y,d:p.d};};   /* de trois quarts dos, le balancement part en profondeur : on n'en garde que la moitié sur le côté, sinon le bras battait comme une aile */
+  const P={S:S0,E:rel(el),W:rel(wr),M:rel(mn)};
  if(diag){const loin=(sh[0]*sa+sh[2]*ca)<0;const ec=Math.sign(-sx*ca||1)*13*(1-Math.abs(ca))*(loin?0.3:1);for(const k in P)P[k].x+=ec;}   /* le bras du fond, lui, reste collé au flanc qui fuit */
  return {S:P.S,E:P.E,W:P.W,M:P.M,cote2,d:pj(el).d,recule:q.s<-6};};
 const dessinerJambe=(J,fonce)=>{
