@@ -18058,6 +18058,36 @@ const peindre=(A,B,r0,r1,teinte,bandes)=>{
   let c=dd>r-1.05?(nl<0.05?cR:cRl):(nl>0.42?cL:(nl<-0.22?cS:teinte));
   if(bandes&&bandes(t))c=dd>r-1.05?(nl<0.05?'#9aa5ae':'#c9d2d9'):(nl>0.3?'#ffffff':'#e3e9ee');
   R(xx,yy,1,1,c);}};
+/* UN VOLUME OVALE, tourné : épaule, bassin, main. Même éclairage que les
+   membres (lumière en haut à gauche), même liseré. */
+const ovale=(C,rx,ry,teinte,rot,clair)=>{
+ const cL=clair||T(teinte,16), cS=T(teinte,-18), cR=T(teinte,-40), cRl=T(teinte,-10);
+ const co=Math.cos(rot||0), si=Math.sin(rot||0), M=Math.max(rx,ry)+1;
+ for(let yy=Math.floor(C.y-M);yy<=Math.ceil(C.y+M);yy++)for(let xx=Math.floor(C.x-M);xx<=Math.ceil(C.x+M);xx++){
+  const dx=xx+.5-C.x, dy=yy+.5-C.y, lx=(dx*co+dy*si)/rx, ly=(-dx*si+dy*co)/ry, q=lx*lx+ly*ly;
+  if(q>1)continue;
+  const nx=(lx*co-ly*si), ny=(lx*si+ly*co), nl=(-0.6*nx-0.8*ny);
+  const bord=q>Math.pow(1-1.05/Math.min(rx,ry),2);
+  R(xx,yy,1,1,bord?(nl<0.05?cR:cRl):(nl>0.42?cL:(nl<-0.22?cS:teinte)));}};
+/* LA MAIN DU SQUELETTE : elle suit l'avant-bras, et change de forme avec
+   l'allure — détendue en marche, doigts à peine repliés ; poing serré en
+   course ; et de profil, quand le bras part en arrière, c'est la paume,
+   plus claire, qu'on voit. Avec des gants, ou un objet tenu, on garde la
+   main d'avant, qui sait les dessiner. */
+const mainS=(B,fonce,recule)=>{
+ if(p._gants||p._main){main(Math.round(B.M.x),Math.round(B.M.y)-1,cote?(s>0?1:-1):(B.S.x<0?-1:1),cote,fonce,dos);return;}
+ const dx=B.M.x-B.W.x, dy=B.M.y-B.W.y, dl=Math.hypot(dx,dy)||1, ux=dx/dl, uy=dy/dl;
+ const rot=Math.atan2(uy,ux)-Math.PI/2;
+ const poing=COURSE&&bouge;
+ const C={x:B.W.x+ux*(poing?1.8:1.9), y:B.W.y+uy*(poing?1.8:1.9)};
+ const paume=cote&&recule&&!poing;
+ ovale(C,poing?2.3:2.2,poing?2.3:2.5,peau,rot,paume?T(peau,24):null);
+ const ts=T(peau,-30);
+ if(poing){R(Math.round(C.x+ux*1.6-1),Math.round(C.y+uy*1.6),2,1,ts);}               /* les jointures */
+ else{R(Math.round(C.x+ux*1.7),Math.round(C.y+uy*1.7),1,1,ts);}                       /* le bout des doigts, replié */
+ /* le pouce, du côté qui regarde devant */
+ const px=cote?1:(B.S.x<0?1:-1);
+ R(Math.round(C.x-uy*px*1.8-ux*.6),Math.round(C.y+ux*px*1.8-uy*.6),1,2,peau);};
 const os={cuisse:A2_JAMBE/2, tibia:A2_JAMBE/2, bras:10.5, avbras:9.5};
 const jambe2=(cote2)=>{const q=PJ[cote2], sx=cote2==='D'?1:-1;
  const tw=A2P?A2P.tw:0;const hip=[sx*5.5,yHan,sx*tw], ank=[sx*(A2P?4:5.5),-3-q.l,q.z];
@@ -18069,11 +18099,14 @@ const jambe2=(cote2)=>{const q=PJ[cote2], sx=cote2==='D'?1:-1;
  const knee=[hip[0]+dx/2+bx/bl*h, hip[1]+dy/2+by/bl*h, hip[2]+dz/2+bz/bl*h];
  return {H:pj(hip),K:pj(knee),A:pj(ank),q,cote2,d:pj(knee).d};};
 const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
- const sh=[sx*13,yEp+3,-sx*(A2P?A2P.tw*1.5:0)], ab=(COURSE?0.06:0.11), s1=q.s*Math.PI/180, s2=(q.s+q.e)*Math.PI/180;
+ /* L'ÉPAULE BOUGE : elle tourne avec la torsion, et elle se soulève d'un
+    rien quand son bras part devant — le bras tire l'omoplate. */
+ const leve=A2P?Math.max(0,q.s)/(COURSE?40:24)*(COURSE?1.6:1):0;
+ const sh=[sx*13,yEp+3-leve,-sx*(A2P?A2P.tw*1.5:0)], ab=(COURSE?0.06:0.11), s1=q.s*Math.PI/180, s2=(q.s+q.e)*Math.PI/180;
  const el=[sh[0]+sx*Math.sin(ab)*os.bras, sh[1]+Math.cos(s1)*Math.cos(ab)*os.bras, sh[2]+Math.sin(s1)*Math.cos(ab)*os.bras];
  const wr=[el[0]-sx*(COURSE?1.6:0.3), el[1]+Math.cos(s2)*os.avbras, el[2]+Math.sin(s2)*os.avbras];
  const mn=[wr[0], wr[1]+Math.cos(s2)*2.2, wr[2]+Math.sin(s2)*2.2];
- return {S:pj(sh,PZB,1),E:pj(el,PZB,1),W:pj(wr,PZB,1),M:pj(mn,PZB,1),cote2,d:pj(el).d};};
+ return {S:pj(sh,PZB,1),E:pj(el,PZB,1),W:pj(wr,PZB,1),M:pj(mn,PZB,1),cote2,d:pj(el).d,recule:q.s<-6};};
 const dessinerJambe=(J,fonce)=>{
  const haut=pant, bas=court?peau:pant;
  peindre(J.H,J.K,8,6.6,haut,null);
@@ -18084,12 +18117,22 @@ const dessinerJambe=(J,fonce)=>{
  soulierDe(Math.round(J.A.x),Math.round(J.A.y)+3,fonce,(cote||diag)?pp:null);};
 const dessinerBras=(B,fonce)=>{
  const sl=manches>0?vest:peau, sl2=manches>=1?vest:peau;
- R(Math.round(B.S.x)-3,Math.round(B.S.y)-2,6,4,manches>0?vest:peau);          /* l'épaule, arrondie */
+ ovale({x:B.S.x,y:B.S.y-0.5},3.3,3.0,manches>0?vest:peau,0);                   /* l'épaule : un deltoïde rond, qui suit le bras */
  peindre(B.S,B.E,5.2,4.6,sl,null);
  if(manches>0&&manches<1&&manches>=0.5)peindre(B.S,{x:B.S.x+(B.E.x-B.S.x)*.92,y:B.S.y+(B.E.y-B.S.y)*.92},5.8,5.4,vest,null);
  peindre(B.E,B.W,4.6,4,sl2,null);
- main(Math.round(B.M.x),Math.round(B.M.y)-1,cote?(s>0?1:-1):(B.S.x<0?-1:1),cote,fonce,dos);};
+ mainS(B,fonce,B.recule);};
 const jambes=[jambe2('D'),jambe2('G')].sort((a,b)=>a.d-b.d);
+/* LE BASSIN EN VOLUME : un ovale entre les deux hanches, qui tourne avec
+   elles. De profil, il dépasse derrière — les fesses — et un peu devant ;
+   de face, il arrondit le haut des cuisses au lieu de deux tubes collés
+   sous la ceinture. Peint après les jambes, avant le buste : la veste en
+   couvre le haut. Pas sous une jupe, qui fait déjà ce volume. */
+const bassin=()=>{if(jupe)return;
+ const tw=A2P?A2P.tw:0;
+ const C=pj([0,yHan+1.5,cote?-0.4:0]);
+ const lx=cote?5.8:9.4, ly=5.4;
+ ovale(C,lx,ly,pant,cote?0:(-tw*0.03));};
 const brs=[bras2('D'),bras2('G')].sort((a,b)=>a.d-b.d);
 const fond=(o)=>o.d<-0.5;
 /* LE DOS : à l'amorti le buste plonge d'une unité devant les hanches, à la
@@ -18099,6 +18142,7 @@ const pc=A2P?A2P.pc:0;
 const leanX=cote?s*(lean+pc):(diag?tourne*pc*0.7:0);
 if(!dos&&!cote)cheveuxDerriere();
 for(const J of jambes){if(fond(J)&&(cote||diag))auFond(()=>dessinerJambe(J,true));else dessinerJambe(J,false);}
+bassin();
 g.save();g.translate(Math.round(leanX+(cote?0:swX))*u,0);   /* au demi-pixel entier : un décalage fractionnaire floutait tout le buste */
 /* DE DOS, LE BRAS QUI PART DEVANT S'ÉLOIGNE DE NOUS : il passe derrière le
    buste, on n'en voit plus que l'épaule. On le peignait par-dessus, et la
@@ -18107,12 +18151,19 @@ g.save();g.translate(Math.round(leanX+(cote?0:swX))*u,0);   /* au demi-pixel ent
 for(const B of brs)if(fond(B)){if(!cote&&!diag)dessinerBras(B,false);else auFond(()=>dessinerBras(B,true));}   /* le bras qui s'éloigne de nous passe derrière le buste, de face comme de dos */
 if(cote||!dos)sac(false);
 torse();
-if(cote){cheveuxDerriere();tete();echarpeDe();barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();chapeauDe();masqueDe();}
+/* LA TÊTE SUIT LE CORPS AVEC UN TEMPS DE RETARD : elle lit la pose d'un
+   instant plus tôt. Quand le buste descend, elle descend un peu après ;
+   quand il plonge devant, elle reste un rien en arrière, puis rattrape.
+   Le cou amortit — c'est ce qui donne du poids à la tête. */
+const AR=A2P?poseA2(COURSE?'course':'marche',tC-0.07):null;
+const teteDY=AR?Math.round((AR.bob-A2P.bob)*0.9):0, teteDX=AR&&cote?Math.round((AR.pc-A2P.pc)*s*0.8):0;
+const laTete=(f)=>{if(!teteDY&&!teteDX)return f();g.save();g.translate(teteDX*u,teteDY*u);f();g.restore();};
+if(cote){laTete(()=>{cheveuxDerriere();tete();echarpeDe();barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();chapeauDe();masqueDe();});}
 for(const B of brs)if(!fond(B))dessinerBras(B,false);
 if(!cote){if(dos)sac(false);else sac(true);
- tete();echarpeDe();if(!dos)barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();
+ laTete(()=>{tete();echarpeDe();if(!dos)barbeDe();cheveuxDessus();if(chapeau==='aucun')finitionsSalon();
  if(diag&&dos){const cx2=tourne>0?9:-12;R(cx2,yTete+9,3,9,peau);R(cx2+(tourne>0?1:0),yTete+11,2,4,peauO);R(tourne>0?11:-13,yTete+14,2,3,peau);}
- chapeauDe();masqueDe();}
+ chapeauDe();masqueDe();});}
 g.restore();
 }
 else if(cote){
