@@ -2640,7 +2640,7 @@ g.fillStyle='#e8cf8a';g.font='9px Georgia,serif';g.fillText('ENTREPÔT',w*0.66,h
 ];
 const PAGES_PORT=[
 {titre:'Se déplacer',sous:'LE POUCE ET LE BOUTON',
-txt:['Pose le pouce et fais-le glisser : le joystick apparaît sous ton doigt. Près du centre tu <b>marches</b>, pousse jusqu’au bord pour <b>courir</b>.',
+txt:['<b>Garde le doigt posé</b> : ton perso marche vers lui. Doigt loin de lui, il <b>court</b> ; lâche, il s’arrête.',
 'Près d’un lieu ou d’un objet, un <b>bouton</b> apparaît en bas de l’écran : touche-le pour entrer, pêcher, acheter…'],
 img:(g,w,h)=>{g.fillStyle='#d9c7a0';g.fillRect(0,0,w,h);g.fillStyle='rgba(0,0,0,.06)';for(let y=0;y<h;y+=14)for(let x=(y/14)%2*12;x<w;x+=24)g.fillRect(x,y,23,1);
 const ox=w*0.3,oy=h*0.55;g.beginPath();g.arc(ox,oy,30,0,7);g.fillStyle='rgba(20,14,8,.12)';g.fill();g.lineWidth=1.5;g.strokeStyle='rgba(250,244,228,.9)';g.stroke();
@@ -14644,7 +14644,7 @@ nettoyerBulles();
 const acteurs=[{y:(window.MOI_ASSIS?window.MOI_ASSIS.ys:joueur.y),
 f:()=>{if(window.MOI_ASSIS){const S=window.MOI_ASSIS;try{assis(ctx,Math.round(S.x-camX),Math.round(S.h-camY),e.ap);}catch(x){}return;}if(CARTE==='tokyo'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif){try{TKM.dessinerEssai(ctx,camX,camY);}catch(x){}return;}try{const m=ctx.getTransform();JOUEUR_ECRAN={x:m.a*px+m.e,y:m.d*(py-18)+m.f,sc:m.a/3};}catch(x){}if(window.AURA_DERRIERE)try{window.AURA_DERRIERE(ctx,px,py);}catch(x){}
 if(DANSE){if(joueur.marche||(GESTE&&GESTE.t>0))arreterDanse();else{const tD=danseDuJoueur();if(tD!==null)return danseur(ctx,px,py,Object.assign({},e.ap),DANSE.k,tD);}}{const r_=personne(ctx,px,py,e.ap,(!(GESTE&&GESTE.t>0)&&joueur.dirVue)||joueur.dir,joueur.pas,!!joueur.marche,court);if(window.AURA_DEVANT)try{window.AURA_DEVANT(ctx,px,py);}catch(x){}return r_;}}}];
-try{acteurTrouvaille(acteurs,camX,camY);}catch(x){}try{acteurMarche(acteurs,camX,camY);}catch(x){}
+try{acteurTrouvaille(acteurs,camX,camY);}catch(x){}try{acteurMarche(acteurs,camX,camY);}catch(x){}try{acteurDoigt(acteurs,camX,camY);}catch(x){}
 if(JOL&&JOL.acteurs){try{for(const a of JOL.acteurs())acteurs.push({y:a.y,f:()=>{try{a.f(ctx,camX,camY);}catch(x){}}});}catch(x){}}
 if(JOL&&JOL.figurants){try{for(const f of JOL.figurants()){const fx=f.x-camX,fy=f.y-camY;if(fx<-40||fy<-30||fx>VW+40||fy>VH+70)continue;acteurs.push({y:f.y,f:()=>{try{const s=GESTE;GESTE={t:0};personne(ctx,Math.round(f.x-camX),Math.round(f.y-camY),Object.assign({},DEF_AP,f.ap),f.dir,f.pas,f.marche!==false,!!f.court);GESTE=s;}catch(x){}}});}}catch(x){}}
 if(OVATION){if(Date.now()>OVATION.fin)OVATION=null;else for(const f of OVATION.gens)acteurs.push({y:f.y,f:()=>{try{dessinerFigurant(ctx,f,camX,camY);}catch(x){}}});}
@@ -19296,6 +19296,7 @@ if(CARTE==='large'){majNavigation(dt);vx=vy=0;joueur.marche=false;return;}
 if(window.FP_GEL&&Date.now()<window.FP_GEL){vx=0;vy=0;joueur.marche=false;tournerEnDouceur(dt);return;}   /* on arrose : on reste planté jusqu'à la fin */
 tournerEnDouceur(dt);
 try{guiderMarche(dt);}catch(z){MARCHE=null;}
+try{guiderDoigt();}catch(z){}
 const n=Math.hypot(joyX,joyY);
 const pousse=Math.min(1,n);
 const max=vitesseDuJoueur();
@@ -19732,6 +19733,26 @@ joyX=d<1?0:Math.cos(a)*n;joyY=d<1?0:Math.sin(a)*n;
 if(Math.hypot(joyX,joyY)<.16)joyX=joyY=0;
 }
 function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
+/* =====================================================================
+   SUIVRE LE DOIGT. Plus de joystick à pied : on pose le doigt, le perso
+   marche vers lui tant qu'on appuie ; loin, il court ; sur lui, il
+   s'arrête. Le joystick reste la barre au large, le volant à Tokyo et la
+   commande du hall (là il guide un engin, pas des pieds). ?ctrl=joy le
+   rend aussi à pied, pour comparer.
+   ===================================================================== */
+const CTRL_JOY=(()=>{try{const q=new URLSearchParams(location.search).get('ctrl');if(q==='joy'||q==='doigt')localStorage.setItem('bdl.ctrl',q);return (localStorage.getItem('bdl.ctrl')||'doigt')==='joy';}catch(x){return false;}})();
+const suivreDoigt=()=>!CTRL_JOY&&CARTE!=='large'&&!(CARTE==='tokyo'&&typeof TKM!=='undefined'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif)&&!(window.FP_GEL&&Date.now()<window.FP_GEL);
+function guiderDoigt(){
+  if(!J.actif||!J.suit||!suivreDoigt())return;
+  if(!(J.bouge||Date.now()-(J.t0||0)>140)){joyX=joyY=0;return;}   /* un toucher bref reste un toucher */
+  const cvR=cv.getBoundingClientRect();
+  const px=cvR.left+(joueur.x-CAM_IMG.x)*ECH_CSS, py=cvR.top+(joueur.y-26-CAM_IMG.y)*ECH_CSS;   /* le milieu du corps, à l'écran */
+  const dx=J.fx-px, dy=J.fy-py, d=Math.hypot(dx,dy);
+  const arret=J.va?16:24;                      /* sur lui, il s'arrête ; il faut s'écarter un peu plus pour qu'il reparte */
+  if(d<arret){joyX=joyY=0;J.va=false;return;}
+  J.va=true;
+  const p=Math.max(0.62,Math.min(1,0.62+(d-70)/230));   /* près : il marche ; au-delà d'environ 130 points : il court */
+  joyX=dx/d*p;joyY=dy/d*p;}
 const pageOuverte=()=>$('pan').classList.contains('on')
 ||$('page2').classList.contains('on')||!$('porte').classList.contains('parti')
 ||$('enLigne').classList.contains('on')||$('annonce').classList.contains('on')
@@ -19746,21 +19767,21 @@ if(J.actif)continue;
 const [x,y]=pointDe(t);
 if(!zoneMarche(x,y,ev.target))continue;
 ev.preventDefault();
-J.id=t.identifier;prendre(x,y);J.t0=Date.now();J.sx=x;J.sy=y;J.bouge=false;
+J.id=t.identifier;prendre(x,y);J.t0=Date.now();J.sx=x;J.sy=y;J.bouge=false;J.fx=x;J.fy=y;J.va=false;J.suit=suivreDoigt();if(J.suit)J.vie=0;
 }
 },{passive:false});
 document.addEventListener('touchmove',ev=>{
 for(const t of ev.changedTouches)if(t.identifier===J.id){
 ev.preventDefault();
-const [x,y]=pointDe(t);if(!J.bouge&&Math.hypot(x-J.sx,y-J.sy)>6){J.bouge=true;arreterMarche();}if(J.bouge)tirer(x,y);
+const [x,y]=pointDe(t);J.fx=x;J.fy=y;if(!J.bouge&&Math.hypot(x-J.sx,y-J.sy)>6){J.bouge=true;arreterMarche();}if(J.bouge&&!J.suit)tirer(x,y);
 }
 },{passive:false});
 ['touchend','touchcancel'].forEach(k=>document.addEventListener(k,ev=>{
 for(const t of ev.changedTouches)if(t.identifier===J.id){ev.preventDefault();const tap=!J.bouge&&Date.now()-(J.t0||0)<800&&k==='touchend';const sx=J.sx,sy=J.sy;lacher();if(tap){J.vie=0;void sx;void sy;}}
 },{passive:false}));
 document.addEventListener('mousedown',ev=>{
-if(zoneMarche(ev.clientX,ev.clientY,ev.target)){prendre(ev.clientX,ev.clientY);J.t0=Date.now();J.sx=ev.clientX;J.sy=ev.clientY;J.bouge=false;}});
-addEventListener('mousemove',ev=>{if(J.actif){if(!J.bouge&&Math.hypot(ev.clientX-J.sx,ev.clientY-J.sy)>6){J.bouge=true;arreterMarche();}if(J.bouge)tirer(ev.clientX,ev.clientY);}});
+if(zoneMarche(ev.clientX,ev.clientY,ev.target)){prendre(ev.clientX,ev.clientY);J.t0=Date.now();J.sx=ev.clientX;J.sy=ev.clientY;J.bouge=false;J.fx=ev.clientX;J.fy=ev.clientY;J.va=false;J.suit=suivreDoigt();if(J.suit)J.vie=0;}});
+addEventListener('mousemove',ev=>{if(J.actif){J.fx=ev.clientX;J.fy=ev.clientY;if(!J.bouge&&Math.hypot(ev.clientX-J.sx,ev.clientY-J.sy)>6){J.bouge=true;arreterMarche();}if(J.bouge&&!J.suit)tirer(ev.clientX,ev.clientY);}});
 addEventListener('mouseup',()=>{if(J.actif){const tap=!J.bouge&&Date.now()-(J.t0||0)<800,sx=J.sx,sy=J.sy;lacher();if(tap){J.vie=0;void sx;void sy;}}});
 addEventListener('keydown',ev=>{const k={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
 z:[0,-1],s:[0,1],q:[-1,0],d:[1,0]}[ev.key];if(k){arreterMarche();joyX=k[0];joyY=k[1];}});
@@ -19819,12 +19840,16 @@ function guiderMarche(dt){
   let reste=d;for(let k=MARCHE.i+1;k<MARCHE.ch.length;k++)reste+=Math.hypot(MARCHE.ch[k][0]-MARCHE.ch[k-1][0],MARCHE.ch[k][1]-MARCHE.ch[k-1][1]);
   const p=reste>170?.95:Math.max(.62,Math.min(.75,d/30));   /* on court quand c'est loin, on marche pour arriver */
   joyX=(x-joueur.x)/d*p;joyY=(y-joueur.y)/d*p;}
+function acteurDoigt(acteurs,camX,camY){if(!J.actif||!J.suit||!J.va)return;try{const cvR=cv.getBoundingClientRect(),wx=CAM_IMG.x+(J.fx-cvR.left)/ECH_CSS,wy=CAM_IMG.y+(J.fy-cvR.top)/ECH_CSS+26;
+  acteurs.push({y:-1e5+1,f:()=>{const X=wx-camX,Y=wy-camY,c=Math.hypot(joyX,joyY)>0.88;
+    ctx.save();ctx.translate(X,Y);ctx.scale(1,.5);ctx.strokeStyle=c?'rgba(232,192,106,.9)':'rgba(255,244,214,.75)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,8,0,7);ctx.stroke();ctx.restore();}});}catch(z){}}
 function acteurMarche(acteurs,camX,camY){if(!MARCHE||!MARCHE.vu)return;const v=MARCHE.vu,f=MARCHE.fin;
   acteurs.push({y:-1e5+1,f:()=>{const t=performance.now()/1000,X=f[0]-camX,Y=f[1]-camY,p=.5+.5*Math.sin(t*7);
     ctx.save();ctx.translate(X,Y);ctx.scale(1,.5);ctx.strokeStyle='rgba(255,244,214,'+(.55+.35*p)+')';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,7+p*3,0,7);ctx.stroke();
     ctx.strokeStyle='rgba(40,28,12,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,4,0,7);ctx.stroke();ctx.restore();void v;}});}
 let joySale=false;
 function dessinerJoy(dt){
+if(J.suit&&J.actif)J.vie=0;
 if(!J.actif&&J.vie>0)J.vie=Math.max(0,J.vie-dt*5);
 if(J.vie<=0){
 if(joySale){jg.setTransform(1,0,0,1,0,0);jg.clearRect(0,0,jc.width,jc.height);joySale=false;jc.style.visibility='hidden';}
