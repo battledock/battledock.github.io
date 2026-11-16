@@ -15777,12 +15777,34 @@ const A3K={
  genou: {marche:[ 3,  15,  14,   8,   5,  10,  36,  58,  48,  20],
          course:[20,  38,  32,  22,  24,  60,  96, 106,  78,  38]}};
 const A3_ECH={marche:0.58,course:0.6};
+/* LA MARCHE CAPTURÉE : un vrai marcheur en studio de motion capture (Mixamo,
+   « Start Walking », la foulée stabilisée après le départ), échantillonnée
+   en 48 points du cycle. z : avance de la cheville sous la hanche (foulée
+   ramenée à ±9 pour la vitesse du jeu) · dl : distance hanche-cheville en
+   part de la jambe tendue (c'est elle qui fait plier le genou) · fl : hauteur
+   du pied au-dessus du sol · pitch : bascule du pied (+ pointe relevée,
+   − talon levé) · s/e : épaule et coude (degrés, + vers l'avant) · sw : le
+   bassin qui se porte sur la jambe d'appui. */
+const A3MOCAP={marche:{"z":[8.36,7.777,7.05,6.287,5.498,4.728,4.01,3.337,2.688,2.045,1.412,0.798,0.2,-0.388,-0.97,-1.553,-2.14,-2.73,-3.325,-3.935,-4.57,-5.242,-5.965,-6.59,-7.06,-7.598,-8.195,-8.67,-8.91,-8.835,-8.463,-7.832,-6.973,-5.97,-4.927,-3.872,-2.785,-1.65,-0.468,0.755,2.002,3.255,4.492,5.695,6.84,7.832,8.457,8.615],"dl":[0.984,0.976,0.971,0.968,0.967,0.966,0.964,0.962,0.961,0.962,0.964,0.966,0.969,0.973,0.977,0.981,0.984,0.987,0.991,0.994,0.996,0.998,0.999,0.99,0.969,0.956,0.953,0.947,0.935,0.916,0.889,0.86,0.834,0.816,0.809,0.815,0.83,0.854,0.881,0.909,0.935,0.956,0.972,0.982,0.988,0.993,0.995,0.992],"fl":[0.855,0.552,0.35,0.215,0.133,0.075,0.035,0.013,0.003,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.018,0.353,1.058,1.645,2.11,2.715,3.478,4.375,5.303,6.12,6.71,6.985,6.895,6.445,5.697,4.758,3.755,2.808,2.01,1.438,1.133,1.095,1.245,1.39,1.385,1.19],"pitch":[7.325,1.45,-4.4,-8.5,-10.925,-12.425,-13.475,-14.075,-14.275,-14.325,-14.375,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.6,-17.825,-25.025,-32.15,-38.575,-46.35,-55.9,-66.35,-75.225,-80.225,-80.65,-77.35,-71.825,-65.2,-57.725,-49.45,-40.9,-32.6,-24.625,-16.775,-8.95,-1.275,5.775,11.05,12.95,11.375],"s":[-34.975,-34.525,-33.225,-30.85,-27.825,-24.725,-21.6,-18.15,-14.15,-9.725,-5.2,-0.8,3.175,6.325,8.525,10.025,11.125,11.925,12.425,12.65,12.7,12.675,12.575,12.025,10.975,9.95,8.7,6.8,4.4,1.725,-1.0,-3.7,-6.4,-9.075,-11.625,-14.025,-16.375,-18.725,-21.05,-23.3,-25.45,-27.45,-29.25,-30.85,-32.25,-33.425,-34.325,-34.875],"e":[21.25,20.625,20.125,19.75,19.475,19.2,18.95,18.8,18.7,18.625,18.575,18.5,18.425,18.425,18.525,18.725,19.075,19.65,20.4,21.225,22.1,23.0,23.85,24.05,23.7,23.975,24.75,25.35,25.75,25.975,26.125,26.425,27.075,27.95,28.7,29.175,29.425,29.425,29.175,28.725,28.075,27.3,26.475,25.6,24.7,23.8,22.9,22.025],"sw":[1.363,1.43,1.24,1.047,0.848,0.637,0.422,0.212,0.015,-0.163,-0.315,-0.445,-0.557,-0.657,-0.745,-0.817,-0.875,-0.923,-0.968,-1.005,-1.02,-0.995,-0.913,-1.028,-1.363,-1.43,-1.24,-1.047,-0.848,-0.637,-0.422,-0.212,-0.015,0.163,0.315,0.445,0.557,0.657,0.745,0.817,0.875,0.923,0.968,1.005,1.02,0.995,0.913,1.028]}};
 function a3courbe(T,t){t=((t%1)+1)%1;const n=T.length,f=t*n,i=Math.floor(f),k=f-i;
  const p0=T[(i-1+n)%n],p1=T[i%n],p2=T[(i+1)%n],p3=T[(i+2)%n];
  return 0.5*((2*p1)+(-p0+p2)*k+(2*p0-5*p1+4*p2-p3)*k*k+(-p0+3*p1-3*p2+p3)*k*k*k);}
 const a3g=(t,c,w)=>{let d=((t-c)%1+1.5)%1-0.5;return Math.exp(-(d*d)/(2*w*w));};
 function poseA2(action,t){
- t=((t%1)+1)%1;const C=action==='course';const H=A3K.hanche[action],K=A3K.genou[action],E=A3_ECH[action];
+ t=((t%1)+1)%1;
+ if(action==='marche'&&A3MOCAP.marche){const M=A3MOCAP.marche,n=M.z.length;
+  const v=(k,tt)=>{tt=((tt%1)+1)%1;const f=tt*n,i=Math.floor(f),u=f-i;const A=M[k][i%n],B=M[k][(i+1)%n];return A+(B-A)*u;};
+  /* le marcheur Mixamo garde le genou fléchi d'une vingtaine de degrés à l'appui :
+     sur nos jambes de deux pixels, ça se lit comme une marche accroupie. On
+     garde la moitié de cette flexion à l'appui, toute celle de l'élan. */
+  const tend=dl=>dl>0.93?1-(1-dl)*0.45:dl+0.0385;
+  const jb=tt=>{const z=v('z',tt),D=tend(v('dl',tt))*A2_JAMBE;return {z,yd:Math.sqrt(Math.max(1,D*D-z*z)),fl:v('fl',tt),p:v('pitch',tt)};};
+  const jD=jb(t),jG=jb(t+0.5),hH=Math.max(jD.yd+jD.fl,jG.yd+jG.fl);
+  const pied=j=>({z:j.z,l:Math.max(0,hH-j.yd),ta:Math.max(0,Math.min(1,j.p/18)),po:Math.max(0,Math.min(1,-j.p/45))});
+  const r={bob:A2_JAMBE-hH,sw:v('sw',t)*1.4,pc:0.8*Math.sin(4*Math.PI*t),D:pied(jD),G:pied(jG),
+   bD:{s:v('s',t),e:v('e',t)},bG:{s:v('s',t+0.5),e:v('e',t+0.5)}};
+  r.tw=(r.D.z-r.G.z)/18*1.8;return r;}
+ const C=action==='course';const H=A3K.hanche[action],K=A3K.genou[action],E=A3_ECH[action];
  const L=A2_JAMBE/2, rad=Math.PI/180;
  const jambe=(tt)=>{const a1=a3courbe(H,tt)*E*rad, a2=a1-a3courbe(K,tt)*rad;
   return {z:L*Math.sin(a1)+L*Math.sin(a2), yd:L*Math.cos(a1)+L*Math.cos(a2)};};
