@@ -14880,6 +14880,12 @@ REPOS_FIN={type:type,k:Math.max(0,Math.min(1,et))};
 g.drawImage(graverFin(ap,dir,0,false,0,false),0,0,c.width,c.height);
 REPOS_FIN=null;
 }
+else if(j>=270&&j<287){
+/* LE DÉPART CAPTURÉ : dix-sept instants de l'arrêt au premier pas */
+DEPART_FIN=(j-270)/16;
+g.drawImage(graverFin(ap,dir,0,true,0,false),0,0,c.width,c.height);
+DEPART_FIN=null;
+}
 else if(j>=200&&j<260){
 /* UNE TRANSITION : élan, freinage ou pivot, sur cinq étapes. Le pivot en
    occupe deux familles, 240 à droite et 245 à gauche. */
@@ -14994,7 +15000,7 @@ const TRANS={etat:'idle', depuis:0, dirPrec:'bas', couPrec:false, marchePrec:fal
    est dessiné pour un départ arrêté — le corps s'accroupissait pour
    pousser alors qu'il était déjà lancé. Un changement de régime ne
    s'accroupit pas : il pique du buste vers l'avant. */
-const DUREE={elan:260, frein:300, pivot:180, lance:220};
+const DUREE={elan:260, frein:300, pivot:180, lance:220, depart:520};
 function majTransition(dir,marche,court){
 const t=Date.now();
 const age=t-TRANS.depuis;
@@ -15003,6 +15009,8 @@ if(TRANS.etat!=='idle'&&TRANS.etat!=='marche'&&TRANS.etat!=='course'){
 /* UN VIRAGE DURE PLUS LONGTEMPS QU'UN AUTRE : un quart de tour n'est pas
    un demi-tour. TRANS.duree porte la mesure, DUREE sert de repli. */
 if(age<(TRANS.duree||DUREE[TRANS.etat])) return TRANS;
+/* le départ fini, la foulée reprend au talon droit posé : début du cycle */
+if(TRANS.etat==='depart'&&marche&&!court)joueur.pas=Math.ceil(joueur.pas/12)*12;
 TRANS.etat=marche?(court?'course':'marche'):'idle';TRANS.depuis=t;TRANS.duree=0;}
 const demarre=marche&&!TRANS.marchePrec;
 const stoppe=!marche&&TRANS.marchePrec;
@@ -15019,10 +15027,11 @@ TRANS.sens=(dir==='droite')?1:-1;}
    demande d'avoir vraiment marché : sans ce délai, une poussée brève du
    joystick déclencherait un freinage à chaque fois. */
 else if(stoppe&&(t-TRANS.depuis)>140){TRANS.etat='frein';TRANS.depuis=t;TRANS.duree=0;}
-else if(demarre){TRANS.etat='elan';TRANS.depuis=t;TRANS.duree=0;}
+else if(demarre){TRANS.etat=court?'elan':'depart';TRANS.depuis=t;TRANS.duree=0;}   /* en marchant, le vrai départ capturé ; en courant, l'élan */
 else if(accelere){TRANS.etat='lance';TRANS.depuis=t;TRANS.duree=0;}
 else if(!marche&&TRANS.etat!=='frein')TRANS.etat='idle';
-else if(marche&&TRANS.etat!=='pivot'&&TRANS.etat!=='elan')TRANS.etat=court?'course':'marche';
+else if(marche&&TRANS.etat!=='pivot'&&TRANS.etat!=='elan'&&TRANS.etat!=='depart')TRANS.etat=court?'course':'marche';
+else if(!marche&&TRANS.etat==='depart')TRANS.etat='idle';
 TRANS.dirPrec=dir;TRANS.couPrec=court;TRANS.marchePrec=marche;
 return TRANS;}
 /* L'INDICE DE POSE d'une transition : 200 l'élan, 220 le freinage,
@@ -15030,6 +15039,7 @@ return TRANS;}
 function indiceTransition(){
 const e=TRANS.etat;
 if(e!=='elan'&&e!=='frein'&&e!=='pivot'&&e!=='lance')return null;
+if(e==='depart')return 270+Math.min(16,Math.floor((Date.now()-TRANS.depuis)/DUREE.depart*17));
 const k=Math.min(0.999,(Date.now()-TRANS.depuis)/(TRANS.duree||DUREE[e]));
 const et=Math.floor(k*5);
 /* LE PIVOT A DEUX FAMILLES, une par côté : 240 vers la droite, 245 vers
@@ -15786,6 +15796,20 @@ const A3_ECH={marche:0.58,course:0.6};
    − talon levé) · s/e : épaule et coude (degrés, + vers l'avant) · sw : le
    bassin qui se porte sur la jambe d'appui. */
 const A3MOCAP={marche:{"z":[8.36,7.777,7.05,6.287,5.498,4.728,4.01,3.337,2.688,2.045,1.412,0.798,0.2,-0.388,-0.97,-1.553,-2.14,-2.73,-3.325,-3.935,-4.57,-5.242,-5.965,-6.59,-7.06,-7.598,-8.195,-8.67,-8.91,-8.835,-8.463,-7.832,-6.973,-5.97,-4.927,-3.872,-2.785,-1.65,-0.468,0.755,2.002,3.255,4.492,5.695,6.84,7.832,8.457,8.615],"dl":[0.984,0.976,0.971,0.968,0.967,0.966,0.964,0.962,0.961,0.962,0.964,0.966,0.969,0.973,0.977,0.981,0.984,0.987,0.991,0.994,0.996,0.998,0.999,0.99,0.969,0.956,0.953,0.947,0.935,0.916,0.889,0.86,0.834,0.816,0.809,0.815,0.83,0.854,0.881,0.909,0.935,0.956,0.972,0.982,0.988,0.993,0.995,0.992],"fl":[0.855,0.552,0.35,0.215,0.133,0.075,0.035,0.013,0.003,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.018,0.353,1.058,1.645,2.11,2.715,3.478,4.375,5.303,6.12,6.71,6.985,6.895,6.445,5.697,4.758,3.755,2.808,2.01,1.438,1.133,1.095,1.245,1.39,1.385,1.19],"pitch":[7.325,1.45,-4.4,-8.5,-10.925,-12.425,-13.475,-14.075,-14.275,-14.325,-14.375,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.6,-17.825,-25.025,-32.15,-38.575,-46.35,-55.9,-66.35,-75.225,-80.225,-80.65,-77.35,-71.825,-65.2,-57.725,-49.45,-40.9,-32.6,-24.625,-16.775,-8.95,-1.275,5.775,11.05,12.95,11.375],"s":[-34.975,-34.525,-33.225,-30.85,-27.825,-24.725,-21.6,-18.15,-14.15,-9.725,-5.2,-0.8,3.175,6.325,8.525,10.025,11.125,11.925,12.425,12.65,12.7,12.675,12.575,12.025,10.975,9.95,8.7,6.8,4.4,1.725,-1.0,-3.7,-6.4,-9.075,-11.625,-14.025,-16.375,-18.725,-21.05,-23.3,-25.45,-27.45,-29.25,-30.85,-32.25,-33.425,-34.325,-34.875],"e":[21.25,20.625,20.125,19.75,19.475,19.2,18.95,18.8,18.7,18.625,18.575,18.5,18.425,18.425,18.525,18.725,19.075,19.65,20.4,21.225,22.1,23.0,23.85,24.05,23.7,23.975,24.75,25.35,25.75,25.975,26.125,26.425,27.075,27.95,28.7,29.175,29.425,29.425,29.175,28.725,28.075,27.3,26.475,25.6,24.7,23.8,22.9,22.025],"sw":[1.363,1.43,1.24,1.047,0.848,0.637,0.422,0.212,0.015,-0.163,-0.315,-0.445,-0.557,-0.657,-0.745,-0.817,-0.875,-0.923,-0.968,-1.005,-1.02,-0.995,-0.913,-1.028,-1.363,-1.43,-1.24,-1.047,-0.848,-0.637,-0.422,-0.212,-0.015,0.163,0.315,0.445,0.557,0.657,0.745,0.817,0.875,0.923,0.968,1.005,1.02,0.995,0.913,1.028]}};
+/* LE DÉPART, capturé aussi (le début du même fichier) : de l'arrêt au
+   premier talon posé, 17 instants. Le pied droit part, le gauche pousse,
+   les bras se mettent en route — et la foulée enchaîne exactement là où
+   le départ s'arrête (talon droit au sol = début du cycle). */
+A3MOCAP.depart={"zD":[-0.84,-1.03,-1.27,-1.55,-1.8,-1.68,-1.24,-0.49,0.61,1.95,3.51,5.04,6.37,7.47,8.26,8.27,7.39],"dlD":[0.9865,0.9856,0.9855,0.9842,0.9808,0.9577,0.9152,0.8733,0.864,0.8877,0.9269,0.9644,0.979,0.9847,0.9929,0.9939,0.9896],"flD":[0.47,0.47,0.47,0.47,0.54,1.3,2.63,3.97,4.35,3.72,2.68,1.81,1.72,1.73,1.31,0.89,0.61],"pD":[-17.1,-17.1,-17.1,-17.1,-18.0,-26.5,-37.9,-44.6,-41.2,-31.4,-18.8,-5.9,6.1,15.6,14.9,1.6,-8.6],"zG":[0.73,0.53,0.28,-0.0,-0.3,-0.58,-0.86,-1.17,-1.53,-1.97,-2.5,-3.11,-3.79,-4.48,-5.24,-6.03,-6.7],"dlG":[0.9906,0.9889,0.9879,0.9856,0.9829,0.9797,0.9732,0.9672,0.9659,0.9677,0.9703,0.9735,0.9762,0.976,0.9704,0.9602,0.9481],"flG":[0.18,0.19,0.19,0.19,0.18,0.17,0.15,0.14,0.13,0.13,0.12,0.12,0.13,0.14,0.23,0.65,1.43],"pG":[-13.3,-13.2,-13.2,-13.3,-13.6,-13.9,-14.4,-14.7,-14.9,-15.0,-15.3,-15.4,-15.4,-15.4,-16.5,-21.8,-32.0],"sD":[-4.8,-5.2,-5.9,-7.0,-8.4,-9.8,-12.2,-15.3,-18.0,-20.4,-22.7,-24.5,-26.1,-29.1,-32.7,-34.5,-34.2],"eD":[25.9,25.9,26.4,27.8,30.0,32.3,36.4,40.8,42.9,42.9,42.1,39.7,36.5,34.0,31.6,29.4,27.8],"sG":[-9.9,-10.3,-10.9,-11.9,-12.8,-12.9,-11.7,-8.8,-4.9,-1.1,2.7,6.3,7.9,9.3,9.6,10.5,10.3],"eG":[24.7,25.2,25.2,24.6,23.7,22.3,20.5,18.3,16.4,14.9,13.9,13.5,14.7,17.3,20.2,22.1,23.8]};
+let DEPART_FIN=null;
+function poseDepart(k){const M=A3MOCAP.depart,n=M.zD.length-1;
+ const v=(c)=>{const f=Math.max(0,Math.min(1,k))*n,i=Math.min(n-1,Math.floor(f)),u=f-i;return M[c][i]+(M[c][i+1]-M[c][i])*u;};
+ const tend=dl=>dl>0.93?1-(1-dl)*0.45:dl+0.0385;
+ const jb=c=>{const z=v('z'+c),Dd=tend(v('dl'+c))*A2_JAMBE;return {z,yd:Math.sqrt(Math.max(1,Dd*Dd-z*z)),fl:v('fl'+c),p:v('p'+c)+15};};
+ const jD=jb('D'),jG=jb('G'),hH=Math.max(jD.yd+jD.fl,jG.yd+jG.fl);
+ const pied=j=>({z:j.z,l:Math.max(0,hH-j.yd),ta:Math.max(0,Math.min(1,j.p/18)),po:Math.max(0,Math.min(1,-j.p/45))});
+ const r={bob:A2_JAMBE-hH,sw:0,pc:0,D:pied(jD),G:pied(jG),bD:{s:v('sD'),e:v('eD')},bG:{s:v('sG'),e:v('eG')}};
+ r.tw=(r.D.z-r.G.z)/18*1.8*Math.min(1,k*2);return r;}
 function a3courbe(T,t){t=((t%1)+1)%1;const n=T.length,f=t*n,i=Math.floor(f),k=f-i;
  const p0=T[(i-1+n)%n],p1=T[i%n],p2=T[(i+1)%n],p3=T[(i+2)%n];
  return 0.5*((2*p1)+(-p0+p2)*k+(2*p0-5*p1+4*p2-p3)*k*k+(-p0+3*p1-3*p2+p3)*k*k*k);}
@@ -15798,7 +15822,7 @@ function poseA2(action,t){
      sur nos jambes de deux pixels, ça se lit comme une marche accroupie. On
      garde la moitié de cette flexion à l'appui, toute celle de l'élan. */
   const tend=dl=>dl>0.93?1-(1-dl)*0.45:dl+0.0385;
-  const jb=tt=>{const z=v('z',tt),D=tend(v('dl',tt))*A2_JAMBE;return {z,yd:Math.sqrt(Math.max(1,D*D-z*z)),fl:v('fl',tt),p:v('pitch',tt)};};
+  const jb=tt=>{const z=v('z',tt),D=tend(v('dl',tt))*A2_JAMBE;return {z,yd:Math.sqrt(Math.max(1,D*D-z*z)),fl:v('fl',tt),p:v('pitch',tt)+14.5};};
   const jD=jb(t),jG=jb(t+0.5),hH=Math.max(jD.yd+jD.fl,jG.yd+jG.fl);
   const pied=j=>({z:j.z,l:Math.max(0,hH-j.yd),ta:Math.max(0,Math.min(1,j.p/18)),po:Math.max(0,Math.min(1,-j.p/45))});
   const r={bob:A2_JAMBE-hH,sw:v('sw',t)*1.4,pc:0.8*Math.sin(4*Math.PI*t),D:pied(jD),G:pied(jG),
@@ -16345,7 +16369,7 @@ return lireFoulee(COURSE?FOULEE.course:FOULEE.marche,phi);};
 /* LE SQUELETTE fournit les deux pieds ; l'avance repasse dans l'unité du dessin */
 const SQM=(bouge&&!(typeof VELO_FIN==='object'&&VELO_FIN)&&!(typeof TROT_FIN!=='undefined'&&TROT_FIN===true))?squelette(tC,COURSE):null, AMsq=(COURSE?1.35:1)*PAS_U;
 const sqPied=(q)=>({x:q.x/AMsq, lift:q.lift, pointe:q.pointe, talon:q.talon});
-const A2P=(SQM&&ANIM2_ON)?poseA2(COURSE?'course':'marche',tC):null;   /* L'ANIMATION 2 : la pose de la foulée */
+const A2P=(SQM&&ANIM2_ON)?(DEPART_FIN!==null&&!COURSE?poseDepart(DEPART_FIN):poseA2(COURSE?'course':'marche',tC)):null;   /* L'ANIMATION 2 : la pose de la foulée */
 let pG=SQM?sqPied(SQM.G):(bouge?pied(tC):{x:0,lift:0,pointe:0,talon:0}), pD=SQM?sqPied(SQM.D):(bouge?pied(tC+0.5):{x:0,lift:0,pointe:0,talon:0});
 /* LE REPORT DE POIDS passe par les pieds : la jambe libre glisse de deux
    unités et sa pointe se relève, la jambe porteuse reste plantée. Un
