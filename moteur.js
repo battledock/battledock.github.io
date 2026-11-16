@@ -14880,6 +14880,13 @@ REPOS_FIN={type:type,k:Math.max(0,Math.min(1,et))};
 g.drawImage(graverFin(ap,dir,0,false,0,false),0,0,c.width,c.height);
 REPOS_FIN=null;
 }
+else if(j>=1100&&j<1137){
+/* L'ARRÊT CAPTURÉ : 1100-1116 sur le pied droit, 1120-1136 sur le gauche
+   (hors de 300-499, que le clignement s'approprie) */
+const mir=j>=1120;ARRET_FIN={k:(j-(mir?1120:1100))/16,mir};
+g.drawImage(graverFin(ap,dir,0,true,0,false),0,0,c.width,c.height);
+ARRET_FIN=null;
+}
 else if(j>=270&&j<287){
 /* LE DÉPART CAPTURÉ : dix-sept instants de l'arrêt au premier pas */
 DEPART_FIN=(j-270)/16;
@@ -15000,7 +15007,7 @@ const TRANS={etat:'idle', depuis:0, dirPrec:'bas', couPrec:false, marchePrec:fal
    est dessiné pour un départ arrêté — le corps s'accroupissait pour
    pousser alors qu'il était déjà lancé. Un changement de régime ne
    s'accroupit pas : il pique du buste vers l'avant. */
-const DUREE={elan:260, frein:300, pivot:180, lance:220, depart:520};
+const DUREE={elan:260, frein:300, pivot:180, lance:220, depart:520, arret:640};
 function majTransition(dir,marche,court){
 const t=Date.now();
 const age=t-TRANS.depuis;
@@ -15026,10 +15033,10 @@ TRANS.sens=(dir==='droite')?1:-1;}
    On les déclenche maintenant à tout départ et à tout arrêt. Le freinage
    demande d'avoir vraiment marché : sans ce délai, une poussée brève du
    joystick déclencherait un freinage à chaque fois. */
-else if(stoppe&&(t-TRANS.depuis)>140){TRANS.etat='frein';TRANS.depuis=t;TRANS.duree=0;}
+else if(stoppe&&(t-TRANS.depuis)>140){if(!TRANS.couPrec){const ph=Math.floor(joueur.pas*2)%24;TRANS.etat='arret';TRANS.mir=(ph>=6&&ph<18);}else TRANS.etat='frein';TRANS.depuis=t;TRANS.duree=0;}   /* en marchant, le vrai arrêt capturé, sur le pied qui vient de se poser ; en courant, le freinage */
 else if(demarre){TRANS.etat=court?'elan':'depart';TRANS.depuis=t;TRANS.duree=0;}   /* en marchant, le vrai départ capturé ; en courant, l'élan */
 else if(accelere){TRANS.etat='lance';TRANS.depuis=t;TRANS.duree=0;}
-else if(!marche&&TRANS.etat!=='frein')TRANS.etat='idle';
+else if(!marche&&TRANS.etat!=='frein'&&TRANS.etat!=='arret')TRANS.etat='idle';
 else if(marche&&TRANS.etat!=='pivot'&&TRANS.etat!=='elan'&&TRANS.etat!=='depart')TRANS.etat=court?'course':'marche';
 else if(!marche&&TRANS.etat==='depart')TRANS.etat='idle';
 TRANS.dirPrec=dir;TRANS.couPrec=court;TRANS.marchePrec=marche;
@@ -15038,8 +15045,9 @@ return TRANS;}
    240 le pivot, sur cinq étapes chacun. */
 function indiceTransition(){
 const e=TRANS.etat;
-if(e!=='elan'&&e!=='frein'&&e!=='pivot'&&e!=='lance')return null;
+if(e!=='elan'&&e!=='frein'&&e!=='pivot'&&e!=='lance'&&e!=='depart'&&e!=='arret')return null;
 if(e==='depart')return 270+Math.min(16,Math.floor((Date.now()-TRANS.depuis)/DUREE.depart*17));
+if(e==='arret')return (TRANS.mir?1120:1100)+Math.min(16,Math.floor((Date.now()-TRANS.depuis)/DUREE.arret*17));
 const k=Math.min(0.999,(Date.now()-TRANS.depuis)/(TRANS.duree||DUREE[e]));
 const et=Math.floor(k*5);
 /* LE PIVOT A DEUX FAMILLES, une par côté : 240 vers la droite, 245 vers
@@ -15788,45 +15796,54 @@ const A3K={
          course:[20,  38,  32,  22,  24,  60,  96, 106,  78,  38]}};
 const A3_ECH={marche:0.58,course:0.6};
 /* LA MARCHE CAPTURÉE : un vrai marcheur en studio de motion capture (Mixamo,
-   « Start Walking », la foulée stabilisée après le départ), échantillonnée
-   en 48 points du cycle. z : avance de la cheville sous la hanche (foulée
+   « Walking », un cycle complet qui boucle), échantillonné en 48 points,
+   chaque jambe et chaque bras avec ses propres mesures. z : avance de la cheville sous la hanche (foulée
    ramenée à ±9 pour la vitesse du jeu) · dl : distance hanche-cheville en
    part de la jambe tendue (c'est elle qui fait plier le genou) · fl : hauteur
    du pied au-dessus du sol · pitch : bascule du pied (+ pointe relevée,
    − talon levé) · s/e : épaule et coude (degrés, + vers l'avant) · sw : le
    bassin qui se porte sur la jambe d'appui. */
-const A3MOCAP={marche:{"z":[8.36,7.777,7.05,6.287,5.498,4.728,4.01,3.337,2.688,2.045,1.412,0.798,0.2,-0.388,-0.97,-1.553,-2.14,-2.73,-3.325,-3.935,-4.57,-5.242,-5.965,-6.59,-7.06,-7.598,-8.195,-8.67,-8.91,-8.835,-8.463,-7.832,-6.973,-5.97,-4.927,-3.872,-2.785,-1.65,-0.468,0.755,2.002,3.255,4.492,5.695,6.84,7.832,8.457,8.615],"dl":[0.984,0.976,0.971,0.968,0.967,0.966,0.964,0.962,0.961,0.962,0.964,0.966,0.969,0.973,0.977,0.981,0.984,0.987,0.991,0.994,0.996,0.998,0.999,0.99,0.969,0.956,0.953,0.947,0.935,0.916,0.889,0.86,0.834,0.816,0.809,0.815,0.83,0.854,0.881,0.909,0.935,0.956,0.972,0.982,0.988,0.993,0.995,0.992],"fl":[0.855,0.552,0.35,0.215,0.133,0.075,0.035,0.013,0.003,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.018,0.353,1.058,1.645,2.11,2.715,3.478,4.375,5.303,6.12,6.71,6.985,6.895,6.445,5.697,4.758,3.755,2.808,2.01,1.438,1.133,1.095,1.245,1.39,1.385,1.19],"pitch":[7.325,1.45,-4.4,-8.5,-10.925,-12.425,-13.475,-14.075,-14.275,-14.325,-14.375,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.4,-14.6,-17.825,-25.025,-32.15,-38.575,-46.35,-55.9,-66.35,-75.225,-80.225,-80.65,-77.35,-71.825,-65.2,-57.725,-49.45,-40.9,-32.6,-24.625,-16.775,-8.95,-1.275,5.775,11.05,12.95,11.375],"s":[-34.975,-34.525,-33.225,-30.85,-27.825,-24.725,-21.6,-18.15,-14.15,-9.725,-5.2,-0.8,3.175,6.325,8.525,10.025,11.125,11.925,12.425,12.65,12.7,12.675,12.575,12.025,10.975,9.95,8.7,6.8,4.4,1.725,-1.0,-3.7,-6.4,-9.075,-11.625,-14.025,-16.375,-18.725,-21.05,-23.3,-25.45,-27.45,-29.25,-30.85,-32.25,-33.425,-34.325,-34.875],"e":[21.25,20.625,20.125,19.75,19.475,19.2,18.95,18.8,18.7,18.625,18.575,18.5,18.425,18.425,18.525,18.725,19.075,19.65,20.4,21.225,22.1,23.0,23.85,24.05,23.7,23.975,24.75,25.35,25.75,25.975,26.125,26.425,27.075,27.95,28.7,29.175,29.425,29.425,29.175,28.725,28.075,27.3,26.475,25.6,24.7,23.8,22.9,22.025],"sw":[1.363,1.43,1.24,1.047,0.848,0.637,0.422,0.212,0.015,-0.163,-0.315,-0.445,-0.557,-0.657,-0.745,-0.817,-0.875,-0.923,-0.968,-1.005,-1.02,-0.995,-0.913,-1.028,-1.363,-1.43,-1.24,-1.047,-0.848,-0.637,-0.422,-0.212,-0.015,0.163,0.315,0.445,0.557,0.657,0.745,0.817,0.875,0.923,0.968,1.005,1.02,0.995,0.913,1.028]}};
+const A3MOCAP={marche:{"zD":[6.29,5.71,5.08,4.38,3.65,2.92,2.17,1.42,0.7,0.01,-0.66,-1.31,-1.96,-2.62,-3.3,-3.95,-4.58,-5.19,-5.79,-6.39,-7.0,-7.62,-8.18,-8.62,-8.86,-9.0,-8.99,-8.67,-8.16,-7.43,-6.54,-5.53,-4.41,-3.22,-1.95,-0.56,0.83,2.21,3.59,4.93,6.18,7.13,7.87,8.15,8.08,7.8,7.29,6.78],"dlD":[0.9684,0.9665,0.964,0.9607,0.9607,0.9626,0.9658,0.9696,0.9744,0.9795,0.9828,0.9855,0.9867,0.9875,0.9888,0.9887,0.988,0.9868,0.9843,0.9819,0.9793,0.9742,0.9698,0.9652,0.958,0.9493,0.9378,0.9219,0.9045,0.8901,0.8775,0.8688,0.8691,0.8755,0.8888,0.9056,0.926,0.9474,0.9632,0.979,0.9904,0.9963,1.0,0.9982,0.9931,0.9861,0.9792,0.9733],"flD":[0.31,0.13,0.04,0.07,0.06,0.04,0.02,0.01,0.01,0.01,0.1,0.24,0.37,0.48,0.6,0.72,0.89,1.09,1.36,1.67,2.04,2.55,3.09,3.68,4.26,4.85,5.42,5.89,6.29,6.45,6.42,6.24,5.73,5.07,4.27,3.38,2.56,1.86,1.51,1.37,1.56,1.83,2.07,2.05,1.8,1.41,0.95,0.58],"pD":[8.5,3.5,0.4,-0.4,-0.3,-0.1,-0.0,0.0,0.0,0.0,-1.1,-2.7,-4.3,-5.8,-7.4,-9.2,-11.5,-14.4,-18.0,-22.2,-26.9,-33.2,-40.6,-50.1,-60.6,-70.9,-79.5,-83.5,-84.7,-81.0,-74.6,-66.2,-55.7,-45.0,-34.1,-23.7,-13.5,-3.6,6.2,15.8,25.0,32.3,37.9,39.6,37.7,33.4,25.7,17.4],"sD":[-32.9,-32.4,-31.6,-30.3,-28.2,-25.8,-22.9,-19.8,-16.6,-12.9,-11.2,-10.0,-6.8,-3.1,1.0,5.3,9.5,13.7,16.9,19.3,20.7,20.4,19.4,17.5,14.5,11.2,7.3,3.9,0.8,-1.9,-4.3,-6.5,-7.7,-8.7,-9.5,-10.5,-12.3,-15.0,-16.8,-18.6,-20.7,-22.9,-25.2,-27.8,-30.0,-31.8,-32.2,-32.5],"eD":[22.8,23.6,24.3,24.8,25.1,25.2,25.0,24.8,24.4,23.6,28.1,34.3,37.0,38.4,39.1,38.6,37.7,36.3,34.8,34.0,34.0,35.8,38.1,40.9,44.1,47.4,50.4,51.2,50.8,48.9,46.2,43.0,38.0,32.9,27.7,23.2,20.1,19.3,17.1,15.2,14.6,14.7,15.4,17.5,19.3,20.9,20.7,21.4],"zG":[-8.77,-8.61,-8.32,-7.89,-7.27,-6.58,-5.78,-4.83,-3.8,-2.61,-1.44,-0.26,0.99,2.26,3.54,4.77,5.9,6.92,7.54,7.92,7.98,7.66,7.22,6.63,6.03,5.39,4.64,3.9,3.17,2.46,1.76,1.08,0.39,-0.27,-0.9,-1.53,-2.17,-2.85,-3.53,-4.2,-4.85,-5.48,-6.09,-6.67,-7.29,-7.9,-8.42,-8.7],"dlG":[0.9319,0.9081,0.8835,0.8581,0.8376,0.822,0.815,0.8153,0.8209,0.8311,0.8491,0.8727,0.8982,0.9223,0.9468,0.9634,0.9774,0.988,0.9891,0.989,0.986,0.983,0.979,0.9727,0.9668,0.9603,0.949,0.9439,0.9433,0.9488,0.9559,0.9645,0.9725,0.9798,0.9858,0.9899,0.9937,0.9969,0.9973,0.9968,0.9935,0.9882,0.983,0.9778,0.9758,0.9763,0.9759,0.9603],"flG":[4.94,5.98,6.93,7.76,8.2,8.37,8.12,7.54,6.85,6.04,5.13,4.2,3.28,2.58,2.03,1.92,2.0,2.27,2.61,2.75,2.59,1.93,1.26,0.7,0.31,0.04,0.01,0.0,0.0,0.0,0.0,0.0,0.02,0.06,0.11,0.13,0.15,0.15,0.19,0.29,0.51,0.79,1.11,1.46,1.81,2.16,2.64,3.6],"pG":[-53.9,-61.8,-69.7,-77.5,-77.7,-74.8,-67.4,-58.9,-50.1,-41.0,-32.5,-23.9,-15.1,-6.7,1.2,7.3,12.9,17.9,21.9,25.0,27.0,25.8,22.5,16.2,8.0,1.0,0.3,0.0,0.0,0.0,0.0,0.0,0.0,-0.3,-1.0,-1.3,-1.5,-1.4,-2.0,-3.3,-6.1,-10.2,-14.9,-20.1,-24.8,-29.2,-33.7,-42.1],"sG":[10.9,11.5,12.0,12.6,12.9,12.8,12.0,10.3,7.7,3.5,-0.3,-3.9,-7.8,-11.1,-13.9,-16.2,-18.3,-20.3,-21.8,-23.4,-25.2,-27.0,-28.5,-28.9,-28.3,-27.4,-26.6,-25.4,-23.9,-20.7,-17.3,-13.9,-11.3,-9.1,-7.3,-6.2,-4.9,-3.4,-1.8,0.1,2.3,4.5,6.6,8.3,9.6,10.6,10.7,10.8],"eG":[47.2,44.1,40.8,37.0,32.9,29.1,26.3,25.0,24.8,26.9,27.7,28.0,28.7,28.6,27.9,26.9,25.9,25.0,24.4,24.7,26.3,29.4,32.2,33.9,34.8,35.5,36.5,36.7,36.2,32.7,29.5,26.7,26.1,26.5,28.2,31.6,35.1,38.4,41.4,43.9,45.6,46.7,47.6,48.0,48.2,48.3,48.6,48.2],"sw":[0.2,0.05,-0.12,-0.31,-0.43,-0.53,-0.6,-0.67,-0.73,-0.79,-0.83,-0.87,-0.9,-0.92,-0.94,-0.94,-0.94,-0.93,-0.9,-0.84,-0.77,-0.64,-0.5,-0.36,-0.21,-0.06,0.09,0.24,0.38,0.5,0.6,0.68,0.75,0.81,0.86,0.88,0.91,0.92,0.93,0.94,0.94,0.94,0.92,0.88,0.79,0.67,0.52,0.37]}};
 /* LE DÉPART, capturé aussi (le début du même fichier) : de l'arrêt au
    premier talon posé, 17 instants. Le pied droit part, le gauche pousse,
    les bras se mettent en route — et la foulée enchaîne exactement là où
    le départ s'arrête (talon droit au sol = début du cycle). */
-A3MOCAP.depart={"zD":[-0.84,-1.03,-1.27,-1.55,-1.8,-1.68,-1.24,-0.49,0.61,1.95,3.51,5.04,6.37,7.47,8.26,8.27,7.39],"dlD":[0.9865,0.9856,0.9855,0.9842,0.9808,0.9577,0.9152,0.8733,0.864,0.8877,0.9269,0.9644,0.979,0.9847,0.9929,0.9939,0.9896],"flD":[0.47,0.47,0.47,0.47,0.54,1.3,2.63,3.97,4.35,3.72,2.68,1.81,1.72,1.73,1.31,0.89,0.61],"pD":[-17.1,-17.1,-17.1,-17.1,-18.0,-26.5,-37.9,-44.6,-41.2,-31.4,-18.8,-5.9,6.1,15.6,14.9,1.6,-8.6],"zG":[0.73,0.53,0.28,-0.0,-0.3,-0.58,-0.86,-1.17,-1.53,-1.97,-2.5,-3.11,-3.79,-4.48,-5.24,-6.03,-6.7],"dlG":[0.9906,0.9889,0.9879,0.9856,0.9829,0.9797,0.9732,0.9672,0.9659,0.9677,0.9703,0.9735,0.9762,0.976,0.9704,0.9602,0.9481],"flG":[0.18,0.19,0.19,0.19,0.18,0.17,0.15,0.14,0.13,0.13,0.12,0.12,0.13,0.14,0.23,0.65,1.43],"pG":[-13.3,-13.2,-13.2,-13.3,-13.6,-13.9,-14.4,-14.7,-14.9,-15.0,-15.3,-15.4,-15.4,-15.4,-16.5,-21.8,-32.0],"sD":[-4.8,-5.2,-5.9,-7.0,-8.4,-9.8,-12.2,-15.3,-18.0,-20.4,-22.7,-24.5,-26.1,-29.1,-32.7,-34.5,-34.2],"eD":[25.9,25.9,26.4,27.8,30.0,32.3,36.4,40.8,42.9,42.9,42.1,39.7,36.5,34.0,31.6,29.4,27.8],"sG":[-9.9,-10.3,-10.9,-11.9,-12.8,-12.9,-11.7,-8.8,-4.9,-1.1,2.7,6.3,7.9,9.3,9.6,10.5,10.3],"eG":[24.7,25.2,25.2,24.6,23.7,22.3,20.5,18.3,16.4,14.9,13.9,13.5,14.7,17.3,20.2,22.1,23.8]};
+A3MOCAP.depart={"zD":[-0.84,-1.03,-1.27,-1.55,-1.8,-1.68,-1.24,-0.49,0.61,1.95,3.51,5.04,6.37,7.47,8.26,8.27,7.39],"dlD":[0.9865,0.9856,0.9855,0.9842,0.9808,0.9577,0.9152,0.8733,0.864,0.8877,0.9269,0.9644,0.979,0.9847,0.9929,0.9939,0.9896],"flD":[0.47,0.47,0.47,0.47,0.54,1.3,2.63,3.97,4.35,3.72,2.68,1.81,1.72,1.73,1.31,0.89,0.61],"pD":[-2.1,-2.1,-2.1,-2.1,-3.0,-11.5,-22.9,-29.6,-26.2,-16.4,-3.8,9.1,21.1,30.6,29.9,16.6,6.4],"zG":[0.73,0.53,0.28,-0.0,-0.3,-0.58,-0.86,-1.17,-1.53,-1.97,-2.5,-3.11,-3.79,-4.48,-5.24,-6.03,-6.7],"dlG":[0.9906,0.9889,0.9879,0.9856,0.9829,0.9797,0.9732,0.9672,0.9659,0.9677,0.9703,0.9735,0.9762,0.976,0.9704,0.9602,0.9481],"flG":[0.18,0.19,0.19,0.19,0.18,0.17,0.15,0.14,0.13,0.13,0.12,0.12,0.13,0.14,0.23,0.65,1.43],"pG":[1.7,1.8,1.8,1.7,1.4,1.1,0.6,0.3,0.1,0.0,-0.3,-0.4,-0.4,-0.4,-1.5,-6.8,-17.0],"sD":[-4.8,-5.2,-5.9,-7.0,-8.4,-9.8,-12.2,-15.3,-18.0,-20.4,-22.7,-24.5,-26.1,-29.1,-32.7,-34.5,-34.2],"eD":[25.9,25.9,26.4,27.8,30.0,32.3,36.4,40.8,42.9,42.9,42.1,39.7,36.5,34.0,31.6,29.4,27.8],"sG":[-9.9,-10.3,-10.9,-11.9,-12.8,-12.9,-11.7,-8.8,-4.9,-1.1,2.7,6.3,7.9,9.3,9.6,10.5,10.3],"eG":[24.7,25.2,25.2,24.6,23.7,22.3,20.5,18.3,16.4,14.9,13.9,13.5,14.7,17.3,20.2,22.1,23.8]};
 let DEPART_FIN=null;
-function poseDepart(k){const M=A3MOCAP.depart,n=M.zD.length-1;
+/* UNE POSE TIRÉE D'UNE TABLE CAPTURÉE (départ, arrêt) : k de 0 à 1 ; mir
+   échange droite et gauche (un arrêt sur le pied gauche est le reflet d'un
+   arrêt sur le pied droit). */
+function poseTab(M,k,mir){const n=M.zD.length-1;
  const v=(c)=>{const f=Math.max(0,Math.min(1,k))*n,i=Math.min(n-1,Math.floor(f)),u=f-i;return M[c][i]+(M[c][i+1]-M[c][i])*u;};
  const tend=dl=>dl>0.93?1-(1-dl)*0.45:dl+0.0385;
- const jb=c=>{const z=v('z'+c),Dd=tend(v('dl'+c))*A2_JAMBE;return {z,yd:Math.sqrt(Math.max(1,Dd*Dd-z*z)),fl:v('fl'+c),p:v('p'+c)+15};};
- const jD=jb('D'),jG=jb('G'),hH=Math.max(jD.yd+jD.fl,jG.yd+jG.fl);
+ const jb=c=>{const z=v('z'+c),Dd=tend(v('dl'+c))*A2_JAMBE;return {z,yd:Math.sqrt(Math.max(1,Dd*Dd-z*z)),fl:v('fl'+c),p:v('p'+c)};};
+ const a=mir?'G':'D', b=mir?'D':'G';
+ const jD=jb(a),jG=jb(b),hH=Math.max(jD.yd+jD.fl,jG.yd+jG.fl);
  const pied=j=>({z:j.z,l:Math.max(0,hH-j.yd),ta:Math.max(0,Math.min(1,j.p/18)),po:Math.max(0,Math.min(1,-j.p/45))});
- const r={bob:A2_JAMBE-hH,sw:0,pc:0,D:pied(jD),G:pied(jG),bD:{s:v('sD'),e:v('eD')},bG:{s:v('sG'),e:v('eG')}};
- r.tw=(r.D.z-r.G.z)/18*1.8*Math.min(1,k*2);return r;}
+ const r={bob:A2_JAMBE-hH,sw:0,pc:0,D:pied(jD),G:pied(jG),bD:{s:v('s'+a),e:v('e'+a)},bG:{s:v('s'+b),e:v('e'+b)}};
+ r.tw=(r.D.z-r.G.z)/18*1.8;return r;}
+const poseDepart=k=>{const r=poseTab(A3MOCAP.depart,k,false);r.tw*=Math.min(1,k*2);return r;};
+/* L'ARRÊT CAPTURÉ (Mixamo « Stop Walking ») : du dernier talon posé aux
+   pieds joints, le corps qui se redresse et les bras qui retombent. */
+A3MOCAP.arret={"zD":[6.46,5.64,4.73,3.79,3.05,2.43,1.87,1.33,0.78,0.23,-0.24,-0.6,-0.85,-1.02,-1.13,-1.16,-1.14],"dlD":[0.9922,0.9796,0.9727,0.9643,0.9529,0.9476,0.9496,0.9519,0.9557,0.9616,0.9685,0.977,0.9819,0.9846,0.9883,0.9925,0.9944],"flD":[1.04,0.64,0.46,0.47,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.46,0.45,0.45,0.45,0.45,0.45],"pD":[19.6,5.4,-0.7,-0.6,-0.6,-0.6,-0.6,-0.5,-0.5,-0.5,-0.5,-0.4,-0.4,-0.4,-0.3,-0.3,-0.3],"zG":[-4.24,-5.1,-5.86,-5.78,-5.23,-3.79,-1.98,0.15,1.47,1.67,1.38,0.91,0.56,0.31,0.15,0.06,0.06],"dlG":[0.9574,0.948,0.945,0.9113,0.8545,0.8006,0.8093,0.8819,0.9422,0.964,0.9742,0.9799,0.9837,0.9862,0.9896,0.9932,0.9947],"flG":[1.04,1.68,2.32,3.71,5.43,6.55,5.7,2.96,0.97,0.31,0.12,0.13,0.13,0.13,0.13,0.13,0.13],"pG":[-7.9,-15.0,-22.9,-36.2,-44.3,-42.8,-27.4,-8.9,0.7,2.1,2.5,2.4,2.4,2.4,2.4,2.4,2.4],"sD":[-17.5,-16.7,-13.2,-11.1,-9.9,-6.3,-1.4,1.8,3.7,5.1,4.5,1.7,-2.2,-6.0,-8.8,-10.7,-11.5],"eD":[7.7,12.6,15.2,20.2,26.9,29.5,29.5,31.5,33.7,34.7,35.6,37.6,40.0,40.7,39.9,37.5,33.2],"sG":[19.0,14.2,7.7,1.1,-4.9,-9.8,-13.7,-16.6,-17.5,-15.1,-11.8,-9.7,-8.5,-7.2,-6.0,-5.5,-5.8],"eG":[23.4,22.9,21.4,17.3,15.4,16.7,19.9,25.3,28.8,28.0,26.1,27.0,29.7,31.5,32.2,32.5,33.0]};
+let ARRET_FIN=null;
 function a3courbe(T,t){t=((t%1)+1)%1;const n=T.length,f=t*n,i=Math.floor(f),k=f-i;
  const p0=T[(i-1+n)%n],p1=T[i%n],p2=T[(i+1)%n],p3=T[(i+2)%n];
  return 0.5*((2*p1)+(-p0+p2)*k+(2*p0-5*p1+4*p2-p3)*k*k+(-p0+3*p1-3*p2+p3)*k*k*k);}
 const a3g=(t,c,w)=>{let d=((t-c)%1+1.5)%1-0.5;return Math.exp(-(d*d)/(2*w*w));};
 function poseA2(action,t){
  t=((t%1)+1)%1;
- if(action==='marche'&&A3MOCAP.marche){const M=A3MOCAP.marche,n=M.z.length;
+ if(action==='marche'&&A3MOCAP.marche){const M=A3MOCAP.marche,n=M.zD.length;
   const v=(k,tt)=>{tt=((tt%1)+1)%1;const f=tt*n,i=Math.floor(f),u=f-i;const A=M[k][i%n],B=M[k][(i+1)%n];return A+(B-A)*u;};
   /* le marcheur Mixamo garde le genou fléchi d'une vingtaine de degrés à l'appui :
      sur nos jambes de deux pixels, ça se lit comme une marche accroupie. On
      garde la moitié de cette flexion à l'appui, toute celle de l'élan. */
   const tend=dl=>dl>0.93?1-(1-dl)*0.45:dl+0.0385;
-  const jb=tt=>{const z=v('z',tt),D=tend(v('dl',tt))*A2_JAMBE;return {z,yd:Math.sqrt(Math.max(1,D*D-z*z)),fl:v('fl',tt),p:v('pitch',tt)+14.5};};
-  const jD=jb(t),jG=jb(t+0.5),hH=Math.max(jD.yd+jD.fl,jG.yd+jG.fl);
+  const jb=(c)=>{const z=v('z'+c,t),D=tend(v('dl'+c,t))*A2_JAMBE;return {z,yd:Math.sqrt(Math.max(1,D*D-z*z)),fl:v('fl'+c,t),p:v('p'+c,t)};};
+  const jD=jb('D'),jG=jb('G'),hH=Math.max(jD.yd+jD.fl,jG.yd+jG.fl);
   const pied=j=>({z:j.z,l:Math.max(0,hH-j.yd),ta:Math.max(0,Math.min(1,j.p/18)),po:Math.max(0,Math.min(1,-j.p/45))});
   const r={bob:A2_JAMBE-hH,sw:v('sw',t)*1.4,pc:0.8*Math.sin(4*Math.PI*t),D:pied(jD),G:pied(jG),
-   bD:{s:v('s',t),e:v('e',t)},bG:{s:v('s',t+0.5),e:v('e',t+0.5)}};
+   bD:{s:v('sD',t),e:v('eD',t)},bG:{s:v('sG',t),e:v('eG',t)}};
   r.tw=(r.D.z-r.G.z)/18*1.8;return r;}
  const C=action==='course';const H=A3K.hanche[action],K=A3K.genou[action],E=A3_ECH[action];
  const L=A2_JAMBE/2, rad=Math.PI/180;
@@ -16369,7 +16386,7 @@ return lireFoulee(COURSE?FOULEE.course:FOULEE.marche,phi);};
 /* LE SQUELETTE fournit les deux pieds ; l'avance repasse dans l'unité du dessin */
 const SQM=(bouge&&!(typeof VELO_FIN==='object'&&VELO_FIN)&&!(typeof TROT_FIN!=='undefined'&&TROT_FIN===true))?squelette(tC,COURSE):null, AMsq=(COURSE?1.35:1)*PAS_U;
 const sqPied=(q)=>({x:q.x/AMsq, lift:q.lift, pointe:q.pointe, talon:q.talon});
-const A2P=(SQM&&ANIM2_ON)?(DEPART_FIN!==null&&!COURSE?poseDepart(DEPART_FIN):poseA2(COURSE?'course':'marche',tC)):null;   /* L'ANIMATION 2 : la pose de la foulée */
+const A2P=(SQM&&ANIM2_ON)?(DEPART_FIN!==null&&!COURSE?poseDepart(DEPART_FIN):(ARRET_FIN!==null?poseTab(A3MOCAP.arret,ARRET_FIN.k,ARRET_FIN.mir):poseA2(COURSE?'course':'marche',tC))):null;   /* L'ANIMATION 2 : la pose de la foulée */
 let pG=SQM?sqPied(SQM.G):(bouge?pied(tC):{x:0,lift:0,pointe:0,talon:0}), pD=SQM?sqPied(SQM.D):(bouge?pied(tC+0.5):{x:0,lift:0,pointe:0,talon:0});
 /* LE REPORT DE POIDS passe par les pieds : la jambe libre glisse de deux
    unités et sa pointe se relève, la jambe porteuse reste plantée. Un
