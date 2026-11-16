@@ -18636,9 +18636,20 @@ const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
    /* EN COURSE, vus de dos, les avant-bras partent devant : ils se raccourcissent
       jusqu'à disparaître, et le bras avait l'air tendu le long du corps. On écarte
       le coude et on rentre la main vers le ventre : le L du bras plié se lit. */
-   if(COURSE&&!diag){P.E.x=cx0+(P.E.x-cx0)*1.12;if(!loinB){for(const k of ['W','M']){P[k].x=cx0+(P[k].x-cx0)*0.8;P[k].y-=1;}}}}
+   if(COURSE&&!diag){
+    /* LE COUREUR VU DE DOS plie franchement le coude.
+       - Le bras qui recule vient vers nous : le coude remonte en arrière et
+         ressort sur le côté, l'avant-bras redescend vers la hanche — un V
+         pointé vers l'extérieur, très lisible.
+       - Le bras qui part devant : le coude reste près de la taille, l'avant-bras
+         remonte devant la poitrine, caché par le dos. */
+    const o=Math.sign(P.S.x-cx0)||1, f=Math.min(1,Math.max(0.35,Math.abs(q.s)/38));
+    if(q.s<=2){P.E={x:P.S.x+o*(2+2.2*f),y:P.S.y+6-1.5*f,d:P.E.d};const ux=-o*0.42,uy=0.9,L=6;
+     P.W={x:P.E.x+ux*L,y:P.E.y+uy*L,d:P.W.d};P.M={x:P.W.x+ux*1.8,y:P.W.y+uy*1.8,d:P.M.d};}
+    else{P.E={x:P.S.x+o*1.2,y:P.S.y+8.5,d:P.E.d};const ux=-o*0.62,uy=-0.78,L=5.5;
+     P.W={x:P.E.x+ux*L,y:P.E.y+uy*L,d:P.W.d};P.M={x:P.W.x+ux*1.8,y:P.W.y+uy*1.8,d:P.M.d};P.derriere=1;}}}
  if(diag){const loin=(sh[0]*sa+sh[2]*ca)<0;const ec=Math.sign(-sx*ca||1)*13*(1-Math.abs(ca))*(loin?0.3:1);for(const k in P)P[k].x+=ec;}   /* le bras du fond, lui, reste collé au flanc qui fuit */
- return {S:P.S,E:P.E,W:P.W,M:P.M,cote2,d:pj(el).d,recule:q.s<-6};};
+ return {S:P.S,E:P.E,W:P.W,M:P.M,cote2,d:P.derriere?-1:pj(el).d,recule:q.s<-6};};   /* de dos en course, les deux avant-bras passent devant le ventre : derrière le buste */
 const dessinerJambe=(J,fonce)=>{
  const haut=pant, bas=court?peau:pant;
  const pp={pointe:J.q.po,talon:J.q.ta};
