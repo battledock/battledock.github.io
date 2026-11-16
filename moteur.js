@@ -18637,7 +18637,8 @@ const PZB=0.34;   /* UNE SEULE CAMÉRA : bras et jambes s'éloignent ou s'approc
    se lève, la foulée qui avance vers nous, le bras qui balance — sans toucher
    au rythme capturé. Le profil, lui, reste la mesure telle quelle. */
 const FV=(!cote&&A2P)?(diag?0.5:1):0;
-const ampJ=q=>FV?{...q,z:q.z*(1+(COURSE?0.35:0.7)*FV),l:q.l*(1+(COURSE?-0.25:0.9)*FV)}:q;
+const FR=!cote&&!diag&&!!A2P;   /* face ou dos, en mouvement */
+const ampJ=q=>FV?{...q,z:q.z*(1+(COURSE?0.35:0.7)*FV),l:q.l*(1+(COURSE?(diag?-0.25:0.3):(diag?0.9:1.8))*FV)}:q;
 const ampB=q=>FV?{s:Math.max(-60,Math.min(55,q.s*(1+0.9*FV))),e:q.e+(q.s>0?14:4)*FV}:q;
 const PJ=A2P?{D:ampJ(A2P.D),G:ampJ(A2P.G)}:{D:{z:pD.x*PAS_U-(bouge?0:0.6),l:pD.lift*6,ta:pD.talon,po:pD.pointe},G:{z:pG.x*PAS_U+(bouge?0:1.2),l:pG.lift*6,ta:pG.talon,po:pG.pointe}};
 const PB=A2P?{D:ampB(A2P.bD),G:ampB(A2P.bG)}:{D:{s:2+souffle*.6,e:9},G:{s:2+souffle*.6,e:9}};
@@ -18703,6 +18704,18 @@ const jambe2=(cote2)=>{const q=PJ[cote2], sx=cote2==='D'?1:-1;
  const h=Math.sqrt(Math.max(0,os.cuisse*os.cuisse-dist*dist/4));
  const knee=[hip[0]+dx/2+bx/bl*h, hip[1]+dy/2+by/bl*h, hip[2]+dz/2+bz/bl*h];
  const H0=pj(hip,0.12),Hb=pj(hip,PZB),rl=v=>{const p=pj(v,PZB);return {x:H0.x+p.x-Hb.x,y:H0.y+p.y-Hb.y,d:p.d};};   /* même caméra que les bras */
+ /* DE FACE ET DE DOS, LA JAMBE SE DESSINE COMME UN DESSINATEUR LA DESSINE.
+    Une caméra en surplomb fait descendre ce qui vient vers nous : le genou
+    qui monte vers l'objectif retombait d'autant — la jambe libre gardait
+    sa longueur, raide. Le dessinateur fait l'inverse : le genou qui monte
+    MONTE, la jambe se raccourcit, le pied se lève sous lui ; seul le pied
+    posé devant descend un peu (il est plus près). On garde donc la
+    profondeur pour la pose au sol, et la hauteur vraie pour la levée. */
+ if(FR){const sol=Math.max(0,1-q.l/4), zA=ank[2]*(dos?-1:1);
+  const A={x:H0.x+(ank[0]-hip[0])*(dos?-1:1)*-1, y:H0.y+(ank[1]-hip[1])+zA*0.42*sol-(1-sol)*q.l*0.25, d:pj(ank).d};
+  const kz=(knee[2]-hip[2])*(dos?-1:1), kb=Math.max(0,kz-Math.max(0,zA));   /* l'avancée propre du genou : la flexion */
+  const K={x:H0.x+(knee[0]-hip[0])*(dos?-1:1)*-1+sx*(dos?-1:1)*-1*kb*0.12, y:H0.y+(knee[1]-hip[1])+zA*0.21*sol-kb*0.18, d:pj(knee).d};
+  return {H:H0,K,A,A3:ank,q,cote2,d:pj(knee).d};}
  return {H:H0,K:rl(knee),A:rl(ank),A3:ank,q,cote2,d:pj(knee).d};};
 const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
  /* L'ÉPAULE BOUGE : elle tourne avec la torsion, et elle se soulève d'un
@@ -18731,6 +18744,11 @@ const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
     l'épaule calculée en 3D tombait jusqu'à quatre unités à côté, et le bras
     entier flottait dans le vide (192 poses sur 768 en marche et en course).
     On pose l'épaule sur le bord réel du buste, le bras garde son mouvement. */
+ /* DE FACE, LE BRAS QUI VIENT DEVANT PASSE DEVANT LE VENTRE : la main
+    rentre vers le milieu ; celle qui recule s'écarte un peu du flanc. */
+ if(FR){const io=-(Math.sign(P.S.x-swX)||sx), sn=Math.sin(q.s*Math.PI/180);
+  const dx=sn>0?io*sn*(COURSE?2.6:3.2):-io*(-sn)*1.2;
+  P.E.x+=dx*0.45;P.W.x+=dx;P.M.x+=dx;}
  if(diag&&!cote){const c0=vis+vrille, cotS=Math.sign(P.S.x-c0)||sx, bord=c0+cotS*(Math.round(EP*0.78)-1.4);
   const dx=bord-P.S.x;for(const k in P)P[k].x+=dx;}
  return {S:P.S,E:P.E,W:P.W,M:P.M,cote2,d:pj(el).d,recule:q.s<-6};};
