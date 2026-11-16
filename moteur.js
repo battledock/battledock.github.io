@@ -2640,8 +2640,7 @@ g.fillStyle='#e8cf8a';g.font='9px Georgia,serif';g.fillText('ENTREPÔT',w*0.66,h
 ];
 const PAGES_PORT=[
 {titre:'Se déplacer',sous:'LE POUCE ET LE BOUTON',
-txt:['<b>Touche un endroit</b> : ton perso y va tout seul, en contournant les obstacles. '+
-'Ou pose le pouce et fais-le glisser : le joystick apparaît sous ton doigt, pousse jusqu’au bord pour <b>courir</b>.',
+txt:['Pose le pouce et fais-le glisser : le joystick apparaît sous ton doigt. Près du centre tu <b>marches</b>, pousse jusqu’au bord pour <b>courir</b>.',
 'Près d’un lieu ou d’un objet, un <b>bouton</b> apparaît en bas de l’écran : touche-le pour entrer, pêcher, acheter…'],
 img:(g,w,h)=>{g.fillStyle='#d9c7a0';g.fillRect(0,0,w,h);g.fillStyle='rgba(0,0,0,.06)';for(let y=0;y<h;y+=14)for(let x=(y/14)%2*12;x<w;x+=24)g.fillRect(x,y,23,1);
 const ox=w*0.3,oy=h*0.55;g.beginPath();g.arc(ox,oy,30,0,7);g.fillStyle='rgba(20,14,8,.12)';g.fill();g.lineWidth=1.5;g.strokeStyle='rgba(250,244,228,.9)';g.stroke();
@@ -19703,7 +19702,7 @@ function verifierLeChemin(dt){
 }
 const jc=$('joy'), jg=jc.getContext('2d');
 let JDPR=1;
-const JOY_C=100;                               /* côté du carré, en points : l'anneau, le pommeau et son ombre y tiennent */
+const JOY_C=150;                               /* côté du carré, en points : l'anneau, le pommeau et son ombre y tiennent */
 function tailleJoy(){
 JDPR=Math.max(1,Math.min(3,window.devicePixelRatio||1));
 jc.width=Math.round(JOY_C*JDPR);jc.height=Math.round(JOY_C*JDPR);
@@ -19711,11 +19710,12 @@ jc.style.width=JOY_C+'px';jc.style.height=JOY_C+'px';
 }
 addEventListener('resize',tailleJoy);
 tailleJoy();
-const RAYON=34, POUCE=13;                    /* le joystick DISCRET : plus petit, plus léger */
+const RAYON=52, POUCE=17;                    /* LE JOYSTICK FIXE ET PLUS GRAND : la marche a de la place (0 → 46 px), la course ne s'ouvre qu'au bord */
 let J={actif:false,id:null,ox:0,oy:0,x:0,y:0,vie:0};
 const pointDe=t=>[t.clientX,t.clientY];
 function prendre(x,y){
-const limite=window.innerHeight-96;          /* la barre du bas */
+const limite=window.innerHeight-96-Math.max(0,RAYON-40);          /* la barre du bas : l'anneau ne la recouvre pas */
+x=Math.max(RAYON+6,Math.min(window.innerWidth-RAYON-6,x));
 if(y>limite)y=limite;
 J.actif=true;J.ox=x;J.oy=y;J.x=x;J.y=y;J.vie=1;
 joyX=joyY=0;
@@ -19726,7 +19726,7 @@ const dx=x-J.ox, dy=y-J.oy, d=Math.hypot(dx,dy);
 const a=Math.atan2(dy,dx);
 const m=Math.min(d,RAYON);
 J.x=J.ox+Math.cos(a)*m;J.y=J.oy+Math.sin(a)*m;
-if(d>RAYON){J.ox=x-Math.cos(a)*RAYON;J.oy=y-Math.sin(a)*RAYON;}
+/* le centre ne suit plus le doigt : revenir vers lui ramène toujours à la marche */
 const n=Math.min(1,d/RAYON);
 joyX=d<1?0:Math.cos(a)*n;joyY=d<1?0:Math.sin(a)*n;
 if(Math.hypot(joyX,joyY)<.16)joyX=joyY=0;
@@ -19752,16 +19752,16 @@ J.id=t.identifier;prendre(x,y);J.t0=Date.now();J.sx=x;J.sy=y;J.bouge=false;
 document.addEventListener('touchmove',ev=>{
 for(const t of ev.changedTouches)if(t.identifier===J.id){
 ev.preventDefault();
-const [x,y]=pointDe(t);if(!J.bouge&&Math.hypot(x-J.sx,y-J.sy)>11){J.bouge=true;arreterMarche();}if(J.bouge)tirer(x,y);
+const [x,y]=pointDe(t);if(!J.bouge&&Math.hypot(x-J.sx,y-J.sy)>6){J.bouge=true;arreterMarche();}if(J.bouge)tirer(x,y);
 }
 },{passive:false});
 ['touchend','touchcancel'].forEach(k=>document.addEventListener(k,ev=>{
-for(const t of ev.changedTouches)if(t.identifier===J.id){ev.preventDefault();const tap=!J.bouge&&Date.now()-(J.t0||0)<800&&k==='touchend';const sx=J.sx,sy=J.sy;lacher();if(tap){J.vie=0;try{allerVers(sx,sy);}catch(z){}}}
+for(const t of ev.changedTouches)if(t.identifier===J.id){ev.preventDefault();const tap=!J.bouge&&Date.now()-(J.t0||0)<800&&k==='touchend';const sx=J.sx,sy=J.sy;lacher();if(tap){J.vie=0;void sx;void sy;}}
 },{passive:false}));
 document.addEventListener('mousedown',ev=>{
 if(zoneMarche(ev.clientX,ev.clientY,ev.target)){prendre(ev.clientX,ev.clientY);J.t0=Date.now();J.sx=ev.clientX;J.sy=ev.clientY;J.bouge=false;}});
-addEventListener('mousemove',ev=>{if(J.actif){if(!J.bouge&&Math.hypot(ev.clientX-J.sx,ev.clientY-J.sy)>11){J.bouge=true;arreterMarche();}if(J.bouge)tirer(ev.clientX,ev.clientY);}});
-addEventListener('mouseup',()=>{if(J.actif){const tap=!J.bouge&&Date.now()-(J.t0||0)<800,sx=J.sx,sy=J.sy;lacher();if(tap){J.vie=0;try{allerVers(sx,sy);}catch(z){}}}});
+addEventListener('mousemove',ev=>{if(J.actif){if(!J.bouge&&Math.hypot(ev.clientX-J.sx,ev.clientY-J.sy)>6){J.bouge=true;arreterMarche();}if(J.bouge)tirer(ev.clientX,ev.clientY);}});
+addEventListener('mouseup',()=>{if(J.actif){const tap=!J.bouge&&Date.now()-(J.t0||0)<800,sx=J.sx,sy=J.sy;lacher();if(tap){J.vie=0;void sx;void sy;}}});
 addEventListener('keydown',ev=>{const k={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
 z:[0,-1],s:[0,1],q:[-1,0],d:[1,0]}[ev.key];if(k){arreterMarche();joyX=k[0];joyY=k[1];}});
 addEventListener('keyup',()=>{joyX=joyY=0;});
