@@ -19297,6 +19297,7 @@ if(window.FP_GEL&&Date.now()<window.FP_GEL){vx=0;vy=0;joueur.marche=false;tourne
 tournerEnDouceur(dt);
 try{guiderMarche(dt);}catch(z){MARCHE=null;}
 try{guiderDoigt();}catch(z){}
+try{guiderCroix();}catch(z){}
 const n=Math.hypot(joyX,joyY);
 const pousse=Math.min(1,n);
 const max=vitesseDuJoueur();
@@ -19740,7 +19741,57 @@ function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
    commande du hall (là il guide un engin, pas des pieds). ?ctrl=joy le
    rend aussi à pied, pour comparer.
    ===================================================================== */
-const CTRL_JOY=(()=>{try{const q=new URLSearchParams(location.search).get('ctrl');if(q==='joy'||q==='doigt')localStorage.setItem('bdl.ctrl',q);return (localStorage.getItem('bdl.ctrl')||'doigt')==='joy';}catch(x){return false;}})();
+const CTRL=(()=>{try{const q=new URLSearchParams(location.search).get('ctrl');if(q==='joy'||q==='doigt'||q==='croix')localStorage.setItem('bdl.ctrl',q);return localStorage.getItem('bdl.ctrl')||'doigt';}catch(x){return 'doigt';}})();
+const CTRL_JOY=CTRL!=='doigt';
+/* LA CROIX (?ctrl=croix). Fixe en bas à gauche, huit directions (les coins
+   donnent les diagonales) ; le bouton rond à droite, tenu, fait courir.
+   Deux pouces, comme sur une console de poche. Le doigt libre ailleurs ne
+   fait rien bouger : il reste aux boutons et au décor. */
+const CROIX={id:null,dx:0,dy:0,court:false,idB:null,el:null,b:null};
+const croixVisible=()=>CTRL==='croix'&&CARTE!=='large'&&!window.TK_SANS_JOY&&!window.ECRAN_COUVRANT&&!pageOuverte()&&!(window.FP_GEL&&Date.now()<window.FP_GEL)&&!(CARTE==='tokyo'&&typeof TKM!=='undefined'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif);
+function poserCroix(){
+  if(CTRL!=='croix'||CROIX.el)return;
+  const st=document.createElement('style');st.textContent=`
+#croix{position:fixed;left:14px;bottom:110px;width:132px;height:132px;z-index:40;touch-action:none;user-select:none;-webkit-user-select:none}
+#croix .b{position:absolute;background:#2b2118;border:2px solid #f4ecd8;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+#croix .h{left:44px;top:0;width:44px;height:132px;border-radius:9px}
+#croix .v{left:0;top:44px;width:132px;height:44px;border-radius:9px}
+#croix .m{left:46px;top:46px;width:40px;height:40px;background:#2b2118;border:0;box-shadow:none;border-radius:0}
+#croix i{position:absolute;width:0;height:0;border:9px solid transparent;opacity:.85}
+#croix .fh{left:57px;top:8px;border-bottom:12px solid #f4ecd8;border-top:0}
+#croix .fb{left:57px;bottom:8px;border-top:12px solid #f4ecd8;border-bottom:0}
+#croix .fg{top:57px;left:8px;border-right:12px solid #f4ecd8;border-left:0}
+#croix .fd{top:57px;right:8px;border-left:12px solid #f4ecd8;border-right:0}
+#croix.on-h .fh{border-bottom-color:#e8c06a;opacity:1}#croix.on-b .fb{border-top-color:#e8c06a;opacity:1}#croix.on-g .fg{border-right-color:#e8c06a;opacity:1}#croix.on-d .fd{border-left-color:#e8c06a;opacity:1}
+#croixB{position:fixed;right:22px;bottom:118px;width:70px;height:70px;border-radius:50%;z-index:40;background:#7a1f2b;border:2px solid #f4ecd8;box-shadow:0 4px 0 rgba(0,0,0,.4);color:#f4ecd8;font:700 12px Georgia,serif;letter-spacing:.06em;touch-action:none;user-select:none;-webkit-user-select:none;display:flex;align-items:center;justify-content:center;padding:0}
+#croixB.on{background:#e8c06a;color:#2b2118;transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.4)}`;
+  document.head.appendChild(st);
+  const el=document.createElement('div');el.id='croix';el.innerHTML='<div class="b h"></div><div class="b v"></div><div class="b m"></div><i class="fh"></i><i class="fb"></i><i class="fg"></i><i class="fd"></i>';
+  const b=document.createElement('button');b.id='croixB';b.textContent='COURIR';
+  document.body.appendChild(el);document.body.appendChild(b);CROIX.el=el;CROIX.b=b;
+  const lire=(x,y)=>{const R=el.getBoundingClientRect(),cx=x-R.left-R.width/2,cy=y-R.top-R.height/2;
+    if(Math.hypot(cx,cy)<10){CROIX.dx=CROIX.dy=0;}else{const a=Math.atan2(cy,cx),k=((Math.round(a/(Math.PI/4))%8)+8)%8,A=k*Math.PI/4;CROIX.dx=Math.round(Math.cos(A));CROIX.dy=Math.round(Math.sin(A));}
+    el.className=(CROIX.dy<0?'on-h ':CROIX.dy>0?'on-b ':'')+(CROIX.dx<0?'on-g':CROIX.dx>0?'on-d':'');};
+  el.addEventListener('touchstart',ev=>{ev.preventDefault();ev.stopPropagation();const t=ev.changedTouches[0];if(CROIX.id===null){CROIX.id=t.identifier;try{arreterMarche();}catch(z){}lire(t.clientX,t.clientY);vibrer(10);}},{passive:false});
+  el.addEventListener('touchmove',ev=>{ev.preventDefault();ev.stopPropagation();for(const t of ev.changedTouches)if(t.identifier===CROIX.id)lire(t.clientX,t.clientY);},{passive:false});
+  const fin=ev=>{ev.preventDefault();ev.stopPropagation();for(const t of ev.changedTouches)if(t.identifier===CROIX.id){CROIX.id=null;CROIX.dx=CROIX.dy=0;el.className='';}};
+  el.addEventListener('touchend',fin,{passive:false});el.addEventListener('touchcancel',fin,{passive:false});
+  b.addEventListener('touchstart',ev=>{ev.preventDefault();ev.stopPropagation();CROIX.court=true;b.classList.add('on');vibrer(10);},{passive:false});
+  const finB=ev=>{ev.preventDefault();ev.stopPropagation();CROIX.court=false;b.classList.remove('on');};
+  b.addEventListener('touchend',finB,{passive:false});b.addEventListener('touchcancel',finB,{passive:false});
+  el.addEventListener('mousedown',ev=>{ev.stopPropagation();CROIX.id='m';lire(ev.clientX,ev.clientY);});
+  addEventListener('mousemove',ev=>{if(CROIX.id==='m')lire(ev.clientX,ev.clientY);});
+  addEventListener('mouseup',()=>{if(CROIX.id==='m'){CROIX.id=null;CROIX.dx=CROIX.dy=0;el.className='';}});
+  b.addEventListener('mousedown',ev=>{ev.stopPropagation();CROIX.court=true;b.classList.add('on');});
+  addEventListener('mouseup',()=>{CROIX.court=false;b.classList.remove('on');});}
+function guiderCroix(){
+  if(CTRL!=='croix')return;
+  if(!CROIX.el){try{poserCroix();}catch(z){return;}}
+  const vis=croixVisible();CROIX.el.style.display=vis?'':'none';CROIX.b.style.display=vis?'':'none';
+  if(!vis){if(CROIX.id!==null){CROIX.id=null;CROIX.dx=CROIX.dy=0;}return;}
+  if(CROIX.id===null)return;
+  const n=Math.hypot(CROIX.dx,CROIX.dy);if(!n){joyX=joyY=0;return;}
+  const p=CROIX.court?1:0.7;joyX=CROIX.dx/n*p;joyY=CROIX.dy/n*p;}
 const suivreDoigt=()=>!CTRL_JOY&&CARTE!=='large'&&!(CARTE==='tokyo'&&typeof TKM!=='undefined'&&TKM&&TKM.ESSAI&&TKM.ESSAI.actif)&&!(window.FP_GEL&&Date.now()<window.FP_GEL);
 function guiderDoigt(){
   if(!J.actif||!J.suit||!suivreDoigt())return;
@@ -19766,6 +19817,7 @@ for(const t of ev.changedTouches){
 if(J.actif)continue;
 const [x,y]=pointDe(t);
 if(!zoneMarche(x,y,ev.target))continue;
+if(CTRL==='croix'&&croixVisible())continue;   /* à la croix, le pouce libre ne fait pas marcher */
 ev.preventDefault();
 J.id=t.identifier;prendre(x,y);J.t0=Date.now();J.sx=x;J.sy=y;J.bouge=false;J.fx=x;J.fy=y;J.va=false;J.suit=suivreDoigt();if(J.suit)J.vie=0;
 }
