@@ -15760,22 +15760,45 @@ const SH_DOS_H=[
 ".gggggggg."];
 let PEINTURE_DECOR=false;
 let A2_JAMBE=Y_PIED-Y_HANCHE;   /* de la hanche à la cheville, comme le dessin : Y_PIED − Y_HANCHE */
+/* ===================== ANIMATION 3 : LA VRAIE FOULÉE =====================
+   Les angles des articulations sont ceux mesurés sur de vrais marcheurs et
+   coureurs (courbes de laboratoire d'analyse du mouvement, en % du cycle,
+   t=0 : le talon droit touche le sol). Les pieds se placent par la
+   géométrie de la jambe (cuisse + tibia), et le bassin descend juste ce
+   qu'il faut pour que le pied d'appui touche le sol : la montée-descente du
+   corps, le genou qui se tend à l'appui, le talon qui se lève, le pied qui
+   passe haut au milieu de la foulée — tout en découle, rien n'est posé à la main.
+   La foulée est raccourcie (angles de hanche ×0,58 / ×0,6) pour garder la
+   vitesse de déplacement du jeu sans que les pieds glissent. */
+const A3K={
+ /*            0    10   20   30   40   50   60   70   80   90  (%) */
+ hanche:{marche:[25,  24,  17,   8,   0,  -8,  -6,   8,  21,  27],
+         course:[36,  26,  14,   0, -10,  -6,  12,  32,  46,  46]},
+ genou: {marche:[ 3,  15,  14,   8,   5,  10,  36,  58,  48,  20],
+         course:[20,  38,  32,  22,  24,  60,  96, 106,  78,  38]}};
+const A3_ECH={marche:0.58,course:0.6};
+function a3courbe(T,t){t=((t%1)+1)%1;const n=T.length,f=t*n,i=Math.floor(f),k=f-i;
+ const p0=T[(i-1+n)%n],p1=T[i%n],p2=T[(i+1)%n],p3=T[(i+2)%n];
+ return 0.5*((2*p1)+(-p0+p2)*k+(2*p0-5*p1+4*p2-p3)*k*k+(-p0+3*p1-3*p2+p3)*k*k*k);}
+const a3g=(t,c,w)=>{let d=((t-c)%1+1.5)%1-0.5;return Math.exp(-(d*d)/(2*w*w));};
 function poseA2(action,t){
- const K=A2[action];t=((t%1)+1)%1;
- const f=t*8, i=Math.floor(f)%8, k0=f-Math.floor(f), k=k0*k0*(3-2*k0);
- const cle=(n)=>{const c=K[n%4];if(n%8<4)return c;
-  return {bob:c.bob,sw:-c.sw,pc:c.pc,D:c.G,G:c.D,bD:c.bG,bG:c.bD};};
- const a=cle(i), b=cle(i+1), m=(x,y)=>x+(y-x)*k;
- const j=(p,q)=>({z:m(p.z,q.z),l:m(p.l,q.l),ta:m(p.ta,q.ta),po:m(p.po,q.po)});
- const r={bob:m(a.bob,b.bob),sw:m(a.sw,b.sw),pc:m(a.pc,b.pc),D:j(a.D,b.D),G:j(a.G,b.G),
-  bD:{s:m(a.bD.s,b.bD.s),e:m(a.bD.e,b.bD.e)},bG:{s:m(a.bG.s,b.bG.s),e:m(a.bG.e,b.bG.e)}};
- /* le bassin descend pour que la jambe au sol l'atteigne sans s'étirer */
- let auto=0;for(const q of [r.D,r.G])if(q.l<0.6)auto=Math.max(auto,A2_JAMBE-Math.sqrt(Math.max(0,A2_JAMBE*A2_JAMBE-q.z*q.z)));
- r.bob+=auto;
- /* LA TORSION : le bassin tourne avec la jambe qui avance, les épaules
-    tournent à l'opposé. C'est ce contre-mouvement qui fait qu'un corps
-    marche au lieu d'être porté. En unités d'avance de la hanche. */
- r.tw=(r.D.z-r.G.z)/18*(action==='course'?2.4:1.8);
+ t=((t%1)+1)%1;const C=action==='course';const H=A3K.hanche[action],K=A3K.genou[action],E=A3_ECH[action];
+ const L=A2_JAMBE/2, rad=Math.PI/180;
+ const jambe=(tt)=>{const a1=a3courbe(H,tt)*E*rad, a2=a1-a3courbe(K,tt)*rad;
+  return {z:L*Math.sin(a1)+L*Math.sin(a2), yd:L*Math.cos(a1)+L*Math.cos(a2)};};
+ const jD=jambe(t), jG=jambe(t+0.5);
+ /* le bassin : posé sur la jambe la plus tendue ; en course, il s'envole entre deux appuis */
+ const appui=Math.max(jD.yd,jG.yd);
+ let vol=0;if(C){for(const c0 of [0.38,0.88]){const u=((t-c0)%1+1)%1;if(u<0.12)vol=Math.max(vol,Math.sin(Math.PI*u/0.12)*2.6);}}
+ const pied=(j,tt)=>({z:j.z, l:appui-j.yd+vol,
+  ta:C?0.5*a3g(tt,0,0.04):a3g(tt,0,0.05),               /* la pointe relevée quand le talon attaque */
+  po:C?a3g(tt,0.32,0.06):a3g(tt,0.55,0.06)});            /* le talon qui décolle, juste avant la poussée */
+ const bras=(tt)=>{const s=C?-5-35*Math.cos(2*Math.PI*(tt-0.03)):-8-16*Math.cos(2*Math.PI*(tt-0.05));
+  return {s, e:C?80+25*(s+40)/70:18+20*(s+24)/32};};      /* le coude se plie davantage quand le bras part devant */
+ const r={bob:A2_JAMBE-appui-vol, sw:(C?0.6:1.2)*Math.sin(2*Math.PI*t), pc:(C?1.2:0.8)*Math.sin(4*Math.PI*t),
+  D:pied(jD,t), G:pied(jG,t+0.5), bD:bras(t), bG:bras(t+0.5)};
+ /* LA TORSION : le bassin tourne avec la jambe qui avance, les épaules à l'opposé */
+ r.tw=(r.D.z-r.G.z)/18*(C?2.4:1.8);
  return r;}
 /* ===================== CHEVEUX 2 =====================
    Une coupe = des mèches (courbes épaisses qui s'effilent) et des masses
@@ -18540,7 +18563,7 @@ const pj=(q,pz,haut)=>{const X=-q[0]*ca+q[2]*sa, Dp=q[0]*sa+q[2]*ca;return {x:X+
    semblait clouée à la hanche. On appuie la profondeur des bras (comme un
    dessinateur appuie un raccourci) : la main qui vient vers nous descend
    franchement, celle qui recule remonte. De profil, rien ne change. */
-const PZB=cote?PZ:(dos?0.15:0.9);   /* de dos le bras qui part devant monte : trop appuyé, il se mettait à l horizontale */
+const PZB=0.34;   /* UNE SEULE CAMÉRA : bras et jambes s'éloignent ou s'approchent avec la même profondeur, de face comme de dos */
 /* la pose : en marche celle de la foulée, au repos celle du report de poids */
 const PJ=A2P?{D:A2P.D,G:A2P.G}:{D:{z:pD.x*PAS_U,l:pD.lift*6,ta:pD.talon,po:pD.pointe},G:{z:pG.x*PAS_U,l:pG.lift*6,ta:pG.talon,po:pG.pointe}};
 const PB=A2P?{D:A2P.bD,G:A2P.bG}:{D:{s:2+souffle*.6,e:9},G:{s:2+souffle*.6,e:9}};
@@ -18605,7 +18628,8 @@ const jambe2=(cote2)=>{const q=PJ[cote2], sx=cote2==='D'?1:-1;
  let bx=0,by=0,bz=1;const dl=dist||1;const pr=(bx*dx+by*dy+bz*dz)/(dl*dl);bx-=dx*pr;by-=dy*pr;bz-=dz*pr;const bl=Math.hypot(bx,by,bz)||1;
  const h=Math.sqrt(Math.max(0,os.cuisse*os.cuisse-dist*dist/4));
  const knee=[hip[0]+dx/2+bx/bl*h, hip[1]+dy/2+by/bl*h, hip[2]+dz/2+bz/bl*h];
- return {H:pj(hip),K:pj(knee),A:pj(ank),A3:ank,q,cote2,d:pj(knee).d};};
+ const H0=pj(hip,0.12),Hb=pj(hip,PZB),rl=v=>{const p=pj(v,PZB);return {x:H0.x+p.x-Hb.x,y:H0.y+p.y-Hb.y,d:p.d};};   /* même caméra que les bras */
+ return {H:H0,K:rl(knee),A:rl(ank),A3:ank,q,cote2,d:pj(knee).d};};
 const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
  /* L'ÉPAULE BOUGE : elle tourne avec la torsion, et elle se soulève d'un
     rien quand son bras part devant — le bras tire l'omoplate. */
@@ -18615,7 +18639,7 @@ const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
     du fond disparaissait, celui de devant n'en sortait qu'un filet. On
     garde donc l'écart latéral entier, et la perspective ne joue que sur
     l'avancée. */
- const sh=[sx*(EP+1.6),yEp+3-leve,-sx*(A2P?A2P.tw*1.5:0)], ab=(COURSE?0.06:0.11), s1=q.s*Math.PI/180, s2=(q.s+q.e)*Math.PI/180;
+ const sh=[sx*(EP+1.6),yEp+3-leve,-sx*(A2P?A2P.tw*1.5:0)], ab=(COURSE?0.16:0.1), s1=q.s*Math.PI/180, s2=(q.s+q.e)*Math.PI/180;
  const el=[sh[0]+sx*Math.sin(ab)*os.bras, sh[1]+Math.cos(s1)*Math.cos(ab)*os.bras, sh[2]+Math.sin(s1)*Math.cos(ab)*os.bras];
  const wr=[el[0]-sx*(COURSE?1.6:0.3), el[1]+Math.cos(s2)*os.avbras, el[2]+Math.sin(s2)*os.avbras];
  const mn=[wr[0], wr[1]+Math.cos(s2)*2.2, wr[2]+Math.sin(s2)*2.2];
@@ -18623,33 +18647,12 @@ const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
      le balancement du bras autour de l'épaule. Appliquée à l'épaule elle-même,
      elle la faisait monter de neuf unités de trois quarts — l'épaule du fond
      flottait à hauteur du menton, détachée du corps. */
-  const S0=pj(sh,0.12,1),Sb=pj(sh,PZB,1),kx=(dos&&diag)?0.5:1,rel=v=>{
-   /* DE DOS, ce qui part vers nous (le bras qui recule) descend franchement ; ce qui
-      s'éloigne (le bras qui part devant) ne remonte presque pas — sinon les deux
-      mains montaient aux épaules et le coureur avait l'air de lever les bras. */
-   const vers=pj(v,1,1).d-Sb.d>0, pz=dos?(vers?0.6:0.12):PZB, kk=(dos&&diag)?(vers?0.6:0.28):kx;const p=pj(v,pz,1),sb=pj(sh,pz,1);return {x:S0.x+(p.x-sb.x)*kk,y:S0.y+p.y-sb.y-(dos&&diag&&!vers?Math.abs(p.x-sb.x)*0.25:0),d:p.d};};   /* de trois quarts dos, le balancement part en profondeur : on n'en garde que la moitié sur le côté, sinon le bras battait comme une aile */
+  /* L'ÉPAULE RESTE POSÉE SUR LE BUSTE (dessiné à plat) ; le bras, lui,
+     s'éloigne ou s'approche avec la profondeur commune à tous les membres. */
+  const S0=pj(sh,0.12,1),Sb=pj(sh,PZB,1),rel=v=>{const p=pj(v,PZB,1);return {x:S0.x+p.x-Sb.x,y:S0.y+p.y-Sb.y,d:p.d};};
   const P={S:S0,E:rel(el),W:rel(wr),M:rel(mn)};
-  /* de dos, la main du bras qui part devant passe derrière le buste : on la
-     ramène vers l'axe du corps, elle disparaît derrière le dos au lieu de flotter à côté */
-  if(dos){const cx0=diag?-tourne*1.5:0, loinB=pj(el).d<-0.5;   /* l'axe du dos */
-   if(loinB){for(const k of ['W','M'])P[k].x=cx0+(P[k].x-cx0)*0.45;P.E.x=cx0+(P.E.x-cx0)*0.8;}
-   /* EN COURSE, vus de dos, les avant-bras partent devant : ils se raccourcissent
-      jusqu'à disparaître, et le bras avait l'air tendu le long du corps. On écarte
-      le coude et on rentre la main vers le ventre : le L du bras plié se lit. */
-   if(COURSE&&!diag){
-    /* LE COUREUR VU DE DOS plie franchement le coude.
-       - Le bras qui recule vient vers nous : le coude remonte en arrière et
-         ressort sur le côté, l'avant-bras redescend vers la hanche — un V
-         pointé vers l'extérieur, très lisible.
-       - Le bras qui part devant : le coude reste près de la taille, l'avant-bras
-         remonte devant la poitrine, caché par le dos. */
-    const o=Math.sign(P.S.x-cx0)||1, f=Math.min(1,Math.max(0.35,Math.abs(q.s)/38));
-    if(q.s<=2){P.E={x:P.S.x+o*(2+2.2*f),y:P.S.y+6-1.5*f,d:P.E.d};const ux=-o*0.42,uy=0.9,L=6;
-     P.W={x:P.E.x+ux*L,y:P.E.y+uy*L,d:P.W.d};P.M={x:P.W.x+ux*1.8,y:P.W.y+uy*1.8,d:P.M.d};}
-    else{P.E={x:P.S.x+o*1.2,y:P.S.y+8.5,d:P.E.d};const ux=-o*0.62,uy=-0.78,L=5.5;
-     P.W={x:P.E.x+ux*L,y:P.E.y+uy*L,d:P.W.d};P.M={x:P.W.x+ux*1.8,y:P.W.y+uy*1.8,d:P.M.d};P.derriere=1;}}}
  if(diag){const loin=(sh[0]*sa+sh[2]*ca)<0;const ec=Math.sign(-sx*ca||1)*13*(1-Math.abs(ca))*(loin?0.3:1);for(const k in P)P[k].x+=ec;}   /* le bras du fond, lui, reste collé au flanc qui fuit */
- return {S:P.S,E:P.E,W:P.W,M:P.M,cote2,d:P.derriere?-1:pj(el).d,recule:q.s<-6};};   /* de dos en course, les deux avant-bras passent devant le ventre : derrière le buste */
+ return {S:P.S,E:P.E,W:P.W,M:P.M,cote2,d:pj(el).d,recule:q.s<-6};};
 const dessinerJambe=(J,fonce)=>{
  const haut=pant, bas=court?peau:pant;
  const pp={pointe:J.q.po,talon:J.q.ta};
