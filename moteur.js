@@ -19152,9 +19152,23 @@ while(o.tVue>=PAS_ROTATION&&o.dirVue!==cible){o.tVue-=PAS_ROTATION;
  const a=ORDRE8.indexOf(o.dirVue), b=ORDRE8.indexOf(cible), d=(b-a+8)%8;
  o.dirVue=ORDRE8[(a+(d<=4?1:-1)+8)%8];}
 if(o.dirVue===cible)o.tVue=0;}
+/* ===================== LA VUE DE PROFIL (essai) =====================
+   ?vue=profil : le personnage ne se montre que de profil, à droite ou à
+   gauche selon le sens horizontal de la marche ; quand on monte ou descend
+   tout droit, il garde son dernier côté.
+   ?vue=mixte : pareil en mouvement, mais à l'arrêt il se tourne vers nous
+   au bout d'une seconde, pour qu'on voie son visage et sa tenue.
+   ?vue=8 : les huit directions, comme avant. Le choix est mémorisé. */
+const VUE_MODE=(()=>{try{const q=new URLSearchParams(location.search).get('vue');if(q==='profil'||q==='mixte'||q==='8')localStorage.setItem('bdl.vue',q);return localStorage.getItem('bdl.vue')||'8';}catch(e){return '8';}})();
+function dirProfil(o,d,marche){
+if(VUE_MODE==='8')return d;
+if(d.indexOf('droite')>=0)o._coteV='droite';else if(d.indexOf('gauche')>=0)o._coteV='gauche';
+const now=performance.now();if(marche||o._tMarcheV===undefined)o._tMarcheV=now;
+if(VUE_MODE==='mixte'&&!marche&&now-o._tMarcheV>950)return 'bas';
+return o._coteV||'droite';}
 function tournerEnDouceur(dt){
 if(joueur._dirPrec!==joueur.dir){if(!joueur.marche)joueur.dir8=joueur.dir;joueur._dirPrec=joueur.dir;}
-const cible=joueur.dir8||joueur.dir;
+const cible=dirProfil(joueur,joueur.dir8||joueur.dir,joueur.marche);
 if(!joueur.dirVue){joueur.dirVue=cible;return;}
 if(joueur.dirVue===cible){joueur.tVue=0;joueur._cibleVue=cible;return;}
 tournerVue(joueur,cible,dt);
@@ -21949,7 +21963,7 @@ else a.dir=dy>0?'bas':'haut';
 }
 }else{a.marche=false;a.pas=0;a.court=false;}
 if(now-(a.recu||0)>3000){a.vx=0;a.vy=0;}
-tournerVue(a,a.dir||'bas',dt);  /* plus de nouvelles : on ne devine plus */
+tournerVue(a,dirProfil(a,a.dir||'bas',!!a.marche),dt);  /* plus de nouvelles : on ne devine plus */
 if(a.gesteT>0){
 const E2=EMOTE_DE(String(a.geste||'').slice(3));
 a.gesteT=Math.max(0,a.gesteT-dt*(E2?(1/E2.duree):2.3));
