@@ -18652,6 +18652,13 @@ const bras2=(cote2)=>{const q=PB[cote2], sx=cote2==='D'?1:-1;
   const S0=pj(sh,0.12,1),Sb=pj(sh,PZB,1),rel=v=>{const p=pj(v,PZB,1);return {x:S0.x+p.x-Sb.x,y:S0.y+p.y-Sb.y,d:p.d};};
   const P={S:S0,E:rel(el),W:rel(wr),M:rel(mn)};
  if(diag){const loin=(sh[0]*sa+sh[2]*ca)<0;const ec=Math.sign(-sx*ca||1)*13*(1-Math.abs(ca))*(loin?0.3:1);for(const k in P)P[k].x+=ec;}   /* le bras du fond, lui, reste collé au flanc qui fuit */
+ /* L'ÉPAULE ACCROCHÉE AU BUSTE TEL QU'IL EST DESSINÉ. De trois quarts le buste
+    est rétréci (×0,78), décalé du côté du regard et vrillé par la marche :
+    l'épaule calculée en 3D tombait jusqu'à quatre unités à côté, et le bras
+    entier flottait dans le vide (192 poses sur 768 en marche et en course).
+    On pose l'épaule sur le bord réel du buste, le bras garde son mouvement. */
+ if(diag&&!cote){const c0=vis+vrille, cotS=Math.sign(P.S.x-c0)||sx, bord=c0+cotS*(Math.round(EP*0.78)-1.4);
+  const dx=bord-P.S.x;for(const k in P)P[k].x+=dx;}
  return {S:P.S,E:P.E,W:P.W,M:P.M,cote2,d:pj(el).d,recule:q.s<-6};};
 const dessinerJambe=(J,fonce)=>{
  const haut=pant, bas=court?peau:pant;
@@ -18707,10 +18714,10 @@ const chaussure2=(J)=>{
   r:sandale?lacet:(basket?'#f2efe4':T(base,-14)),c:sandale?T(base,-16):(haute?T(base,10):T(base,-12)),
   w:mi,g:T(mi,-46),s:T(chau,-40)};
  const H=M.length, W=M[0].length;
- const sol=Math.round(A.y+3+(!cote&&!diag&&!dos?1.5:0));   /* le dessous de la semelle ; de face, la pointe vient vers nous, donc plus bas */
+ const sol=Math.round(A.y+3+(!cote&&!diag&&!dos?1.5:0)-(diag&&q.l>1?1:0));   /* pied levé de 3/4 : le tibia penché remonte la cheville, la chaussure suit d'un cran */   /* le dessous de la semelle ; de face, la pointe vient vers nous, donc plus bas */
  let ax, piv, ang=0;
  if(cote||diag){
-  ax=Math.round(A.x)-5;                                 /* la cheville tombe sur la 6e colonne */
+  ax=Math.round(A.x)-(diag&&tourne<0?W-6:5);            /* la cheville tombe sur la 6e colonne — comptée depuis l'autre bord quand la chaussure est retournée (3/4 vers la gauche), sinon elle se posait à côté du pied */
   if(q.ta>0.05){ang=q.ta*0.24;piv=[1,H-1];}             /* la pointe se lève : on pivote sur le talon */
   else if(q.po>0.05){ang=-q.po*0.42;piv=[W-2,H-1];}     /* le talon décolle : on pivote sur la pointe */
   else piv=[0,H-1];
@@ -18721,9 +18728,11 @@ const chaussure2=(J)=>{
  const Rm=Math.max(W,H)+2;
  for(let ty=-Rm;ty<=Rm;ty++)for(let tx=-Rm;tx<=Rm;tx++){
   /* on remonte du pixel d'écran au pixel du modèle : jamais de trou */
-  const X=tx/kx, Y=ty-pente*X*(mir?-1:1);
-  let dx=X*co-Y*si, dy=X*si+Y*co;
-  if(mir)dx=-dx;
+  /* retournée, on repasse d'abord dans le repère de la chaussure : la rotation
+     (talon qui décolle, pointe qui se lève) garde ainsi le bon sens — sinon le
+     talon plongeait sous le sol et la chaussure se détachait du pied */
+  const X=(mir?-tx:tx)/kx, Y=ty-pente*X;
+  const dx=X*co-Y*si, dy=X*si+Y*co;
   const mx=Math.round(piv[0]+dx), my=Math.round(piv[1]+dy);
   if(mx<0||my<0||mx>=W||my>=H)continue;
   const c=M[my][mx];if(c==='.')continue;
