@@ -18631,8 +18631,16 @@ const pj=(q,pz,haut)=>{const X=-q[0]*ca+q[2]*sa, Dp=q[0]*sa+q[2]*ca;return {x:X+
 const PZB=0.34;   /* UNE SEULE CAMÉRA : bras et jambes s'éloignent ou s'approchent avec la même profondeur, de face comme de dos */
 /* la pose : en marche celle de la foulée, au repos celle du report de poids */
 /* au repos, comme dans le repos capturé (Mixamo « Idle ») : le pied gauche un rien devant, le poids sur la droite */
-const PJ=A2P?{D:A2P.D,G:A2P.G}:{D:{z:pD.x*PAS_U-(bouge?0:0.6),l:pD.lift*6,ta:pD.talon,po:pD.pointe},G:{z:pG.x*PAS_U+(bouge?0:1.2),l:pG.lift*6,ta:pG.talon,po:pG.pointe}};
-const PB=A2P?{D:A2P.bD,G:A2P.bG}:{D:{s:2+souffle*.6,e:9},G:{s:2+souffle*.6,e:9}};
+/* LA FACE ET LE DOS, MIS EN SCÈNE. Vue de face, la vraie foulée se joue en
+   profondeur : à notre taille elle ne se voit presque pas (jambes raides, bras
+   collés). On amplifie ce qui se lit de face — le genou qui monte, le pied qui
+   se lève, la foulée qui avance vers nous, le bras qui balance — sans toucher
+   au rythme capturé. Le profil, lui, reste la mesure telle quelle. */
+const FV=(!cote&&A2P)?(diag?0.5:1):0;
+const ampJ=q=>FV?{...q,z:q.z*(1+(COURSE?0.35:0.7)*FV),l:q.l*(1+(COURSE?-0.25:0.9)*FV)}:q;
+const ampB=q=>FV?{s:Math.max(-60,Math.min(55,q.s*(1+0.9*FV))),e:q.e+(q.s>0?14:4)*FV}:q;
+const PJ=A2P?{D:ampJ(A2P.D),G:ampJ(A2P.G)}:{D:{z:pD.x*PAS_U-(bouge?0:0.6),l:pD.lift*6,ta:pD.talon,po:pD.pointe},G:{z:pG.x*PAS_U+(bouge?0:1.2),l:pG.lift*6,ta:pG.talon,po:pG.pointe}};
+const PB=A2P?{D:ampB(A2P.bD),G:ampB(A2P.bG)}:{D:{s:2+souffle*.6,e:9},G:{s:2+souffle*.6,e:9}};
 const peindre=(A,B,r0,r1,teinte,bandes)=>{
  const cL=T(teinte,16), cS=T(teinte,-18), cR=T(teinte,-40), cRl=T(teinte,-10);
  const RM=typeof r0==='function'?8:Math.max(r0,r1);
