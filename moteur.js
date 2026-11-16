@@ -19185,7 +19185,7 @@ if(o.dirVue===cible)o.tVue=0;}
    ?vue=mixte : pareil en mouvement, mais à l'arrêt il se tourne vers nous
    au bout d'une seconde, pour qu'on voie son visage et sa tenue.
    ?vue=8 : les huit directions, comme avant. Le choix est mémorisé. */
-const VUE_MODE=(()=>{try{const q=new URLSearchParams(location.search).get('vue');if(q==='profil'||q==='mixte'||q==='8')localStorage.setItem('bdl.vue',q);return localStorage.getItem('bdl.vue')||'8';}catch(e){return '8';}})();
+const VUE_MODE=(()=>{try{const q=new URLSearchParams(location.search).get('vue');if(q==='profil'||q==='mixte'||q==='8')localStorage.setItem('bdl.vue2',q);return localStorage.getItem('bdl.vue2')||'8';}catch(e){return '8';}})();
 function dirProfil(o,d,marche){
 if(VUE_MODE==='8')return d;
 if(d.indexOf('droite')>=0)o._coteV='droite';else if(d.indexOf('gauche')>=0)o._coteV='gauche';
