@@ -6,11 +6,12 @@
    Ce morceau ne touche à rien d'autre : le sol, le décor, les collisions
    et la sortie vivent ici, et le moteur ne fait que les appeler. */
 (()=>{
-const W=800, H=800;
-const DOCKS_PIED=236, TROTTOIR=346, TRAM0=346, TRAM1=422, PLACE_BAS=760;
+const W=1200, H=1080;                       /* la place voit grand : 1200 × 1080 */
+const FACW=800, DX=(W-FACW)/2;              /* la façade des Docks garde ses 800 ; DX la recentre */
+const DOCKS_PIED=236, TROTTOIR=346, TRAM0=346, TRAM1=422, PLACE_BAS=1000;
 const SORTIE_X=400, SORTIE_DEMI=44;
-const DEPART=(()=>{try{const q=new URLSearchParams(location.search).get('de');if(q==='terrasses')return [400,262];if(q==='stade')return [600,440];if(q==='piste')return [622,630];if(q==='foire')return [400,700];if(q==='club')return [622,640];if(q==='casino')return [400,712];if(q==='appart')return [430,700];}catch(x){}return [400,712];})();
-const FONT=[400,592];
+const DEPART=(()=>{try{const q=new URLSearchParams(location.search).get('de');if(q==='terrasses')return [600,262];if(q==='stade')return [900,440];if(q==='piste')return [930,770];if(q==='foire')return [600,900];if(q==='club')return [930,780];if(q==='casino')return [600,840];if(q==='appart')return [640,840];}catch(x){}return [600,840];})();
+const FONT=[600,710];
 const h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const teinte=(hex,d)=>{const v=parseInt(hex.slice(1),16);const c=k=>Math.max(0,Math.min(255,((v>>k)&255)+d));
   return 'rgb('+c(16)+','+c(8)+','+c(0)+')';};
@@ -24,15 +25,32 @@ const R=(x,y,w,hh,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math
 /* le ciel, juste au-dessus de la corniche */
 for(let y=0;y<26;y++){const k=y/26;R(0,y,W,1,'rgb('+(118+k*60|0)+','+(170+k*40|0)+','+(222+k*14|0)+')');}
 
-/* la façade des Docks est un objet du décor (x_jol_docks_sol), dessiné au demi-pixel */
+/* la façade des Docks est un objet du décor (x_jol_docks_sol), dessiné au demi-pixel ;
+   elle garde ses 800 points au centre, et deux ailes d'entrepôt la prolongent de chaque côté */
 R(0,26,W,DOCKS_PIED-26,'#e3d0a8');
+for(const x0 of [0,W-DX]){
+  for(let y=26;y<96;y++){const k=(y-26)/70;R(x0,y,DX,1,'rgb('+(60+k*40|0)+','+(140+k*40|0)+','+(208+k*26|0)+')');}
+  R(x0,88,DX,5,'#ece6dc');R(x0,93,DX,2,'#7a3f2a');R(x0,95,DX,2,'rgba(30,24,16,.2)');          /* la casquette rouillée */
+  for(let y=97;y<210;y+=9)for(let x=x0;x<x0+DX;x+=18){const d=(h(x,y,61)-.5)*8;
+    R(x,y,18,9,teinte('#e9dfd2',d|0));R(x,y,18,.5,teinte('#f6efe6',d|0));R(x,y,.5,9,'#d8ccbc');}
+  for(let i=0;i<3;i++){const ax=x0+30+i*((DX-60)/2.6);                                        /* trois baies cintrées */
+    g.fillStyle='#2f6466';g.fillRect(ax,122,34,76);
+    g.fillStyle='#17262c';g.fillRect(ax+2,124,30,72);
+    g.fillStyle='#2f6466';g.beginPath();g.ellipse(ax+17,124,17,13,0,Math.PI,0);g.fill();
+    g.fillStyle='#17262c';g.beginPath();g.ellipse(ax+17,124,15,11,0,Math.PI,0);g.fill();
+    for(let k=1;k<5;k++)R(ax+2+k*6,116,1,80,'#2f6466');R(ax+2,152,30,1.4,'#2f6466');
+    g.fillStyle='rgba(200,230,255,.18)';g.beginPath();g.moveTo(ax+4,196);g.lineTo(ax+22,126);g.lineTo(ax+28,126);g.lineTo(ax+10,196);g.fill();
+    R(ax-3,196,40,4,'#cbbcaa');R(ax-3,196,40,1,'#f6efe6');}
+  R(x0,208,DX,4,'#cbbcaa');R(x0,212,DX,24,'#d9cdb8');R(x0,212,DX,1,'#efe6d2');                /* le socle */
+  for(let x=x0+9;x<x0+DX;x+=22)R(x,214,1,20,'rgba(90,70,50,.12)');
+}
 
 /* LE PARVIS DES TERRASSES : grandes dalles claires et bandes incrustées plus sombres */
 dalles(g,R,0,DOCKS_PIED,W,TROTTOIR-DOCKS_PIED,['#e6e0d6','#e2dcd2','#eae4da','#ded8cc'],46,18);
 for(let x=20;x<W;x+=80){R(x,DOCKS_PIED+16,40,6,'#c8bcaa');R(x,DOCKS_PIED+16,40,.5,'#d8ccba');R(x+20,DOCKS_PIED+34,40,6,'#c8bcaa');}
 R(0,DOCKS_PIED,W,3,'rgba(40,30,20,.22)');          /* l'ombre du socle */
 /* les grilles d'arbres, en fonte, au pied des pins du parvis */
-for(const x of [40,250,550,760]){g.fillStyle='#5a5650';g.beginPath();g.ellipse(x,342,13,5,0,0,7);g.fill();
+for(const x of [60,240,450,750,960,1140]){g.fillStyle='#5a5650';g.beginPath();g.ellipse(x,342,13,5,0,0,7);g.fill();
   g.strokeStyle='#3a3834';g.lineWidth=1;for(let r=3;r<13;r+=3){g.beginPath();g.ellipse(x,342,r,r*.38,0,0,7);g.stroke();}}
 
 /* LE TRAM : bordure, pavés gris, deux voies, et le quai de la station côté place */
@@ -51,8 +69,8 @@ dalles(g,R,0,TRAM1,W,PLACE_BAS-TRAM1,['#ebe4d6','#e6dfd0','#efe8da','#e2dbcc','#
 for(let x=84;x<W-84;x+=104){R(x,TRAM1,4,PLACE_BAS-TRAM1,'#d4c8b2');R(x,TRAM1,1,PLACE_BAS-TRAM1,'#c4b8a0');}
 for(let y=TRAM1+40;y<PLACE_BAS;y+=88){R(84,y,W-168,4,'#d4c8b2');R(84,y,W-168,1,'#c4b8a0');}
 /* le parvis rond de la fontaine : des anneaux de pavés en éventail */
-for(let y=TRAM1;y<PLACE_BAS;y++)for(let x=FONT[0]-170;x<FONT[0]+170;x++){
-  const dx=(x-FONT[0])/160, dy=(y-FONT[1]+10)/100, r=Math.sqrt(dx*dx+dy*dy);
+for(let y=TRAM1;y<PLACE_BAS;y++)for(let x=FONT[0]-200;x<FONT[0]+200;x++){
+  const dx=(x-FONT[0])/190, dy=(y-FONT[1]+10)/119, r=Math.sqrt(dx*dx+dy*dy);
   if(r>1)continue;
   const ang=Math.atan2(dy,dx), anneau=(r*9)|0, sect=((ang+Math.PI)/(Math.PI*2)*(18+anneau*6))|0;
   let c=((anneau+sect)%2)?'#e4d6bc':'#dccaa8';
@@ -457,7 +475,7 @@ const OUVERT=PORTES.map(()=>0);
 function dessinerLesPortes(g,X0,Y0){
   const dt=Math.min(.05,(performance.now()-(dessinerLesPortes.t||performance.now()))/1000);dessinerLesPortes.t=performance.now();
   PORTES.forEach(([px,pw],i)=>{
-    let pres=false;try{const dx=joueur.x-px,dy=joueur.y-236;pres=Math.abs(dx)<pw*1.1&&dy>-40&&dy<72;}catch(x){}
+    let pres=false;try{const dx=joueur.x-(px+DX),dy=joueur.y-236;pres=Math.abs(dx)<pw*1.1&&dy>-40&&dy<72;}catch(x){}
     OUVERT[i]+=((pres?1:0)-OUVERT[i])*Math.min(1,dt*7);
     const o=OUVERT[i], lw=pw/2, dec=o*(lw-2), y=Y0+PORTE_Y+12, x0=X0+px-pw/2;
     for(const [s,bx] of [[-1,x0],[1,x0+lw]]){const x=bx+s*dec;
@@ -476,18 +494,18 @@ const NOEL=false;
 const AUTOMNE=(()=>{try{const q=new URLSearchParams(location.search).get('automne');if(q!==null)return q==='1';}catch(x){}
   const d=new Date(),m=d.getMonth(),j=d.getDate();return (m===8&&j>=22)||m===9||m===10||(m===11&&j<=20);})();   /* pas de décor de Noël */
 function toileDocks(jour){
-  const D=2,c=document.createElement('canvas');c.width=W*D;c.height=250*D;
+  const D=2,c=document.createElement('canvas');c.width=FACW*D;c.height=250*D;
   const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.setTransform(D,0,0,D,0,12*D);
   dessinerTerrasses(g,{noel:NOEL,jour});return c;}
 let DOCKS_JOUR=null, DOCKS_NUIT=null;
-function graverDocks(){if(!DOCKS_JOUR)DOCKS_JOUR=toileDocks(true);return {toile:DOCKS_JOUR,W,H:250,sol:248};}
+function graverDocks(){if(!DOCKS_JOUR)DOCKS_JOUR=toileDocks(true);return {toile:DOCKS_JOUR,W:FACW,H:250,sol:248};}
 /* le soir, la façade s'assombrit et ses fenêtres s'allument, au rythme de l'heure du jeu */
 function nuitDuMoment(){try{const c=cielDuMoment();return c?Math.max(0,Math.min(1,c.lampes||0)):0;}catch(x){return 0;}}
 function dessinerLesDocks(g,o,x,y){
   if(!DOCKS_JOUR)DOCKS_JOUR=toileDocks(true);
-  const X0=Math.round(x-W/2), Y0=Math.round(y-248);
+  const X0=Math.round(x-FACW/2), Y0=Math.round(y-248);
   const k=nuitDuMoment();if(k>0.02&&!DOCKS_NUIT)DOCKS_NUIT=toileDocks(false);
-  g.drawImage(k>0.02?melangeNuit(DOCKS_JOUR,DOCKS_NUIT,k):DOCKS_JOUR,X0,Y0,W,250);
+  g.drawImage(k>0.02?melangeNuit(DOCKS_JOUR,DOCKS_NUIT,k):DOCKS_JOUR,X0,Y0,FACW,250);
   try{dessinerLesPortes(g,X0,Y0);}catch(x){}
 }
 
@@ -749,7 +767,7 @@ const T={
  blanc:(g,x,y,i)=>{fe(g,x,y-2,4,2.4,VERT,20,i);for(let k=0;k<5;k++){g.fillStyle='#fdfaf2';g.beginPath();g.arc(x-3+hA(k,i,2)*6,y-4+hA(k,i,3)*3,.9,0,7);g.fill();}},
 };
 
-const CX=400, CY=582, NSEG=16;
+const CX=600, CY=700, NSEG=16;
 const PORTES_A=[0,Math.PI/2,Math.PI,-Math.PI/2];
 const dansPorte=(a,l)=>PORTES_A.some(p=>{let d=Math.abs(a-p);if(d>Math.PI)d=2*Math.PI-d;return d<(l||.30);});   /* .30 : là où rien ne pousse ; on passe à .22 */
 /* toutes les plantes, en coordonnées du monde : la haie de buis autour, l'anneau de graminées autour du banc */
@@ -989,30 +1007,34 @@ function decor(){
   /* la façade des Docks, au demi-pixel */
   P('x_jol_docks_sol',W/2,DOCKS_PIED,{anim:'jol_docks'});
   /* le parvis : des magnolias dans leurs grilles, deux terrasses de café */
-  for(const x of [40,250,550,760])P('x_jol_arbre_magnolia',x,342,{col:[10,5]});
-  for(const x of [110,170,630,690])P('x_jol_parasol',x,290,{col:[44,12],bas:5});
+  for(const x of [60,240,450,750,960,1140])P('x_jol_arbre_magnolia',x,342,{col:[10,5]});
+  for(const x of [310,370,830,890])P('x_jol_parasol',x,290,{col:[44,12],bas:5});
   /* les deux stations : une sur le parvis pour la voie du haut, une sur le quai côté place */
-  P('x_jol_abri',220,350,{col:[100,6]});
-  P('x_jol_abri',600,420,{col:[100,6]});   /* (le menu du tram vers les autres lieux est débranché) */
+  P('x_jol_abri',420,350,{col:[100,6]});
+  P('x_jol_abri',800,420,{col:[100,6]});   /* (le menu du tram vers les autres lieux est débranché) */
   /* les deux rames, une par voie ; elles s'arrêtent devant leur station */
-  P('x_jol_tram',400,376,{anim:'jol_tram',sens:1,arret:220});
-  P('x_jol_tram',400,400,{anim:'jol_tram',sens:-1,arret:600});
+  P('x_jol_tram',600,376,{anim:'jol_tram',sens:1,arret:420});
+  P('x_jol_tram',600,400,{anim:'jol_tram',sens:-1,arret:800});
   /* la fontaine au milieu, deux oliviers en bacs de part et d'autre */
   P('x_jol_fontaine_ronde',PLACE.CX,PLACE.FY,{anim:'jol_fontaine'});
   for(const s of PLACE.SEGS)P('x_jol_place_sol',s.x,s.y,{v:s.v});
   /* les allées de platanes */
-  [470,590,710].forEach((y,i)=>{P('x_jol_platane',42,y,{col:[12,6],v:i});P('x_jol_platane',W-42,y,{col:[12,6],v:i+3});});
+  [470,610,750,890].forEach((y,i)=>{P('x_jol_platane',42,y,{col:[12,6],v:i%3});P('x_jol_platane',W-42,y,{col:[12,6],v:i%3+3});});
   /* les massifs de lavande et de graminées, avec leurs bancs */
-  for(const [i,[x,y]] of [[200,470],[600,470],[200,700],[600,700]].entries()){P('x_jol_massif',x,y,{col:[84,14],v:i});P('x_jol_banc',x,y+20,{col:[40,6]});}
+  for(const [i,[x,y]] of [[280,480],[920,480],[220,780],[980,780],[430,940],[770,940]].entries()){P('x_jol_massif',x,y,{col:[84,14],v:i%4});P('x_jol_banc',x,y+20,{col:[40,6]});}
+  /* deux pins parasols encadrent le bas de la place */
+  P('x_jol_pin',120,1000,{col:[16,8]});P('x_jol_pin',1080,1000,{col:[16,8]});
+  /* des oliviers en bac le long du quai du tram */
+  for(const x of [180,560,1020])P('x_jol_olivier',x,452,{col:[18,6]});
   /* des bancs tournés vers la fontaine */
   /* les lampadaires */
-  for(const [x,y] of [[120,452],[680,452],[96,668],[680,642],[300,746],[500,746]])P('x_jol_lampadaire',x,y,{col:[4,3]});
+  for(const [x,y] of [[300,452],[900,452],[110,640],[1090,640],[320,860],[880,860],[480,1000],[720,1000]])P('x_jol_lampadaire',x,y,{col:[4,3]});
   /* le tableau d'embauche, à deux pas de l'arrivée */
   /* le kiosque à journaux */
-  for(const [px] of PORTES)P('x_jol_entree',px,DOCKS_PIED+10,{agir:entrerGalerie,libelle:'Entrer',nom:'LA GALERIE BLEUE'});
-  P('x_jol_kiosque',156,600,{col:[96,14],agir:ouvrirVacationsKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
-  P('x_jol_entree',PLACE.CX,628,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
-  P('x_jol_affiches',622,600,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
+  for(const [px] of PORTES)P('x_jol_entree',px+DX,DOCKS_PIED+10,{agir:entrerGalerie,libelle:'Entrer',nom:'LA GALERIE BLEUE'});
+  P('x_jol_kiosque',180,690,{col:[96,14],agir:ouvrirVacationsKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
+  P('x_jol_entree',PLACE.CX,748,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
+  P('x_jol_affiches',1040,690,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
   return D;
 }
 
@@ -1048,7 +1070,7 @@ const VOILE_GB='position:fixed;inset:0;z-index:2147483000;display:flex;flex-dire
 const TITRE_GB='<div style="font-size:13px;letter-spacing:.5em;opacity:.75;transform:translateX(.25em)">BIENVENUE À</div>'+
   '<div style="font-weight:800;font-size:30px;letter-spacing:.14em">LA GALERIE BLEUE</div><div style="width:64px;height:2px;background:#8cc4ff;border-radius:2px"></div>';
 function entrerGalerie(){if(ENTRE||PARTI)return;ENTRE=true;try{vibrer&&vibrer(12);}catch(x){}
-  const px=PORTES.reduce((a,[x])=>Math.abs(x-joueur.x)<Math.abs(a-joueur.x)?x:a,PORTES[0][0]);
+  const px=PORTES.reduce((a,[x])=>Math.abs(x+DX-joueur.x)<Math.abs(a+DX-joueur.x)?x:a,PORTES[0][0])+DX;
   const x0=joueur.x,y0=joueur.y,y1=DOCKS_PIED-26,t0=performance.now(),D=900;
   window.FP_GEL=Date.now()+4000;
   let marche=true;try{Object.defineProperty(joueur,'marche',{configurable:true,get:()=>marche,set:()=>{}});}catch(x){}
@@ -1074,7 +1096,7 @@ for(const k in SPR)for(const s of [1,-1]){const c=document.createElement('canvas
   SPR[k].forEach((r,y)=>{for(let x=0;x<r.length;x++){const v=PAL[r[x]];if(!v)continue;g.fillStyle=v;g.fillRect(s>0?x:17-x,y,1,1);}});C[k+s]=c;
   const n=document.createElement('canvas');n.width=18;n.height=12;const h=n.getContext('2d');h.drawImage(c,0,0);h.globalCompositeOperation='multiply';h.fillStyle='#5a6490';h.fillRect(0,0,18,12);h.globalCompositeOperation='destination-in';h.drawImage(c,0,0);C[k+s+'n']=n;}
 const R=(a,b)=>a+Math.random()*(b-a);
-const BANDES=[[330,650,4],[480,520,3],[318,730,3],[560,640,2]];
+const BANDES=[[500,780,4],[730,620,3],[430,900,3],[860,760,2]];
 const L=[];
 for(const [hx,hy,n] of BANDES){const bd={hx,hy,etat:'sol',t:0};for(let i=0;i<n;i++){const x=hx+R(-14,14),y=hy+R(-8,8);
   L.push({bd,x,y,z:0,tx:x,ty:y,dir:Math.random()<.5?1:-1,att:R(0,2),pic:0,ph:R(0,9),vx:0,vy:0,vz:0,fin:0});}}
