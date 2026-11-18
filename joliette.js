@@ -156,18 +156,10 @@ for(const x0 of [0,W-84]){
    quai, trois pointus amarrés et leurs bouées. */
 {
 const Y0=PLACE_BAS;
-/* L'EAU DU PORT, RÉALISTE ET CALME. Un vert-bleu profond, vite assombri vers
-   le large ; aucune vaguelette dessinée, aucun motif : juste la profondeur et
-   de larges ondulations douces, posées une fois pour toutes. */
-for(let y=Y0+32;y<H;y++){const q=Math.min(1,(y-Y0-32)/(H-Y0-40)),e=q*q*(3-2*q);
-  R(0,y,W,1,'rgb('+(24-e*14|0)+','+(58-e*30|0)+','+(74-e*34|0)+')');}
-/* de très larges bandes d'ombre et de clarté : la houle vue de loin, floue */
-for(let i=0;i<13;i++){const cy=Y0+50+h(i,2,93)*(H-Y0-60),amp=4+h(i,4,93)*8,phase=h(i,3,93)*6.28,clr=h(i,5,93)<.5;
-  for(let x=0;x<W;x++){const y=cy+Math.sin(x/70+phase)*amp;
-    g.fillStyle=clr?'rgba(90,150,160,.05)':'rgba(4,20,36,.07)';g.fillRect(x,y-3,1,6);}}
-/* le chemin de lune : une colonne pâle vers le large, très diffuse, immobile */
-for(let y=Y0+40;y<H;y++){const q=(y-Y0)/(H-Y0),lar=16+q*34;
-  for(let dx=-lar;dx<lar;dx++){const a=(1-Math.abs(dx)/lar)*.10*(1-q*.5);if(a>.01&&h((y*131+dx)|0,7,94)<.5)R(W*.62+dx,y,1,1,'rgba(150,180,180,'+a.toFixed(3)+')');}}
+/* L'EAU : rien qu'un beau dégradé propre. Clair et lumineux au pied du quai,
+   qui plonge vers un bleu profond au large. Aucune texture, aucun mouchetis. */
+for(let y=Y0+32;y<H;y++){const q=Math.min(1,(y-Y0-32)/(H-Y0-36)),e=q*q*(3-2*q);
+  R(0,y,W,1,'rgb('+(26+(1-e)*36|0)+','+(96+(1-e)*78|0)+','+(140+(1-e)*52|0)+')');}
 /* le mur du quai sous la terrasse, son ombre sur l'eau, l'écume au pied */
 R(0,Y0+16,W,16,'#a39a86');for(let x=0;x<W;x+=22){R(x,Y0+16,1,16,'rgba(60,50,36,.3)');R(x+11,Y0+24,1,8,'rgba(60,50,36,.22)');}
 R(0,Y0+23,W,1,'rgba(60,50,36,.25)');R(0,Y0+29,W,3,'#6f7a62');                         /* la ligne d'algues */
