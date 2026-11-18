@@ -1187,8 +1187,8 @@ function decor(){
   for(const x of [60,240,450,750,960,1140])P('x_jol_arbre_magnolia',x,342,{col:[10,5]});
   for(const x of [310,370,830,890])P('x_jol_parasol',x,290,{col:[44,12],bas:5});
   /* les deux stations : une sur le parvis pour la voie du haut, une sur le quai côté place */
-  P('x_jol_abri',420,350,{col:[100,6]});
-  P('x_jol_abri',800,420,{col:[100,6]});   /* (le menu du tram vers les autres lieux est débranché) */
+  P('x_jol_abri',420,350,{col:[100,6],agir:ouvrirTram,libelle:'Prendre le tram',nom:'STATION JOLIETTE'});
+  P('x_jol_abri',800,420,{col:[100,6],agir:ouvrirTram,libelle:'Prendre le tram',nom:'STATION JOLIETTE'});
   /* les deux rames, une par voie ; elles s'arrêtent devant leur station */
   P('x_jol_tram',600,376,{anim:'jol_tram',sens:1,arret:420});
   P('x_jol_tram',600,400,{anim:'jol_tram',sens:-1,arret:800});
