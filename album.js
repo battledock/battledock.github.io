@@ -50,12 +50,37 @@ const CSS=`#alb{position:fixed;inset:0;z-index:2147482300;display:flex;flex-dire
 #alb .apo button b{margin-left:auto;font-size:14px}#alb .apo button.gr{background:linear-gradient(90deg,#7aff8a,#3ac868);color:#0a2a12;animation:albPu 1.4s ease-in-out infinite}#alb .apo button[disabled]{opacity:.4;animation:none}
 @keyframes albPu{50%{transform:scale(1.02)}}
 #alb .amsg{text-align:center;font-weight:800;font-size:13px;color:#8a6a4a;margin-top:8px;min-height:18px}
-#alb #albP{position:fixed;inset:0;z-index:2147482400;background:radial-gradient(circle at 50% 40%,#3c1e50,#0a0614);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;font-family:'Baloo 2',system-ui,sans-serif;color:#fff}
-#albP .poch{width:170px;height:230px;border-radius:14px;background:linear-gradient(150deg,#ff3ac8,#8a4aff 50%,#3af0ff);box-shadow:0 0 40px rgba(255,58,200,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;font:900 22px 'Baloo 2',system-ui,sans-serif;text-align:center;animation:albSec .12s infinite alternate;position:relative;overflow:hidden}
-#albP .poch:before{content:'';position:absolute;top:0;left:0;right:0;height:22px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.4) 0 6px,transparent 6px 12px)}
-#albP .poch.dechire{animation:albDe .5s forwards}@keyframes albSec{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}@keyframes albDe{to{transform:scale(1.4) rotate(8deg);opacity:0}}
-#albP .tri{display:flex;gap:10px}#albP .cs{width:112px;aspect-ratio:auto;perspective:600px}#albP .cs .st{animation:albRe .6s cubic-bezier(.3,1.5,.5,1) backwards}#albP .nm{color:#fff;font-size:12.5px;margin-top:2px}
-@keyframes albRe{from{transform:rotateY(90deg) scale(.6);opacity:0}}
+#alb #albP{position:fixed;inset:0;z-index:2147482400;background:radial-gradient(circle at 50% 38%,#1f4482,#0b1936 58%,#050a18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;font-family:'Baloo 2',system-ui,sans-serif;color:#fff;overflow:hidden}
+#albP:before{content:'';position:absolute;left:50%;top:38%;width:150vmax;height:150vmax;margin:-75vmax;background:repeating-conic-gradient(rgba(255,226,150,.05) 0 9deg,transparent 9deg 22deg);animation:albTour 26s linear infinite;pointer-events:none}
+@keyframes albTour{to{transform:rotate(360deg)}}
+#albP>*{position:relative}
+#albP .poch{width:176px;height:246px;position:relative;filter:drop-shadow(0 20px 22px rgba(0,0,0,.55));animation:albEntre .7s cubic-bezier(.2,1.45,.4,1) both,albFlotte 2.6s ease-in-out .7s infinite}
+@keyframes albEntre{from{transform:translateY(-70vh) rotate(-14deg)}}
+@keyframes albFlotte{50%{transform:translateY(-9px) rotate(1.4deg)}}
+#albP .ph,#albP .pc{position:absolute;left:0;right:0;background:linear-gradient(160deg,#1b3f80,#0e2450 55%,#1c4f92)}
+#albP .ph{top:0;height:30px;background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.2) 0 2px,rgba(0,0,0,.16) 2px 4px),linear-gradient(160deg,#1b3f80,#12306a);border-bottom:1.5px dashed rgba(255,226,150,.75);
+ -webkit-mask:conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) 50%/11px 100%;mask:conic-gradient(from 135deg at top,#0000,#000 1deg 89deg,#0000 90deg) 50%/11px 100%}
+#albP .pc{top:30px;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;overflow:hidden;text-align:center;
+ -webkit-mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50%/11px 100%;mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50%/11px 100%}
+#albP .pc:before{content:'';position:absolute;inset:8px 8px 22px;border:1.5px solid rgba(255,226,150,.7);border-radius:8px;box-shadow:inset 0 0 0 3px rgba(255,226,150,.14)}
+#albP .pc:after{content:'';position:absolute;inset:0;background:linear-gradient(112deg,transparent 34%,rgba(255,255,255,.36) 47%,rgba(160,220,255,.2) 53%,transparent 64%);background-size:260% 100%;animation:albBrille 2.4s ease-in-out infinite}
+@keyframes albBrille{0%{background-position:140% 0}70%,100%{background-position:-60% 0}}
+#albP .pc .bas{position:absolute;left:0;right:0;bottom:0;height:20px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.2) 0 2px,rgba(0,0,0,.16) 2px 4px)}
+#albP .pc svg{width:62px;height:62px;filter:drop-shadow(0 2px 0 rgba(0,0,0,.3))}
+#albP .pc b{font:900 20px/1 'Baloo 2',system-ui,sans-serif;letter-spacing:1px;color:#ffe296;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+#albP .pc small{font:800 10.5px 'Baloo 2',system-ui,sans-serif;letter-spacing:4px;text-indent:4px;color:#cfe2ff}
+#albP .pc i{font:900 9.5px 'Baloo 2',system-ui,sans-serif;font-style:normal;letter-spacing:1.5px;background:#ffe296;color:#0e2450;border-radius:99px;padding:2px 9px;margin-top:5px}
+#albP .eclat{position:absolute;left:50%;top:50%;width:20px;height:20px;margin:-10px;border-radius:50%;background:radial-gradient(circle,#fff,rgba(255,226,150,.9) 40%,transparent 70%);opacity:0;pointer-events:none}
+#albP .poch.dechire{animation:none}
+#albP .poch.dechire .ph{animation:albArr .5s cubic-bezier(.3,.6,.4,1) forwards}
+#albP .poch.dechire .pc{animation:albTombe .5s .16s cubic-bezier(.5,0,.8,.4) forwards}
+#albP .poch.dechire .eclat{animation:albEclat .62s .08s ease-out forwards}
+@keyframes albArr{35%{transform:translate(4px,-6px) rotate(4deg)}to{transform:translate(70px,-120px) rotate(38deg);opacity:0}}
+@keyframes albTombe{20%{transform:scale(1.05)}to{transform:translateY(90px) scale(.92);opacity:0}}
+@keyframes albEclat{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(26)}}
+#albP .ouv{font-weight:800;color:#ffe296;opacity:.9;letter-spacing:.5px}
+#albP .tri{display:flex;gap:10px}#albP .cs{width:112px;aspect-ratio:auto;perspective:600px}#albP .cs .st{animation:albRe .6s cubic-bezier(.25,1.4,.45,1) backwards}#albP .nm{color:#fff;font-size:12.5px;margin-top:2px}
+@keyframes albRe{from{transform:translateY(70px) scale(.55) rotate(-10deg);opacity:0}}
 #albP .nf{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#ffd23a;color:#2a1a08;font:900 10px 'Baloo 2',system-ui,sans-serif;border-radius:8px;padding:1px 6px;z-index:4;white-space:nowrap}
 #albP .acoll{border:0;border-radius:16px;padding:12px 30px;font:900 17px 'Baloo 2',system-ui,sans-serif;background:#fff;color:#2a1a40}`;
 function sticker(i,n,rot){const c=C[i],r=rar(i),u=window.AUTOCOLLANT?AUTOCOLLANT(c[0],r,220):'';return '<div class="st r'+r+'" style="--r:'+(rot||0)+'deg;--m:url('+u+')"><img src="'+u+'" alt="">'+(r?'<b class="sh"></b><span class="rb r'+r+'">'+RN[r]+'</span>':'')+'</div><span class="nm">'+c[1]+'</span>'+(n>1?'<span class="nb">×'+n+'</span>':'');}
@@ -78,8 +103,12 @@ function rendre(){if(!RAC)return;const P=PAGES[PG];RAC.style.setProperty('--c1',
  po.querySelectorAll('button').forEach(b=>b.onclick=()=>ouvrirPochette(b.dataset.s));}
 function msg(t){const m=RAC&&RAC.querySelector('.amsg');if(m)m.textContent=t;}
 async function lire(){const r=await rpcS('album_mes',{});if(r&&r.cartes){ET=Object.assign(ET,r);if(!Array.isArray(ET.pages))ET.pages=[];}else if(r&&r.erreur)msg('L’album arrive très bientôt !');rendre();}
+/* LA POCHETTE : un sachet bleu nuit serti d'or, crans en haut et en bas, une ancre au centre */
+const POCH='<div class="poch"><div class="ph"></div><div class="pc">'
+ +'<svg viewBox="0 0 64 64" fill="none" stroke="#ffe296" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="13" r="6"/><path d="M32 19v36M20 29h24M10 39c2 11 11 16 22 16s20-5 22-16M10 39l-3 7M10 39l7 3M54 39l3 7M54 39l-7 3"/></svg>'
+ +'<b>BATTLE DOCK</b><small>AUTOCOLLANTS</small><i>À COLLER DANS L’ALBUM</i><div class="bas"></div></div><div class="eclat"></div></div>';
 async function ouvrirPochette(s){if(OCC)return;OCC=true;vib(10);msg('');
- const v=document.createElement('div');v.id='albP';v.innerHTML='<div class="poch">BATTLE<br>DOCK<small style="font-size:12px;letter-spacing:3px">AUTOCOLLANTS</small></div><div style="font-weight:800;opacity:.8">On ouvre…</div>';(RAC||document.body).appendChild(v);
+ const v=document.createElement('div');v.id='albP';v.innerHTML=POCH+'<div class="ouv">On ouvre…</div>';(RAC||document.body).appendChild(v);
  const r=await rpcS('album_pochette',{p_source:s});await new Promise(k=>setTimeout(k,900));OCC=false;
  if(!r||!r.ok){v.remove();msg(r&&r.erreur==='pas_assez'?'Pas assez d’euros.':r&&r.erreur==='deja'?'Tu as déjà ouvert la pochette du jour.':r&&r.erreur==='doublons'?'Il faut 5 doublons.':'L’album arrive très bientôt !');lire();return;}
  if(typeof r.euros==='number'){e.euros=r.euros;try{majHaut();}catch(x){}}
@@ -89,12 +118,12 @@ function devoiler(v,r,fin,voir){v.querySelector('.poch').classList.add('dechire'
   '<div style="font-weight:800;font-size:15px;text-align:center;padding:0 20px">'+(L.some(id=>rar(ID[id])===2)?'✨ UNE LÉGENDE ! ✨':N.some(Boolean)?(L.length>1?'De nouveaux autocollants pour ton album !':'Un nouvel autocollant pour ton album !'):(L.length>1?'Que des doublons… garde-les pour les échanger !':'Un doublon… garde-le pour l’échanger !'))+'</div><button class="acoll">Coller dans l’album</button>'+(voir?'<button class="avoir" style="border:0;background:none;color:#fff;opacity:.75;font:800 14px \'Baloo 2\',system-ui,sans-serif;text-decoration:underline">Voir mon album</button>':'');
   if(L.some(id=>rar(ID[id])===2))vib([30,40,30,40,120]);
   v.querySelector('.acoll').onclick=()=>{vib(8);v.remove();fin(L);};
-  const av=v.querySelector('.avoir');if(av)av.onclick=()=>{vib(8);v.remove();fin(L);setTimeout(()=>window.ouvrirAlbum&&ouvrirAlbum(),60);};},450);}
+  const av=v.querySelector('.avoir');if(av)av.onclick=()=>{vib(8);v.remove();fin(L);setTimeout(()=>window.ouvrirAlbum&&ouvrirAlbum(),60);};},640);}
 function css(){if(!document.getElementById('albCss')){const s=document.createElement('style');s.id='albCss';s.textContent=CSS;document.head.appendChild(s);}}
 /* une pochette gagnée ailleurs (battle, soute, Père Noël, calendrier, trouvaille) */
 window.ALB_REVELER=function(r,titre){if(!r||!Array.isArray(r.cartes)||!r.cartes.length)return;css();
  let hote=RAC,tmp=false;if(!hote){hote=document.createElement('div');hote.id='alb';hote.className='on';hote.style.cssText='background:none;pointer-events:none;inset:auto;width:0;height:0';document.body.appendChild(hote);tmp=true;}
- const v=document.createElement('div');v.id='albP';v.style.pointerEvents='auto';v.innerHTML='<div class="poch">BATTLE<br>DOCK<small style="font-size:12px;letter-spacing:3px">AUTOCOLLANTS</small></div><div style="font-weight:800;opacity:.8">'+(titre||'Une pochette pour toi !')+'</div>';hote.appendChild(v);vib(10);
+ const v=document.createElement('div');v.id='albP';v.style.pointerEvents='auto';v.innerHTML=POCH+'<div class="ouv">'+(titre||'Une pochette pour toi !')+'</div>';hote.appendChild(v);vib(10);
  const k=Object.assign({},r,{titre:titre||''});
  setTimeout(()=>devoiler(v,k,()=>{if(tmp)hote.remove();else lire();},tmp),1100);};
 function fermer(){if(!RAC)return;const R0=RAC;RAC=null;window.ECRAN_COUVRANT=false;R0.classList.remove('on');setTimeout(()=>R0.remove(),220);}

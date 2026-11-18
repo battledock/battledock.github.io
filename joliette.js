@@ -1540,10 +1540,9 @@ const AMBIANCE=(()=>{
      /* l'eau du port : une toile de vaguelettes peinte une fois, glissée en deux couches qui se croisent */
      {const y0=PLACE_BAS+40,top=y0-camY;if(top<VH){const V=vagues(),sy=Math.max(0,-top),hh=Math.min(V.height-sy,VH-Math.max(0,top));
        if(hh>0){const dy=Math.max(0,top),a=1-k*.55;
-         for(const [vit,amp,al] of [[9,0,.9],[-6,3,.6]]){const off=((t*vit)%W+W)%W,sx=(camX+off)%W;
-           g.globalAlpha=al*a*(.8+.2*Math.sin(t*1.3+vit));
-           const w1=Math.min(VW,W-sx),yy=dy+Math.sin(t*.9+vit)*amp*.3;
-           g.drawImage(V,sx,sy,w1,hh,0,yy,w1,hh);if(w1<VW)g.drawImage(V,0,sy,VW-w1,hh,w1,yy,VW-w1,hh);}
+         /* une seule couche, qui dérive tout doucement : rien d'autre ne bouge */
+         {const off=((t*2.2)%W+W)%W,sx=Math.floor((camX+off)%W),w1=Math.min(VW,W-sx);g.globalAlpha=.85*a;
+           g.drawImage(V,sx,sy,w1,hh,0,dy,w1,hh);if(w1<VW)g.drawImage(V,0,sy,VW-w1,hh,w1,dy,VW-w1,hh);}
          g.globalAlpha=1;}}}
      if(k>.05){for(const [x,y] of LAMPES)lueurNuit(g,x-camX,y-camY-4,58,'rgba(255,196,120,1)');
        for(let x=DX+70;x<DX+FACW-40;x+=96)lueurNuit(g,x-camX,DOCKS_PIED+18-camY,54,'rgba(255,214,150,1)');}
