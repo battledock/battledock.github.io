@@ -177,7 +177,6 @@ const pointu=(cx,cy,coque,lisere)=>{
   R(cx-20,cy-1,34,2,'#e8dcc0');R(cx-20,cy+1,34,1,'rgba(60,40,20,.3)');                   /* le mât couché, voile ferlée */
   R(cx+18,cy-3,7,6,'#3c4046');R(cx+19,cy-2,5,2,'#6a7078');                               /* le moteur */
   g.strokeStyle='rgba(236,226,200,.85)';g.lineWidth=1;g.beginPath();g.moveTo(cx-33,cy-1);g.quadraticCurveTo(cx-40,cy-24,cx-44,Y0+24);g.stroke();};
-pointu(250,Y0+78,'#2a5ea8','#f4ecd8');pointu(640,Y0+96,'#c8402e','#f4ecd8');pointu(960,Y0+74,'#2f8a6a','#f6d87a');
 for(const [bx,by,c] of [[420,Y0+110,'#e8642a'],[820,Y0+118,'#e8642a'],[1120,Y0+104,'#f2c94c'],[80,Y0+112,'#f2c94c']]){
   g.fillStyle='rgba(8,36,64,.3)';g.beginPath();g.ellipse(bx+1,by+3,5,2,0,0,7);g.fill();
   g.fillStyle=c;g.beginPath();g.arc(bx,by,4,0,7);g.fill();R(bx-2,by-3,2,2,'rgba(255,255,255,.6)');}

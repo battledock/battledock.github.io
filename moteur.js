@@ -2640,7 +2640,7 @@ g.fillStyle='#e8cf8a';g.font='9px Georgia,serif';g.fillText('ENTREPÔT',w*0.66,h
 ];
 const PAGES_PORT=[
 {titre:'Se déplacer',sous:'LE POUCE ET LE BOUTON',
-txt:['<b>Touche un endroit</b> : ton perso y va tout seul. <b>Deux touchers</b> : il y court. Ou <b>garde le doigt posé</b> : il te suit.',
+txt:['Pose le pouce et fais-le glisser : le joystick apparaît sous ton doigt. Près du centre tu <b>marches</b>, pousse jusqu’au bord pour <b>courir</b>.',
 'Près d’un lieu ou d’un objet, un <b>bouton</b> apparaît en bas de l’écran : touche-le pour entrer, pêcher, acheter…'],
 img:(g,w,h)=>{g.fillStyle='#d9c7a0';g.fillRect(0,0,w,h);g.fillStyle='rgba(0,0,0,.06)';for(let y=0;y<h;y+=14)for(let x=(y/14)%2*12;x<w;x+=24)g.fillRect(x,y,23,1);
 const ox=w*0.3,oy=h*0.55;g.beginPath();g.arc(ox,oy,30,0,7);g.fillStyle='rgba(20,14,8,.12)';g.fill();g.lineWidth=1.5;g.strokeStyle='rgba(250,244,228,.9)';g.stroke();
@@ -19741,7 +19741,7 @@ function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
    commande du hall (là il guide un engin, pas des pieds). ?ctrl=joy le
    rend aussi à pied, pour comparer.
    ===================================================================== */
-const CTRL=(()=>{try{const q=new URLSearchParams(location.search).get('ctrl');if(q==='joy'||q==='doigt'||q==='croix')localStorage.setItem('bdl.ctrl3',q);return localStorage.getItem('bdl.ctrl3')||'doigt';}catch(x){return 'doigt';}})();
+const CTRL=(()=>{try{const q=new URLSearchParams(location.search).get('ctrl');if(q==='joy'||q==='doigt'||q==='croix')localStorage.setItem('bdl.ctrl4',q);return localStorage.getItem('bdl.ctrl4')||'joy';}catch(x){return 'joy';}})();
 const CTRL_JOY=CTRL!=='doigt';
 /* LA CROIX (?ctrl=croix). Fixe en bas à gauche, huit directions (les coins
    donnent les diagonales) ; le bouton rond à droite, tenu, fait courir.
