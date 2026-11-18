@@ -2640,7 +2640,7 @@ g.fillStyle='#e8cf8a';g.font='9px Georgia,serif';g.fillText('ENTREPÔT',w*0.66,h
 ];
 const PAGES_PORT=[
 {titre:'Se déplacer',sous:'LE POUCE ET LE BOUTON',
-txt:['<b>Garde le doigt posé</b> : ton perso marche vers lui. Doigt loin de lui, il <b>court</b> ; lâche, il s’arrête.',
+txt:['<b>Touche un endroit</b> : ton perso y va tout seul, son chemin se dessine en pointillés d’or. <b>Deux touchers</b> : il y court. Ou <b>garde le doigt posé</b> : il te suit.',
 'Près d’un lieu ou d’un objet, un <b>bouton</b> apparaît en bas de l’écran : touche-le pour entrer, pêcher, acheter…'],
 img:(g,w,h)=>{g.fillStyle='#d9c7a0';g.fillRect(0,0,w,h);g.fillStyle='rgba(0,0,0,.06)';for(let y=0;y<h;y+=14)for(let x=(y/14)%2*12;x<w;x+=24)g.fillRect(x,y,23,1);
 const ox=w*0.3,oy=h*0.55;g.beginPath();g.arc(ox,oy,30,0,7);g.fillStyle='rgba(20,14,8,.12)';g.fill();g.lineWidth=1.5;g.strokeStyle='rgba(250,244,228,.9)';g.stroke();
@@ -19741,7 +19741,7 @@ function lacher(){J.actif=false;J.id=null;joyX=joyY=0;}
    commande du hall (là il guide un engin, pas des pieds). ?ctrl=joy le
    rend aussi à pied, pour comparer.
    ===================================================================== */
-const CTRL=(()=>{try{const q=new URLSearchParams(location.search).get('ctrl');if(q==='joy'||q==='doigt'||q==='croix')localStorage.setItem('bdl.ctrl',q);return localStorage.getItem('bdl.ctrl')||'doigt';}catch(x){return 'doigt';}})();
+const CTRL=(()=>{try{const q=new URLSearchParams(location.search).get('ctrl');if(q==='joy'||q==='doigt'||q==='croix')localStorage.setItem('bdl.ctrl3',q);return localStorage.getItem('bdl.ctrl3')||'doigt';}catch(x){return 'doigt';}})();
 const CTRL_JOY=CTRL!=='doigt';
 /* LA CROIX (?ctrl=croix). Fixe en bas à gauche, huit directions (les coins
    donnent les diagonales) ; le bouton rond à droite, tenu, fait courir.
@@ -19829,12 +19829,12 @@ const [x,y]=pointDe(t);J.fx=x;J.fy=y;if(!J.bouge&&Math.hypot(x-J.sx,y-J.sy)>6){J
 }
 },{passive:false});
 ['touchend','touchcancel'].forEach(k=>document.addEventListener(k,ev=>{
-for(const t of ev.changedTouches)if(t.identifier===J.id){ev.preventDefault();const tap=!J.bouge&&Date.now()-(J.t0||0)<800&&k==='touchend';const sx=J.sx,sy=J.sy;lacher();if(tap){J.vie=0;void sx;void sy;}}
+for(const t of ev.changedTouches)if(t.identifier===J.id){ev.preventDefault();const suit=J.suit,tap=!J.bouge&&Date.now()-(J.t0||0)<(suit?320:800)&&k==='touchend';const sx=J.sx,sy=J.sy;lacher();if(tap){J.vie=0;if(suit)try{toucherAller(sx,sy);}catch(z){}}}
 },{passive:false}));
 document.addEventListener('mousedown',ev=>{
 if(zoneMarche(ev.clientX,ev.clientY,ev.target)){prendre(ev.clientX,ev.clientY);J.t0=Date.now();J.sx=ev.clientX;J.sy=ev.clientY;J.bouge=false;J.fx=ev.clientX;J.fy=ev.clientY;J.va=false;J.suit=suivreDoigt();if(J.suit)J.vie=0;}});
 addEventListener('mousemove',ev=>{if(J.actif){J.fx=ev.clientX;J.fy=ev.clientY;if(!J.bouge&&Math.hypot(ev.clientX-J.sx,ev.clientY-J.sy)>6){J.bouge=true;arreterMarche();}if(J.bouge&&!J.suit)tirer(ev.clientX,ev.clientY);}});
-addEventListener('mouseup',()=>{if(J.actif){const tap=!J.bouge&&Date.now()-(J.t0||0)<800,sx=J.sx,sy=J.sy;lacher();if(tap){J.vie=0;void sx;void sy;}}});
+addEventListener('mouseup',()=>{if(J.actif){const suit=J.suit,tap=!J.bouge&&Date.now()-(J.t0||0)<(suit?320:800),sx=J.sx,sy=J.sy;lacher();if(tap){J.vie=0;if(suit)try{toucherAller(sx,sy);}catch(z){}}}});
 addEventListener('keydown',ev=>{const k={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
 z:[0,-1],s:[0,1],q:[-1,0],d:[1,0]}[ev.key];if(k){arreterMarche();joyX=k[0];joyY=k[1];}});
 addEventListener('keyup',()=>{joyX=joyY=0;});
@@ -19881,6 +19881,34 @@ function allerVers(sx,sy){
   if(!ch||!ch.length){MARCHE=null;try{texteVolant(wx,wy-10,'On ne peut pas aller là','#f4ecd8');}catch(z){}return;}
   MARCHE={ch,i:0,fin:ch[ch.length-1],t0:Date.now(),best:1e9,bloqueT:0,vu:{x:wx,y:wy}};}
 function arreterMarche(){if(MARCHE){MARCHE=null;joyX=joyY=0;}}
+/* LE FIL D'OR. Un toucher : le perso y va seul, et son chemin se dessine au sol
+   en pointillés d'or qu'il avale en marchant. Deux touchers : il y court.
+   Doigt tenu : il suit le doigt, relié à lui par le même fil. */
+let DERNIER_TAP={t:0,x:0,y:0};
+function toucherAller(sx,sy){
+  const n=Date.now(),dbl=n-DERNIER_TAP.t<380&&Math.hypot(sx-DERNIER_TAP.x,sy-DERNIER_TAP.y)<46;
+  DERNIER_TAP={t:n,x:sx,y:sy};
+  allerVers(sx,sy);
+  if(MARCHE){MARCHE.court=dbl;try{vibrer(dbl?[8,30,8]:8);}catch(z){}}}
+function filDor(pts,camX,camY,court){
+  /* des perles qui coulent le long du chemin, de lui vers le but */
+  const t=performance.now()/1000,pas=court?7:9,vit=court?26:15;let reste=(t*vit)%pas;
+  ctx.save();
+  for(let k=1;k<pts.length;k++){const [ax,ay]=pts[k-1],[bx,by]=pts[k],L=Math.hypot(bx-ax,by-ay);if(L<.5)continue;
+    let d=reste;for(;d<L;d+=pas){const u=d/L,x=ax+(bx-ax)*u-camX,y=ay+(by-ay)*u-camY;
+      ctx.fillStyle='rgba(60,40,10,.4)';ctx.fillRect(Math.round(x)-1,Math.round(y),3,2);
+      ctx.fillStyle=court?'#ff9a3c':'#f2b93c';ctx.fillRect(Math.round(x)-1,Math.round(y)-1,2,2);}
+    reste=d-L;}
+  ctx.restore();}
+function butDor(X,Y,age,court){
+  /* le but : une onde qui s'ouvre au toucher, puis un losange qui respire */
+  const t=performance.now()/1000,p=.5+.5*Math.sin(t*5),c=court?'255,154,60':'242,185,60';
+  ctx.save();ctx.translate(X,Y);ctx.scale(1,.5);
+  if(age<.55){const k=age/.55;ctx.strokeStyle='rgba('+c+','+(1-k)+')';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,4+k*22,0,7);ctx.stroke();}
+  ctx.strokeStyle='rgba(60,40,10,.35)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,8+p*2,0,7);ctx.stroke();
+  ctx.strokeStyle='rgba('+c+',.95)';ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(0,0,8+p*2,0,7);ctx.stroke();
+  ctx.rotate(Math.PI/4);ctx.fillStyle='rgba('+c+',1)';ctx.fillRect(-2.2,-2.2,4.4,4.4);
+  ctx.restore();}
 function guiderMarche(dt){
   if(!MARCHE||J.actif)return;
   if(window.ECRAN_COUVRANT||pageOuverte()){arreterMarche();return;}
@@ -19890,15 +19918,15 @@ function guiderMarche(dt){
   /* coincé (un passant, un pigeon têtu) : on recalcule une fois, puis on renonce */
   if(d<MARCHE.best-1){MARCHE.best=d;MARCHE.bloqueT=0;}else{MARCHE.bloqueT+=dt;if(MARCHE.bloqueT>.9){const f=MARCHE.fin,re=!MARCHE.re;if(re){const ch=chercherChemin(joueur.x,joueur.y,f[0],f[1]);if(ch&&ch.length){MARCHE={...MARCHE,ch,i:0,best:1e9,bloqueT:0,re:1};return;}}arreterMarche();return;}}
   let reste=d;for(let k=MARCHE.i+1;k<MARCHE.ch.length;k++)reste+=Math.hypot(MARCHE.ch[k][0]-MARCHE.ch[k-1][0],MARCHE.ch[k][1]-MARCHE.ch[k-1][1]);
-  const p=reste>170?.95:Math.max(.62,Math.min(.75,d/30));   /* on court quand c'est loin, on marche pour arriver */
+  const p=MARCHE.court?(reste>26?.97:.7):(reste>260?.95:Math.max(.62,Math.min(.75,d/30)));   /* deux touchers : il court ; sinon il ne court que si c'est vraiment loin */
   joyX=(x-joueur.x)/d*p;joyY=(y-joueur.y)/d*p;}
 function acteurDoigt(acteurs,camX,camY){if(!J.actif||!J.suit||!J.va)return;try{const cvR=cv.getBoundingClientRect(),wx=CAM_IMG.x+(J.fx-cvR.left)/ECH_CSS,wy=CAM_IMG.y+(J.fy-cvR.top)/ECH_CSS+26;
-  acteurs.push({y:-1e5+1,f:()=>{const X=wx-camX,Y=wy-camY,c=Math.hypot(joyX,joyY)>0.88;
-    ctx.save();ctx.translate(X,Y);ctx.scale(1,.5);ctx.strokeStyle=c?'rgba(232,192,106,.9)':'rgba(255,244,214,.75)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,8,0,7);ctx.stroke();ctx.restore();}});}catch(z){}}
-function acteurMarche(acteurs,camX,camY){if(!MARCHE||!MARCHE.vu)return;const v=MARCHE.vu,f=MARCHE.fin;
-  acteurs.push({y:-1e5+1,f:()=>{const t=performance.now()/1000,X=f[0]-camX,Y=f[1]-camY,p=.5+.5*Math.sin(t*7);
-    ctx.save();ctx.translate(X,Y);ctx.scale(1,.5);ctx.strokeStyle='rgba(255,244,214,'+(.55+.35*p)+')';ctx.lineWidth=2;ctx.beginPath();ctx.arc(0,0,7+p*3,0,7);ctx.stroke();
-    ctx.strokeStyle='rgba(40,28,12,.35)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,4,0,7);ctx.stroke();ctx.restore();void v;}});}
+  acteurs.push({y:-1e5+1,f:()=>{const c=Math.hypot(joyX,joyY)>0.88;
+    filDor([[joueur.x,joueur.y],[wx,wy]],camX,camY,c);butDor(wx-camX,wy-camY,9,c);}});}catch(z){}}
+function acteurMarche(acteurs,camX,camY){if(!MARCHE||!MARCHE.vu)return;const M=MARCHE,f=M.fin;
+  acteurs.push({y:-1e5+1,f:()=>{
+    const pts=[[joueur.x,joueur.y]];for(let k=M.i;k<M.ch.length;k++)pts.push(M.ch[k]);
+    filDor(pts,camX,camY,!!M.court);butDor(f[0]-camX,f[1]-camY,(Date.now()-M.t0)/1000,!!M.court);}});}
 let joySale=false;
 function dessinerJoy(dt){
 if(J.suit&&J.actif)J.vie=0;
