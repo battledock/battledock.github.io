@@ -1123,157 +1123,47 @@ const GB_BOUTIQUES=[
  ['OV','#1e7a8a','#38a8b8','OPTIQUE DU VIEUX-PORT','Lunettes de vue & de soleil','lunettes'],
  ['SM','#8a2438','#b84458','SALON MASSILIA','Coiffeur & barbier','salon'],
  ['CG','#5a3a22','#8a5c38','CAFÉ DE LA GALERIE','Boissons chaudes & petits boosts','cafe']];
-/* les pictos des boutiques, dessinés au pixel */
-const GB_PICTOS={
-bdc:{p:{d:'#16307c',b:'#2a4fae',l:'#5277d6',w:'#e8ecf6'},m:[
-'..dddd..dddd..',
-'.ddbbdddddbbd.',
-'ddbbbdlldbbbdd',
-'dbbbbdlldbbbbd',
-'dbbbbdlldbbbbd',
-'dbbbbdlldbbbbd',
-'.dddbdlldbddd.',
-'...dbdlldbd...',
-'...dbdlldbd...',
-'...dbbdlbbd...',
-'...dbbdlbbd...',
-'...dddddddd...']},
-sneakers:{p:{d:'#7a3410',b:'#e07a36',l:'#ffd8b8',w:'#fff4ea'},m:[
-'..............',
-'..............',
-'.....dd.......',
-'....dbbd......',
-'...dbbbbdd....',
-'..dblbbbbbdd..',
-'.dblllbbbbbbd.',
-'dbllbbbbbbbbbd',
-'dbbbbbbbbbbbbd',
-'dwwwwwwwwwwwwd',
-'.dddddddddddd.',
-'..............']},
-bijou:{p:{d:'#6a4a08',b:'#c89a3a',l:'#ffe9a8',w:'#fffdf2'},m:[
-'.....dddd.....',
-'....dbllbd....',
-'.....dddd.....',
-'...ddblbbdd...',
-'..dblwwwwlbd..',
-'.dbwwwwwwwwbd.',
-'.dbwwwdwwwwbd.',
-'.dbwwwdwwwwbd.',
-'.dbwwwwdwwwbd.',
-'..dblwwwwlbd..',
-'...ddbllbdd...',
-'.....dddd.....']},
-lunettes:{p:{d:'#0c4450',b:'#38a8b8',l:'#b8ecf4',w:'#e8fbff'},m:[
-'..............',
-'..............',
-'..............',
-'.dddddd.dddddd',
-'dbbbbbbdbbbbbb',
-'dblwwwbdbblwww',
-'dblwwwbddbblww',
-'dbwwwwb..dbbww',
-'.dbbbbd...dbbb',
-'..dddd.....ddd',
-'..............',
-'..............']},
-salon:{p:{d:'#5c1020',b:'#b84458',l:'#e8a0b0',w:'#f2f2f6'},m:[
-'ww..........ww',
-'.ww........ww.',
-'..ww....a.ww..',
-'...ww....ww...',
-'....ww..ww....',
-'.....wwww.....',
-'......ww......',
-'.....dbbd.....',
-'....dbddbd....',
-'...dbd..dbd...',
-'...dbd..dbd...',
-'....dd....dd..']},
-cafe:{p:{d:'#3c2412',b:'#8a5c38',l:'#d8b890',w:'#f6f0e6'},m:[
-'.....l..l.....',
-'....l..l......',
-'.....l..l.....',
-'..............',
-'.dddddddddd...',
-'.dwwwwwwwwd dd',
-'.dwwwwwwwwddbd',
-'.dwbbbbbbwd.bd',
-'.dwwwwwwwwddd.',
-'..dwwwwwwd....',
-'...dddddd.....',
-'..............']}};
-function pictoGalerie(k){const S=GB_PICTOS[k];if(!S)return null;
- const c=document.createElement('canvas');c.width=14;c.height=12;const g=c.getContext('2d');
- S.m.forEach((r,y)=>{for(let x=0;x<r.length&&x<14;x++){const v=S.p[r[x]];if(v){g.fillStyle=v;g.fillRect(x,y,1,1);}}});
- return c;}
+/* LE MENU DE LA GALERIE : L'ÉPURE. Fond clair, grande typographie,
+   un point de couleur par maison, des filets fins. Rien d'autre. */
 function cssGalerieMenu(){if(document.getElementById('gbmenu-css'))return;
  const st=document.createElement('style');st.id='gbmenu-css';st.textContent=`
-#gbm{position:absolute;inset:0;overflow:auto;-webkit-overflow-scrolling:touch;font-family:Georgia,'Times New Roman',serif;color:#fff;
- background:radial-gradient(ellipse at 50% -12%,#2e6cc2 0%,#1a4692 46%,#0c2554 100%)}
-#gbm::before{content:'';position:fixed;inset:0;pointer-events:none;background:
- repeating-linear-gradient(115deg,rgba(140,196,255,.045) 0 2px,transparent 2px 90px)}
-#gbm .lum{position:fixed;left:-30%;top:-26%;width:160%;height:70%;pointer-events:none;filter:blur(2px);
- background:conic-gradient(from 168deg at 50% 0%,transparent 0 14%,rgba(170,212,255,.10) 16% 19%,transparent 21% 33%,rgba(170,212,255,.07) 35% 38%,transparent 40% 60%,rgba(170,212,255,.09) 62% 65%,transparent 67% 100%);
- animation:gbLum 13s ease-in-out infinite alternate}
-@keyframes gbLum{from{transform:translateX(-26px)}to{transform:translateX(26px)}}
-#gbm .cont{position:relative;max-width:430px;margin:0 auto;padding:max(10px,env(safe-area-inset-top)) 16px calc(30px + env(safe-area-inset-bottom))}
-#gbm .haut{display:flex;align-items:center;justify-content:space-between;margin-bottom:0}
-#gbm .bo{background:rgba(8,20,48,.6);border:1px solid rgba(232,192,106,.5);border-radius:999px;padding:6px 13px;font-size:14px;font-weight:700;color:#ffe9a8;white-space:nowrap;box-shadow:0 2px 8px rgba(4,10,30,.4)}
-#gbm .x{width:36px;height:36px;border-radius:50%;border:1px solid rgba(140,196,255,.4);background:rgba(8,20,48,.6);color:#cfe4ff;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center}
-#gbm .verriere{display:block;width:min(100%,340px);margin:-6px auto -34px;opacity:.9}
-#gbm .titres{text-align:center;margin:0 0 20px;position:relative}
-#gbm .sur{font-size:11px;letter-spacing:.52em;text-indent:.52em;color:#9cc2ee}
-#gbm h1{margin:7px 0 0;font-size:30px;letter-spacing:.11em;font-weight:800;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.28),0 0 26px rgba(140,196,255,.35)}
-#gbm .filet{display:flex;align-items:center;gap:10px;justify-content:center;margin-top:11px}
-#gbm .filet i{display:block;width:54px;height:1.5px;background:linear-gradient(90deg,transparent,#e8c06a);border-radius:2px}
-#gbm .filet i:last-child{background:linear-gradient(270deg,transparent,#e8c06a)}
-#gbm .filet b{width:5px;height:5px;background:#e8c06a;transform:rotate(45deg);box-shadow:0 0 8px rgba(232,192,106,.8)}
-#gbm .mot{font-style:italic;font-size:12.5px;color:#9cc2ee;margin-top:10px}
-#gbm .bq{position:relative;display:flex;align-items:center;gap:14px;width:100%;text-align:left;margin:0 0 12px;padding:13px 14px;border-radius:17px;color:#fff;
- background:linear-gradient(180deg,rgba(214,230,255,.13),rgba(130,170,230,.05) 55%,rgba(10,24,56,.12));
- border:1px solid rgba(150,200,255,.3);border-top-color:rgba(214,236,255,.5);
- box-shadow:0 6px 18px rgba(3,8,26,.45),inset 0 1px 0 rgba(255,255,255,.12);font-family:inherit;
- opacity:0;animation:gbIn .55s cubic-bezier(.2,.7,.3,1) both}
-@keyframes gbIn{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
-#gbm .bq:active{transform:translateY(1px) scale(.995);background:linear-gradient(180deg,rgba(214,230,255,.2),rgba(130,170,230,.1))}
-#gbm .bq::after{content:'';position:absolute;inset:0;border-radius:17px;pointer-events:none;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.07) 42%,transparent 54%)}
-#gbm .tuile{flex:0 0 56px;height:56px;border-radius:14px;display:flex;align-items:center;justify-content:center;
- box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35),inset 0 -10px 16px rgba(0,0,0,.22),0 4px 10px rgba(3,8,26,.5)}
-#gbm .tuile canvas{width:40px;height:34px;image-rendering:pixelated;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
-#gbm .lib{flex:1;min-width:0}
-#gbm .lib b{display:block;font-size:15.5px;letter-spacing:.07em}
-#gbm .lib small{display:block;font-size:12px;color:#a8c6ea;font-style:italic;margin-top:3.5px}
-#gbm .chv{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;
- border:1px solid rgba(232,192,106,.45);color:#ffe9a8;font-size:15px;padding-bottom:2px;opacity:.9}
-#gbm .pied{text-align:center;margin-top:18px;color:#7ea6d6}
-#gbm .pied small{display:block;font-size:10px;letter-spacing:.34em;text-indent:.34em;margin-top:7px;color:#5f86b8}
-#gbm .pied em{font-size:11.5px;font-style:italic}`;
+#gbm{position:absolute;inset:0;overflow:auto;-webkit-overflow-scrolling:touch;font-family:Georgia,'Times New Roman',serif;color:#15181e;background:#faf7f1}
+#gbm .cont{max-width:430px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 24px calc(36px + env(safe-area-inset-bottom))}
+#gbm .haut{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+#gbm .bo{font-size:13.5px;font-weight:700;color:#15181e;border:1px solid #d8d2c4;border-radius:999px;padding:6px 13px;background:#fff}
+#gbm .x{width:34px;height:34px;border-radius:50%;border:1px solid #d8d2c4;background:#fff;color:#15181e;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center}
+#gbm .sur{font-size:10.5px;letter-spacing:.5em;text-indent:.02em;color:#b89a4a;margin-bottom:10px}
+#gbm h1{margin:0 0 6px;font-size:40px;line-height:1.02;font-weight:800;letter-spacing:-.01em}
+#gbm h1 i{font-style:italic;font-weight:400;color:#2a5ac8}
+#gbm .ss{font-size:13px;font-style:italic;color:#8a8574;margin-bottom:24px}
+#gbm .bq{display:flex;align-items:center;gap:14px;width:100%;background:none;border:0;border-top:1px solid #e4ddce;padding:17px 0;margin:0;text-align:left;font-family:inherit;color:#15181e;
+ opacity:0;animation:gbIn .5s cubic-bezier(.2,.7,.3,1) both}
+#gbm .bq:last-of-type{border-bottom:1px solid #e4ddce}
+@keyframes gbIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+#gbm .bq:active{background:#f1ecdf}
+#gbm .pt{flex:none;width:11px;height:11px;border-radius:3px;transform:rotate(45deg)}
+#gbm .nm{flex:1;min-width:0}
+#gbm .nm b{display:block;font-size:19px;letter-spacing:.01em;font-weight:700}
+#gbm .nm small{display:block;font-size:12px;font-style:italic;color:#8a8574;margin-top:3px}
+#gbm .n2{font-size:11px;color:#c0b89f;letter-spacing:.1em}
+#gbm .fl{color:#15181e;font-size:18px}
+#gbm .pied{margin-top:28px;font-size:10px;letter-spacing:.42em;text-indent:.42em;color:#c0b89f;text-align:center}`;
  document.head.appendChild(st);}
-const GB_VERRIERE=(()=>{let h='';for(let i=0;i<=10;i++){const a=Math.PI*(1-i/10),x=170+150*Math.cos(a),y=96-78*Math.sin(a);
-  h+='<line x1="170" y1="96" x2="'+x.toFixed(1)+'" y2="'+y.toFixed(1)+'" stroke="rgba(150,200,255,.34)" stroke-width="1"/>';}
- return '<svg class="verriere" viewBox="0 0 340 100" fill="none">'
-  +'<defs><linearGradient id="gbv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="rgba(190,222,255,.34)"/><stop offset="1" stop-color="rgba(190,222,255,.03)"/></linearGradient></defs>'
-  +'<path d="M20 96 A150 78 0 0 1 320 96" fill="url(#gbv)"/>'+h
-  +'<path d="M14 96 A156 82 0 0 1 326 96" stroke="#e8c06a" stroke-width="2"/>'
-  +'<path d="M20 96 A150 78 0 0 1 320 96" stroke="rgba(214,236,255,.55)" stroke-width="1"/>'
-  +'<circle cx="170" cy="30" r="2.6" fill="#ffe9a8"/><circle cx="170" cy="30" r="6" fill="rgba(255,233,168,.25)"/></svg>';})();
 function ouvrirMenuGalerie(){
  cssGalerieMenu();
  const F=document.getElementById('page2Fond');if(!F)return;
  F.className='';
- F.innerHTML='<div id="gbm"><div class="lum"></div><div class="cont">'
+ F.innerHTML='<div id="gbm"><div class="cont">'
   +'<div class="haut"><div class="bo">'+enEuros(e.euros||0)+'</div><button class="x" aria-label="Fermer">✕</button></div>'
-  +GB_VERRIERE
-  +'<div class="titres"><div class="sur">BIENVENUE À</div><h1>LA GALERIE BLEUE</h1>'
-  +'<div class="filet"><i></i><b></b><i></i></div>'
-  +'<div class="mot">Le passage couvert de la Joliette — six maisons, un comptoir</div></div>'
-  +GB_BOUTIQUES.map((b,i)=>'<button class="bq" data-k="'+b[5]+'" style="animation-delay:'+(90+i*75)+'ms">'
-   +'<span class="tuile" style="background:linear-gradient(150deg,'+b[2]+','+b[1]+')" data-pic="'+b[5]+'"></span>'
-   +'<span class="lib"><b>'+b[3]+'</b><small>'+b[4]+'</small></span><span class="chv">›</span></button>').join('')
-  +'<div class="pied"><em>Ferme une boutique : tu reviens ici.</em><small>GALERIE BLEUE · JOLIETTE · DEPUIS 1962</small></div>'
+  +'<div class="sur">LE PASSAGE COUVERT</div>'
+  +'<h1>La <i>Galerie</i><br>Bleue.</h1>'
+  +'<div class="ss">Six maisons, un comptoir — Joliette, Marseille.</div>'
+  +GB_BOUTIQUES.map((b,i)=>'<button class="bq" data-k="'+b[5]+'" style="animation-delay:'+(70+i*60)+'ms">'
+   +'<span class="pt" style="background:'+b[2]+'"></span>'
+   +'<span class="nm"><b>'+b[3]+'</b><small>'+b[4]+'</small></span>'
+   +'<span class="n2">0'+(i+1)+'</span><span class="fl">→</span></button>').join('')
+  +'<div class="pied">DEPUIS 1962</div>'
   +'</div></div>';
- F.querySelectorAll('.tuile').forEach(t=>{const c=pictoGalerie(t.dataset.pic);if(c)t.appendChild(c);});
  document.getElementById('page2').classList.add('on');
  F.querySelector('.x').onclick=()=>{GB_RET=false;document.getElementById('page2').classList.remove('on');try{window.fermeA=Date.now();}catch(x){}};
  F.querySelectorAll('.bq').forEach(b=>{b.onclick=()=>{try{vibrer&&vibrer(8);}catch(x){}ouvrirBoutiqueDepuisMenu(b.dataset.k);};});
