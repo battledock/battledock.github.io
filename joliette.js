@@ -71,12 +71,7 @@ for(let y=TRAM1+40;y<PLACE_BAS;y+=88){R(84,y,W-168,4,'#d4c8b2');R(84,y,W-168,1,'
 /* LES MATIÈRES. Des dalles qui ont vécu : quelques-unes plus pâles ou plus
    grises, des fissures fines, de la mousse dans les joints à l'ombre des
    arbres, des feuilles collées au sol sous les platanes. */
-for(let i=0;i<150;i++){const x=90+h(i,1,95)*(W-180),y=TRAM1+6+h(i,2,95)*(PLACE_BAS-TRAM1-30),k=h(i,3,95);
-  R(x-(x%56),y-(y%22),56,22,k<.5?'rgba(255,250,236,.16)':'rgba(120,104,80,.07)');}
-for(let i=0;i<70;i++){let x=90+h(i,1,96)*(W-180),y=TRAM1+10+h(i,2,96)*(PLACE_BAS-TRAM1-40);const n=8+h(i,3,96)*18;
-  for(let k=0;k<n;k++){R(x,y,1,1,'rgba(96,82,60,.42)');x+=h(i,k,97)<.72?1:0;y+=h(i,k,98)<.5?1:(h(i,k,99)<.5?0:-1);}}
-for(let i=0;i<520;i++){const cote=h(i,1,102)<.5,x=(cote?6:W-150)+h(i,2,102)*144,y=TRAM1+10+h(i,3,102)*(PLACE_BAS-TRAM1-20),k=h(i,4,102);
-  R(x,y,2,2,k<.4?'#d98a2c':k<.75?'#e8b23c':'#b8602a');R(x,y,1,1,'rgba(255,236,190,.5)');}
+/* le sol reste net : pas de taches ni de feuilles mortes. */
 
 /* ======== LA COMPOSITION DE LA PLACE ========
    Une grande croix d'allées en brique rousse (l'axe des portes de la Galerie
@@ -827,7 +822,7 @@ function graverMassifBeau(v){const c=MASSIFS[(v||0)%4]();return {toile:c,W:96,H:
 function toileA(L,HH){const D=2,c=document.createElement('canvas');c.width=L*D;c.height=HH*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
   const R=(x,y,w,hh,col)=>{g.fillStyle=col;g.fillRect(Math.round(x*2)/2,Math.round(y*2)/2,Math.max(.5,Math.round(w*2)/2),Math.max(.5,Math.round(hh*2)/2));};return {c,g,R};}
 const hA=(x,y,k)=>{let n=((x*73856093)^(y*19349663)^(k*83492791))|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
-const ombreA=(g,x,y,rx,ry)=>{g.fillStyle='rgba(30,26,18,.24)';g.beginPath();g.ellipse(x,y,rx,ry,0,0,7);g.fill();};
+const ombreA=(g,x,y,rx,ry)=>{};   /* plus d'ombre au pied des arbres */
 /* une boule de feuillage : sombre en bas à droite, claire en haut à gauche, grain de feuilles */
 function feuillage(g,R,cx,cy,rx,ry,pal,n,seed){
   const [s,m,c,l]=pal;
@@ -1518,20 +1513,11 @@ const AMBIANCE=(()=>{
  function acteurs(){const t=(performance.now()-T0)/1000,L=[];let k=0;try{k=nuitDecor();}catch(x){}
    /* le sol : ombres le jour, halos le soir, scintillement de l'eau */
    L.push({y:-1e5+2,f:(g,camX,camY)=>{
-     if(k<.85){g.save();g.fillStyle='rgba(38,52,30,'+(.13*(1-k))+')';
-       g.globalAlpha=1-k;
-       for(const A of TACHES){const X=A.x-camX,Y=A.y-camY;if(X<-80||Y<-50||X>VW+80||Y>VH+50)continue;
-         if(!A.c){const R=Math.ceil(A.r*1.5),c=document.createElement('canvas');c.width=R*2;c.height=R;const q=c.getContext('2d');q.fillStyle='rgba(38,52,30,.13)';
-           for(const [dx,dy,r] of A.L){q.beginPath();q.ellipse(R+dx,R/2+dy,r,r*.42,0,0,7);q.fill();}A.c=c;A.R=R;}
-         g.drawImage(A.c,Math.round(X-A.R+Math.sin(t*.9+A.x)*1.6),Math.round(Y-A.R/2+Math.cos(t*.8+A.x)*.6));}
-       g.globalAlpha=1;
-       g.restore();}
+     /* plus d'ombres de feuillage au sol */
      if(k>.05){for(const [x,y] of LAMPES)lueurNuit(g,x-camX,y-camY-4,58,'rgba(255,196,120,1)');
        for(let x=DX+70;x<DX+FACW-40;x+=96)lueurNuit(g,x-camX,DOCKS_PIED+18-camY,54,'rgba(255,214,150,1)');}
    }});
-   /* les feuilles */
-   if(k<.9)for(const f of FEUILLES){const p=posFeuille(f,t);L.push({y:p.pose?-1e5+3:p.sol,f:(g,camX,camY)=>{const X=Math.round(p.x-camX),Y=Math.round(p.y-camY);if(X<-4||Y<-4||X>VW+4||Y>VH+4)return;
-       g.globalAlpha=p.a;g.fillStyle=p.c;if(p.pose||p.tour)g.fillRect(X,Y,3,2);else g.fillRect(X,Y,2,3);g.fillStyle='rgba(255,236,190,.5)';g.fillRect(X,Y,1,1);g.globalAlpha=1;}});}
+   /* plus de feuilles qui tombent */
    /* le chat */
    L.push({y:CHAT.y,f:(g,camX,camY)=>{const X=CHAT.x-camX,Y=CHAT.y-camY;if(X<-14||Y<-4||X>VW+14||Y>VH+18)return;dessinerChat(g,X,Y);}});
    return L;}
