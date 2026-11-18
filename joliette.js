@@ -512,31 +512,77 @@ function dessinerLesDocks(g,o,x,y){
 /* LE TRAM : une rame blanche et bleue qui traverse la place toutes les minutes */
 let RAME=null;
 function graverRame(){
-const L=250,HH=56,{c,g,R}=toile(L,HH),s=HH-4;
-g.fillStyle='rgba(20,20,26,.28)';g.fillRect(4,s-2,L-8,5);
-/* la caisse */
-R(6,s-40,L-12,36,'#f3f4f2');
-R(6,s-40,L-12,2,'#ffffff');R(6,s-6,L-12,2,'#9aa0a6');
-/* le bandeau vitré */
-R(10,s-34,L-20,14,'#2e4660');
-for(let x=14;x<L-14;x+=18){R(x,s-34,1,14,'#c9d2da');R(x+2,s-32,4,4,'rgba(200,230,255,.35)');}
-/* la ligne bleue */
-R(6,s-18,L-12,4,'#1e88c8');R(6,s-14,L-12,1,'#13608e');
-/* les portes */
-for(const x of [44,112,180]){R(x,s-34,14,28,'#c9cfd4');R(x+6,s-34,2,28,'#7a828a');R(x+1,s-32,5,10,'#3e5672');R(x+8,s-32,5,10,'#3e5672');}
-/* les deux nez arrondis */
-for(const [x,d] of [[2,1],[L-10,-1]]){
-  g.fillStyle='#f3f4f2';g.beginPath();g.ellipse(x+4,s-22,8,18,0,0,7);g.fill();
-  g.fillStyle='#22364c';g.beginPath();g.ellipse(x+4+d*-1,s-28,5,9,0,0,7);g.fill();
-  R(x+2,s-12,4,2,'#ffe6a0');}
-/* bogies et pantographe */
-for(const x of [30,L/2-10,L-50]){R(x,s-4,20,4,'#2e3036');R(x+3,s-1,5,2,'#55585e');R(x+12,s-1,5,2,'#55585e');}
-R(L/2-14,s-44,28,4,'#b0b6bc');g.strokeStyle='#4c5056';g.lineWidth=1.5;g.beginPath();
-g.moveTo(L/2-8,s-44);g.lineTo(L/2,s-54);g.lineTo(L/2+8,s-44);g.stroke();R(L/2-6,s-55,12,2,'#4c5056');
+/* LA RAME, REGARDÉE DE PRÈS. Trois caisses articulées par des soufflets,
+   une robe blanche qui prend la lumière par le haut, un bandeau vitré
+   continu où le ciel glisse en biais, la vague bleue de la ligne, et deux
+   nez ronds à girouette ambrée. */
+const L=290,HH=62,{c,g,R}=toile(L,HH),s=HH-4;
+const MODS=[[8,94],[98,188],[192,278]];                     /* les trois caisses */
+g.fillStyle='rgba(20,20,26,.30)';g.beginPath();g.ellipse(L/2,s+1,L/2-8,3.4,0,0,7);g.fill();
+const arrondi=(x,y,w,h,r)=>{g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath();};
+for(const [a,b] of MODS){
+  const w=b-a;
+  /* la robe : claire en haut, l'ombre vers la jupe */
+  const gr=g.createLinearGradient(0,s-44,0,s-2);gr.addColorStop(0,'#ffffff');gr.addColorStop(.42,'#f2f4f5');gr.addColorStop(.8,'#dde1e5');gr.addColorStop(1,'#c8ccd2');
+  g.fillStyle=gr;arrondi(a,s-44,w,42,3);g.fill();
+  R(a+1,s-44,w-2,1,'#ffffff');
+  /* la jupe sombre qui cache les roues */
+  R(a+1,s-7,w-2,5,'#3a3e46');R(a+1,s-7,w-2,1,'#51555e');
+  /* le bandeau vitré : bleu de nuit, le ciel en biais */
+  const vg=g.createLinearGradient(0,s-38,0,s-23);vg.addColorStop(0,'#35557c');vg.addColorStop(.5,'#24405f');vg.addColorStop(1,'#182c46');
+  g.fillStyle=vg;g.fillRect(a+3,s-38,w-6,15);
+  g.save();g.beginPath();g.rect(a+3,s-38,w-6,15);g.clip();
+  g.fillStyle='rgba(205,228,246,.30)';
+  for(let x=a-20;x<b;x+=26){g.beginPath();g.moveTo(x,s-23);g.lineTo(x+11,s-38);g.lineTo(x+16,s-38);g.lineTo(x+5,s-23);g.fill();}
+  g.fillStyle='rgba(255,255,255,.5)';g.fillRect(a+3,s-38,w-6,1);
+  g.restore();
+  /* la vague bleue de la ligne, sous les vitres */
+  R(a+1,s-21,w-2,5,'#1e88c8');R(a+1,s-17,w-2,1.4,'#13608e');R(a+1,s-21,w-2,1,'#5cb4e4');
+  /* les montants fins du bandeau */
+  for(let x=a+20;x<b-8;x+=22)R(x,s-38,1,15,'#cfd6dc');
+}
+/* les portes : deux vantaux au bleu de la ligne, hublots hauts */
+for(const dx of [30,66,124,160,218,254]){
+  R(dx-8,s-38,16,31,'#b8c0c8');R(dx-8,s-38,16,1,'#8e969e');
+  const dg=g.createLinearGradient(0,s-38,0,s-8);dg.addColorStop(0,'#d8dde2');dg.addColorStop(1,'#aeb6be');
+  g.fillStyle=dg;g.fillRect(dx-7,s-37,14,29);
+  R(dx-.5,s-37,1,29,'#6e767e');                                   /* la fente centrale */
+  R(dx-6,s-36,5,12,'#24405f');R(dx+1,s-36,5,12,'#24405f');        /* les hublots */
+  g.fillStyle='rgba(205,228,246,.35)';g.fillRect(dx-5,s-35,2,10);g.fillRect(dx+2,s-35,2,10);
+  R(dx-6,s-20,12,3,'#1e88c8');                                    /* la vague continue sur la porte */
+  R(dx-7,s-13,2,2,'#58c878');R(dx+5,s-13,2,2,'#58c878');          /* les boutons verts */
+}
+/* les soufflets d'articulation */
+for(const x of [94,188]){R(x,s-42,4,40,'#2c2e34');for(let y=s-41;y<s-4;y+=3)R(x,y,4,1,'#44464e');}
+/* le toit : une coursive grise, les coffres de clim */
+R(8,s-46,L-16,3,'#c2c8ce');R(8,s-46,L-16,1,'#e6eaee');
+for(const x of [34,128,222]){R(x,s-50,26,5,'#aeb4ba');R(x,s-50,26,1,'#d6dade');R(x+2,s-45,22,1,'rgba(40,44,50,.4)');}
+/* le pantographe, sur la caisse du milieu */
+g.strokeStyle='#4c5056';g.lineWidth=1.4;g.beginPath();g.moveTo(L/2-9,s-46);g.lineTo(L/2,s-57);g.lineTo(L/2+9,s-46);g.stroke();
+g.beginPath();g.moveTo(L/2-5,s-52);g.lineTo(L/2,s-57);g.lineTo(L/2+5,s-52);g.stroke();
+R(L/2-8,s-58,16,1.6,'#3c4046');R(L/2-10,s-46,20,2,'#9aa0a6');
+/* les deux nez : ronds, pare-brise enveloppant, girouette ambrée */
+for(const [x0,d] of [[8,1],[L-8,-1]]){
+  const nz=g.createLinearGradient(x0-d*2,0,x0+d*14,0);nz.addColorStop(0,'#ffffff');nz.addColorStop(1,'#e2e6ea');
+  g.fillStyle=nz;g.beginPath();g.moveTo(x0,s-44);g.quadraticCurveTo(x0-d*10,s-42,x0-d*10,s-23);g.quadraticCurveTo(x0-d*10,s-6,x0,s-2);g.closePath();g.fill();
+  g.fillStyle='#3a3e46';g.beginPath();g.moveTo(x0,s-7);g.quadraticCurveTo(x0-d*9,s-8,x0-d*9,s-16);g.lineTo(x0-d*9,s-12);g.quadraticCurveTo(x0-d*8,s-5,x0,s-2);g.closePath();g.fill();
+  /* le pare-brise */
+  g.fillStyle='#16283e';g.beginPath();g.moveTo(x0,s-38);g.quadraticCurveTo(x0-d*8,s-36,x0-d*8,s-24);g.quadraticCurveTo(x0-d*7,s-19,x0,s-18);g.closePath();g.fill();
+  g.fillStyle='rgba(205,228,246,.32)';g.beginPath();g.moveTo(x0-d*2,s-36);g.lineTo(x0-d*6,s-22);g.lineTo(x0-d*4,s-21);g.lineTo(x0-d*0.5,s-34);g.closePath();g.fill();
+  /* la girouette */
+  R(x0-(d>0?7:1),s-43,8,4,'#101216');g.fillStyle='#ffb43c';g.font='700 3.5px monospace';g.textAlign='center';g.fillText('T2',x0-(d>0?3:-3),s-39.8);
+  /* phares et feux */
+  R(x0-(d>0?8:0),s-13,3,2.4,'#ffe6a0');R(x0-(d>0?8:0)+(d>0?0:-2),s-10,2,1.6,'#d84848');
+  /* l'essuie-glace */
+  g.strokeStyle='#2c2e34';g.lineWidth=.8;g.beginPath();g.moveTo(x0-d*3,s-19);g.lineTo(x0-d*6,s-26);g.stroke();
+}
+/* la vague bleue remonte sur les nez */
+g.fillStyle='#1e88c8';g.beginPath();g.moveTo(8,s-21);g.quadraticCurveTo(1,s-20,0,s-14);g.lineTo(0,s-11);g.quadraticCurveTo(2,s-16,8,s-16);g.closePath();g.fill();
+g.beginPath();g.moveTo(L-8,s-21);g.quadraticCurveTo(L-1,s-20,L,s-14);g.lineTo(L,s-11);g.quadraticCurveTo(L-2,s-16,L-8,s-16);g.closePath();g.fill();
 return {c,L,HH,s};
 }
 /* LA RAME S'ARRÊTE À LA STATION : elle arrive en freinant, attend, repart en accélérant. */
-const PERIODE=52, ARRIVEE=8, ARRET=8, DEPART_T=8, LONG_RAME=250;
+const PERIODE=52, ARRIVEE=8, ARRET=8, DEPART_T=8, LONG_RAME=290;
 function posTram(o){
   const t=(Date.now()/1000+(o.sens>0?0:PERIODE/2))%PERIODE, x0=o.sens>0?-300:W+300, x2=o.sens>0?W+300:-300, xa=o.arret;
   if(t<ARRIVEE){const k=t/ARRIVEE;return x0+(xa-x0)*(1-Math.pow(1-k,3));}
@@ -1063,24 +1109,96 @@ setInterval(()=>{try{
   }}catch(x){}},150);
 
 
-/* ON ENTRE À LA GALERIE BLEUE : devant une porte, le bouton « Entrer » ; on passe la porte, l'écran se fond en bleu */
-let ENTRE=false;
+/* ====================================================================
+   LA GALERIE BLEUE N'EST PLUS UN LIEU : C'EST UN BEAU MENU.
+   On marche jusqu'aux portes, le voile bleu se lève, et la galerie
+   s'ouvre comme un répertoire de boutiques : on choisit, la boutique
+   s'ouvre par-dessus, on la ferme, on retrouve le menu.
+   ==================================================================== */
+let ENTRE=false, GB_RET=false;
+const GB_BOUTIQUES=[
+ ['BC','#20439a','#3a66c8','BLEU DE CHAUFFE','Vêtements de travail & de ville','bdc'],
+ ['S13','#b8541e','#e07a36','SNEAKERS 13','Les baskets du quartier','sneakers'],
+ ['HB','#8a6a1e','#c89a3a','L’HEURE BLEUE','Bijoux, montres & chaînes','bijou'],
+ ['OV','#1e7a8a','#38a8b8','OPTIQUE DU VIEUX-PORT','Lunettes de vue & de soleil','lunettes'],
+ ['SM','#8a2438','#b84458','SALON MASSILIA','Coiffeur & barbier','salon'],
+ ['CG','#5a3a22','#8a5c38','CAFÉ DE LA GALERIE','Boissons chaudes & petits boosts','cafe']];
+function cssGalerieMenu(){if(document.getElementById('gbmenu-css'))return;
+ const st=document.createElement('style');st.id='gbmenu-css';st.textContent=`
+#gbm{position:absolute;inset:0;overflow:auto;-webkit-overflow-scrolling:touch;font-family:Georgia,'Times New Roman',serif;color:#fff;
+ background:radial-gradient(ellipse at 50% -10%,#2a64b8 0%,#173f86 52%,#0c2554 100%)}
+#gbm::before{content:'';position:fixed;inset:0;pointer-events:none;background:
+ repeating-linear-gradient(115deg,rgba(140,196,255,.05) 0 2px,transparent 2px 86px)}
+#gbm .cont{max-width:430px;margin:0 auto;padding:max(14px,env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom))}
+#gbm .haut{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px}
+#gbm .bo{background:rgba(10,24,56,.55);border:1px solid rgba(140,196,255,.35);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:700;color:#ffe9a8;white-space:nowrap}
+#gbm .x{width:34px;height:34px;border-radius:50%;border:1px solid rgba(140,196,255,.4);background:rgba(10,24,56,.55);color:#cfe4ff;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center}
+#gbm .titres{text-align:center;margin:2px 0 18px}
+#gbm .sur{font-size:11px;letter-spacing:.5em;text-indent:.5em;opacity:.72}
+#gbm h1{margin:6px 0 10px;font-size:29px;letter-spacing:.12em;font-weight:800;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+#gbm .filet{width:64px;height:2px;background:#8cc4ff;border-radius:2px;margin:0 auto}
+#gbm .mot{font-style:italic;font-size:12.5px;opacity:.6;margin-top:10px}
+#gbm .bq{display:flex;align-items:center;gap:13px;width:100%;text-align:left;margin:0 0 11px;padding:12px 13px;border-radius:15px;color:#fff;
+ background:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.035));border:1px solid rgba(140,196,255,.26);
+ box-shadow:0 4px 14px rgba(4,10,30,.35);font-family:inherit}
+#gbm .bq:active{transform:translateY(1px);background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.06))}
+#gbm .tuile{flex:0 0 52px;height:52px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+ font-weight:800;font-size:16px;letter-spacing:.04em;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.3),0 3px 8px rgba(4,10,30,.4)}
+#gbm .lib{flex:1;min-width:0}
+#gbm .lib b{display:block;font-size:15.5px;letter-spacing:.06em}
+#gbm .lib small{display:block;font-size:12px;opacity:.68;font-style:italic;margin-top:3px}
+#gbm .chv{font-size:22px;opacity:.55;flex:0 0 auto}
+#gbm .pied{text-align:center;font-size:11.5px;opacity:.5;font-style:italic;margin-top:14px}`;
+ document.head.appendChild(st);}
+function ouvrirMenuGalerie(){
+ cssGalerieMenu();
+ const F=document.getElementById('page2Fond');if(!F)return;
+ F.className='';
+ F.innerHTML='<div id="gbm"><div class="cont">'
+  +'<div class="haut"><div class="bo">'+enEuros(e.euros||0)+'</div><button class="x" aria-label="Fermer">✕</button></div>'
+  +'<div class="titres"><div class="sur">BIENVENUE À</div><h1>LA GALERIE BLEUE</h1><div class="filet"></div>'
+  +'<div class="mot">Les belles boutiques couvertes de la Joliette</div></div>'
+  +GB_BOUTIQUES.map((b,i)=>'<button class="bq" data-k="'+b[5]+'"><span class="tuile" style="background:linear-gradient(145deg,'+b[2]+','+b[1]+')">'+b[0]+'</span>'
+   +'<span class="lib"><b>'+b[3]+'</b><small>'+b[4]+'</small></span><span class="chv">›</span></button>').join('')
+  +'<div class="pied">Ferme une boutique pour revenir ici.</div>'
+  +'</div></div>';
+ document.getElementById('page2').classList.add('on');
+ F.querySelector('.x').onclick=()=>{GB_RET=false;document.getElementById('page2').classList.remove('on');try{window.fermeA=Date.now();}catch(x){}};
+ F.querySelectorAll('.bq').forEach(b=>{b.onclick=()=>{try{vibrer&&vibrer(8);}catch(x){}ouvrirBoutiqueDepuisMenu(b.dataset.k);};});
+}
+async function ouvrirBoutiqueDepuisMenu(k){
+ GB_RET=true;
+ try{
+  if(k==='bdc'){if(typeof window.ouvrirBleuDeChauffe!=='function')eval(await chargerMorceau('bleudechauffe.js'));window.ouvrirBleuDeChauffe();return;}
+  if(k==='salon'){await ouvrirLeSalon();return;}
+  if(typeof window.ouvrirBoutiqueGalerie!=='function')eval(await chargerMorceau('galerie.js'));
+  if(k==='cafe')window.ouvrirCafeGalerie();else window.ouvrirBoutiqueGalerie(k);
+ }catch(x){try{console.warn('GBM',x);}catch(_){}}
+}
+/* la boutique fermée, le menu revient */
+setInterval(()=>{try{
+ if(!GB_RET)return;
+ const p=document.getElementById('page2');
+ if(!p.classList.contains('on')){GB_RET=false;ouvrirMenuGalerie();}
+}catch(x){}},420);
 const VOILE_GB='position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none;'+
-  'background:radial-gradient(ellipse at 50% 42%,#2a64b8 0%,#173f86 55%,#0c2554 100%);color:#fff;font-family:"Helvetica Neue",Arial,sans-serif;transition:opacity .5s';
+  'background:radial-gradient(ellipse at 50% 42%,#2a64b8 0%,#173f86 55%,#0c2554 100%);color:#fff;font-family:Georgia,serif;transition:opacity .5s';
 const TITRE_GB='<div style="font-size:13px;letter-spacing:.5em;opacity:.75;transform:translateX(.25em)">BIENVENUE À</div>'+
   '<div style="font-weight:800;font-size:30px;letter-spacing:.14em">LA GALERIE BLEUE</div><div style="width:64px;height:2px;background:#8cc4ff;border-radius:2px"></div>';
-function entrerGalerie(){if(ENTRE||PARTI)return;ENTRE=true;try{vibrer&&vibrer(12);}catch(x){}
+function entrerGalerie(){if(ENTRE)return;ENTRE=true;try{vibrer&&vibrer(12);}catch(x){}
   const px=PORTES.reduce((a,[x])=>Math.abs(x+DX-joueur.x)<Math.abs(a+DX-joueur.x)?x:a,PORTES[0][0])+DX;
-  const x0=joueur.x,y0=joueur.y,y1=DOCKS_PIED-26,t0=performance.now(),D=900;
-  window.FP_GEL=Date.now()+4000;
-  let marche=true;try{Object.defineProperty(joueur,'marche',{configurable:true,get:()=>marche,set:()=>{}});}catch(x){}
-  const pas=()=>{const k=Math.min(1,(performance.now()-t0)/D),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
-    joueur.x=x0+(px-x0)*Math.min(1,k*2.2);joueur.y=y0+(y1-y0)*e;joueur.dir='haut';joueur.dirVue='haut';joueur.pas+=.12;
+  const x0=joueur.x,y0=joueur.y,y1=DOCKS_PIED-26,t0=performance.now(),D=760;
+  window.FP_GEL=Date.now()+1600;
+  const pas=()=>{const k=Math.min(1,(performance.now()-t0)/D),e2=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    joueur.x=x0+(px-x0)*Math.min(1,k*2.2);joueur.y=y0+(y1-y0)*e2;joueur.dir='haut';joueur.dirVue='haut';joueur.pas+=.12;
     if(k<1)requestAnimationFrame(pas);};
   requestAnimationFrame(pas);
   const v=document.createElement('div');v.style.cssText=VOILE_GB+';opacity:0';v.innerHTML=TITRE_GB;
-  setTimeout(()=>{document.body.appendChild(v);requestAnimationFrame(()=>v.style.opacity='1');},520);
-  setTimeout(()=>{try{sauver();}catch(x){}const q=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='terrasses.html?de=place'+q+'&t='+Date.now();},1250);}
+  setTimeout(()=>{document.body.appendChild(v);requestAnimationFrame(()=>v.style.opacity='1');},380);
+  setTimeout(()=>{try{ouvrirMenuGalerie();}catch(x){}
+    v.style.opacity='0';setTimeout(()=>{try{v.remove();}catch(x){}},520);
+    joueur.y=DOCKS_PIED+34;ENTRE=false;},1150);
+}
 
 /* ---------- LES PIGEONS : ils picorent sur la place, s'envolent quand on approche, reviennent plus tard ---------- */
 const PIGEONS=(()=>{
