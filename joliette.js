@@ -68,6 +68,63 @@ R(0,418,W,4,'#b9b3a6');R(0,TRAM1-1,W,1,'#7f796c');
 dalles(g,R,0,TRAM1,W,PLACE_BAS-TRAM1,['#ebe4d6','#e6dfd0','#efe8da','#e2dbcc','#e8e1d3'],56,22);
 for(let x=84;x<W-84;x+=104){R(x,TRAM1,4,PLACE_BAS-TRAM1,'#d4c8b2');R(x,TRAM1,1,PLACE_BAS-TRAM1,'#c4b8a0');}
 for(let y=TRAM1+40;y<PLACE_BAS;y+=88){R(84,y,W-168,4,'#d4c8b2');R(84,y,W-168,1,'#c4b8a0');}
+/* ======== LA COMPOSITION DE LA PLACE ========
+   Une grande croix d'allées en brique rousse (l'axe des portes de la Galerie
+   jusqu'à la rue, et la traverse qui passe par la fontaine), quatre parterres
+   de gazon bordés de fleurs dans les quartiers, et deux plates-bandes qui
+   ferment la place côté rue. Tout reste praticable : rien ici n'arrête le pas. */
+{
+const AX=FONT[0], AY=FONT[1]-5;                       /* le centre de la croix */
+const brique=(x0,y0,w,hh,vert)=>{
+  R(x0-4,y0-(vert?0:4),w+(vert?8:0),hh+(vert?0:8),'#d9cdb4');                 /* les deux rives de pierre */
+  if(vert){R(x0-4,y0,1,hh,'#efe6d2');R(x0+w+3,y0,1,hh,'#b9ab8e');}else{R(x0,y0-4,w,1,'#efe6d2');R(x0,y0+hh+3,w,1,'#b9ab8e');}
+  const T=['#c98a62','#c07f58','#d39a70','#b87650','#cc9068'];
+  for(let y=y0;y<y0+hh;y+=4)for(let x=x0-((((y-y0)/4)|0)%2)*4;x<x0+w;x+=8){
+    const xa=Math.max(x0,x),xb=Math.min(x0+w,x+8);if(xb<=xa)continue;
+    R(xa,y,xb-xa,4,T[(h(x,y,71)*T.length)|0]);R(xa,y,xb-xa,1,'rgba(255,236,210,.20)');R(xa,y,1,4,'rgba(70,36,20,.22)');}
+  /* un liseré de briques debout, de chaque côté */
+  if(vert){for(let y=y0;y<y0+hh;y+=5){R(x0,y,7,4,'#a9694a');R(x0+w-7,y,7,4,'#a9694a');R(x0,y,7,1,'#c58a66');R(x0+w-7,y,7,1,'#c58a66');}}
+  else{for(let x=x0;x<x0+w;x+=5){R(x,y0,4,7,'#a9694a');R(x,y0+hh-7,4,7,'#a9694a');R(x,y0,1,7,'#c58a66');R(x,y0+hh-7,1,7,'#c58a66');}}
+};
+brique(AX-52,TRAM1+2,104,PLACE_BAS-TRAM1-2,true);      /* l'axe */
+brique(96,AY-38,W-192,76,false);                       /* la traverse */
+/* le carrefour : la brique de l'axe reprend le dessus, sans rive */
+for(let y=AY-38;y<AY+38;y+=4)for(let x=AX-52-((((y)/4)|0)%2)*4;x<AX+52;x+=8){const xa=Math.max(AX-52,x),xb=Math.min(AX+52,x+8);if(xb>xa)R(xa,y,xb-xa,4,['#c98a62','#c07f58','#d39a70','#b87650'][(h(x,y,72)*4)|0]);}
+
+/* les parterres : gazon tondu en bandes, bordure de pierre, liseré de fleurs */
+const TL=document.createElement('canvas');TL.width=W;TL.height=H;const t=TL.getContext('2d');
+const rr=(c,x,y,w,hh,rad)=>{c.beginPath();c.moveTo(x+rad,y);c.arcTo(x+w,y,x+w,y+hh,rad);c.arcTo(x+w,y+hh,x,y+hh,rad);c.arcTo(x,y+hh,x,y,rad);c.arcTo(x,y,x+w,y,rad);c.closePath();};
+const PARTERRES=[[150,520,AX-72-150,AY-56-520],[AX+72,520,W-150-(AX+72),AY-56-520],[150,AY+56,AX-72-150,952-(AY+56)],[AX+72,AY+56,W-150-(AX+72),952-(AY+56)]];
+/* 1) la bordure */
+t.fillStyle='#cfc3aa';for(const [x,y,w,hh] of PARTERRES){rr(t,x-4,y-4,w+8,hh+8,16);t.fill();}
+t.globalCompositeOperation='destination-out';t.beginPath();t.ellipse(AX,AY,214,137,0,0,7);t.fill();t.globalCompositeOperation='source-over';
+t.fillStyle='#cfc3aa';t.save();t.beginPath();for(const [x,y,w,hh] of PARTERRES)t.rect(x-4,y-4,w+8,hh+8);t.clip();
+t.beginPath();t.ellipse(AX,AY,220,141,0,0,7);t.ellipse(AX,AY,213,136,0,0,7);t.fill('evenodd');t.restore();
+g.drawImage(TL,0,0);
+/* 2) le gazon */
+t.clearRect(0,0,W,H);
+for(const [x,y,w,hh] of PARTERRES){t.save();rr(t,x,y,w,hh,13);t.clip();
+  for(let yy=y;yy<y+hh;yy++)for(let xx=x;xx<x+w;xx+=2){const b=(((xx+yy)/14)|0)%2, v=h(xx,yy,81);
+    t.fillStyle=v<.08?'#5f9548':v>.93?'#9ccb72':(b?'#7fb35c':'#74a853');t.fillRect(xx,yy,2,1);}
+  /* le liseré de fleurs, à l'intérieur de la bordure */
+  const FL=['#8f6fd0','#a886e0','#b89cec','#f6e9f0','#e889aa'];
+  for(let i=0;i<w*hh/40;i++){const u=h(i,x,82),e=h(i,y,83);let fx,fy;const p=u*(2*w+2*hh);
+    if(p<w){fx=x+p;fy=y+3+e*9;}else if(p<2*w){fx=x+p-w;fy=y+hh-12+e*9;}else if(p<2*w+hh){fx=x+3+e*9;fy=y+p-2*w;}else{fx=x+w-12+e*9;fy=y+p-2*w-hh;}
+    t.fillStyle='#3f7a36';t.fillRect(fx|0,(fy|0)+1,2,2);t.fillStyle=FL[(h(i,7,84)*FL.length)|0];t.fillRect(fx|0,fy|0,2,2);}
+  t.restore();}
+t.globalCompositeOperation='destination-out';t.beginPath();t.ellipse(AX,AY,220,141,0,0,7);t.fill();t.globalCompositeOperation='source-over';
+g.drawImage(TL,0,0);
+/* un filet d'ombre sous la bordure, côté bas */
+for(const [x,y,w,hh] of PARTERRES){R(x+10,y+hh+4,w-20,1,'rgba(60,44,24,.16)');}
+
+/* les deux plates-bandes qui ferment la place, côté rue */
+for(const [x0,x1] of [[150,AX-72],[AX+72,W-150]]){
+  R(x0-3,962,x1-x0+6,26,'#cfc3aa');R(x0-3,962,x1-x0+6,1,'#efe6d2');R(x0,965,x1-x0,20,'#5c4630');
+  for(let i=0;i<(x1-x0)*1.6;i++){const fx=x0+2+h(i,x0,85)*(x1-x0-5),fy=966+h(i,x0,86)*16,k=h(i,x0,87);
+    R(fx,fy+1,2,2,'#3f7a36');R(fx,fy,2,2,k<.3?'#e4605a':k<.55?'#f2c94c':k<.8?'#f6e9f0':'#e889aa');}
+  for(let x=x0+6;x<x1-6;x+=11){R(x,970+((x*7)%9),3,3,'#4f8c42');}
+}
+}
 /* le parvis rond de la fontaine : des anneaux de pavés en éventail */
 for(let y=TRAM1;y<PLACE_BAS;y++)for(let x=FONT[0]-200;x<FONT[0]+200;x++){
   const dx=(x-FONT[0])/190, dy=(y-FONT[1]+10)/119, r=Math.sqrt(dx*dx+dy*dy);
@@ -88,6 +145,9 @@ for(const x0 of [0,W-84]){
 R(0,PLACE_BAS,W,4,'#b9b3a6');R(0,PLACE_BAS,W,1,'#eee8da');
 for(let y=PLACE_BAS+4;y<H;y++)R(0,y,W,1,teinte('#5e6066',((y-PLACE_BAS)%7===0)?-6:0));
 for(let i=0;i<1500;i++)R(h(i,1,31)*W,PLACE_BAS+4+h(i,2,31)*36,1,1,h(i,3,31)<.5?'#6c6e74':'#54565c');
+for(let x=10;x<W;x+=44){if(Math.abs(x+11-FONT[0])<70)continue;R(x,PLACE_BAS+40,22,2,'#d8d4c6');}          /* la ligne d'axe */
+for(let x=FONT[0]-48;x<FONT[0]+48;x+=12)R(x,PLACE_BAS+8,7,H-PLACE_BAS-12,'#e6e2d6');                      /* le passage piéton, dans l'axe */
+R(0,PLACE_BAS+4,W,2,'rgba(0,0,0,.18)');
 return c;
 }
 function dalles(g,R,x0,y0,w,hh,tons,tw,th){
@@ -1067,20 +1127,24 @@ function decor(){
   /* les allées de platanes */
   [470,610,750,890].forEach((y,i)=>{P('x_jol_platane',42,y,{col:[12,6],v:i%3});P('x_jol_platane',W-42,y,{col:[12,6],v:i%3+3});});
   /* les massifs de lavande et de graminées, avec leurs bancs */
-  for(const [i,[x,y]] of [[280,480],[920,480],[220,780],[980,780],[430,940],[770,940]].entries()){P('x_jol_massif',x,y,{col:[84,14],v:i%4});P('x_jol_banc',x,y+20,{col:[40,6]});}
+  /* une jardinière au cœur de chaque parterre */
+  for(const [i,[x,y]] of [[300,590],[900,590],[300,866],[900,866]].entries())P('x_jol_massif',x,y,{col:[84,14],v:i});
+  /* les bancs : le long de l'axe, adossés aux parterres, et autour de la fontaine */
+  for(const [x,y] of [[505,560],[695,560],[505,900],[695,900],[330,700],[870,700],[240,512],[960,512]])P('x_jol_banc',x,y,{col:[40,6]});
   /* deux pins parasols encadrent le bas de la place */
   P('x_jol_pin',120,1000,{col:[16,8]});P('x_jol_pin',1080,1000,{col:[16,8]});
   /* des oliviers en bac le long du quai du tram */
-  for(const x of [180,560,1020])P('x_jol_olivier',x,452,{col:[18,6]});
+  for(const x of [130,530,670,1070])P('x_jol_olivier',x,456,{col:[18,6]});
+
   /* des bancs tournés vers la fontaine */
   /* les lampadaires */
-  for(const [x,y] of [[300,452],[900,452],[110,640],[1090,640],[320,860],[880,860],[480,1000],[720,1000]])P('x_jol_lampadaire',x,y,{col:[4,3]});
+  for(const [x,y] of [[535,500],[665,500],[535,960],[665,960],[130,655],[1070,655],[130,756],[1070,756],[420,470],[780,470]])P('x_jol_lampadaire',x,y,{col:[4,3]});
   /* le tableau d'embauche, à deux pas de l'arrivée */
   /* le kiosque à journaux */
   for(const [px] of PORTES)P('x_jol_entree',px+DX,DOCKS_PIED+10,{agir:entrerGalerie,libelle:'Entrer',nom:'LA GALERIE BLEUE'});
-  P('x_jol_kiosque',180,690,{col:[96,14],agir:ouvrirVacationsKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
+  P('x_jol_kiosque',320,500,{col:[96,14],agir:ouvrirVacationsKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
   P('x_jol_entree',PLACE.CX,748,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
-  P('x_jol_affiches',1040,690,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
+  P('x_jol_affiches',880,500,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
   return D;
 }
 
@@ -1216,7 +1280,7 @@ for(const k in SPR)for(const s of [1,-1]){const c=document.createElement('canvas
   SPR[k].forEach((r,y)=>{for(let x=0;x<r.length;x++){const v=PAL[r[x]];if(!v)continue;g.fillStyle=v;g.fillRect(s>0?x:17-x,y,1,1);}});C[k+s]=c;
   const n=document.createElement('canvas');n.width=18;n.height=12;const h=n.getContext('2d');h.drawImage(c,0,0);h.globalCompositeOperation='multiply';h.fillStyle='#5a6490';h.fillRect(0,0,18,12);h.globalCompositeOperation='destination-in';h.drawImage(c,0,0);C[k+s+'n']=n;}
 const R=(a,b)=>a+Math.random()*(b-a);
-const BANDES=[[500,780,4],[730,620,3],[430,900,3],[860,760,2]];
+const BANDES=[[600,560,4],[470,705,3],[740,705,3],[600,900,2]];
 const L=[];
 for(const [hx,hy,n] of BANDES){const bd={hx,hy,etat:'sol',t:0};for(let i=0;i<n;i++){const x=hx+R(-14,14),y=hy+R(-8,8);
   L.push({bd,x,y,z:0,tx:x,ty:y,dir:Math.random()<.5?1:-1,att:R(0,2),pic:0,ph:R(0,9),vx:0,vy:0,vz:0,fin:0});}}
