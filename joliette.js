@@ -586,7 +586,7 @@ function dessinerLesPortes(g,X0,Y0){
   });
 }
 
-const NOEL=(()=>{try{const q=new URLSearchParams(location.search).get('noel');if(q==='1'||q==='0')localStorage.setItem('bdl.noel',q);return (localStorage.getItem('bdl.noel')||'1')==='1';}catch(x){return true;}})();
+const NOEL=(()=>{try{const q=new URLSearchParams(location.search).get('noel');if(q==='1'||q==='0')localStorage.setItem('bdl.noel',q);return (localStorage.getItem('bdl.noel')||'0')==='1';}catch(x){return false;}})();
 /* les platanes prennent leurs couleurs d'automne du 22 septembre au 20 décembre (?automne=0 ou 1 pour forcer) */
 const AUTOMNE=(()=>{try{const q=new URLSearchParams(location.search).get('automne');if(q!==null)return q==='1';}catch(x){}
   const d=new Date(),m=d.getMonth(),j=d.getDate();return (m===8&&j>=22)||m===9||m===10||(m===11&&j<=20);})();   /* pas de décor de Noël */
