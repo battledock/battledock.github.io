@@ -156,9 +156,11 @@ for(const x0 of [0,W-84]){
    quai, trois pointus amarrés et leurs bouées. */
 {
 const Y0=PLACE_BAS;
-for(let y=Y0;y<H;y++){const k=(y-Y0)/(H-Y0);R(0,y,W,1,'rgb('+(52-k*14|0)+','+(134-k*26|0)+','+(184-k*22|0)+')');}
-for(let i=0;i<2600;i++){const x=h(i,1,91)*W,y=Y0+34+h(i,2,91)*(H-Y0-36),k=h(i,3,91);
-  R(x,y,3+k*7,1,k<.45?'rgba(150,206,236,.55)':k<.8?'rgba(24,84,130,.5)':'rgba(214,238,250,.6)');}
+for(let y=Y0;y<H;y++){const k=(y-Y0-32)/(H-Y0-32),q=Math.max(0,Math.min(1,k)),e=q*q*(3-2*q);
+  R(0,y,W,1,'rgb('+(70-e*46|0)+','+(170-e*72|0)+','+(200-e*46|0)+')');}
+/* de grandes nappes plus claires et plus sombres : la houle, vue de haut */
+for(let i=0;i<46;i++){const cx=h(i,1,93)*W,cy=Y0+50+h(i,2,93)*(H-Y0-60),rx=40+h(i,3,93)*90,ry=5+h(i,4,93)*9;
+  g.fillStyle=h(i,5,93)<.5?'rgba(150,226,236,.10)':'rgba(8,46,92,.10)';g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,7);g.fill();}
 /* le mur du quai sous la terrasse, son ombre sur l'eau, l'écume au pied */
 R(0,Y0+16,W,16,'#a39a86');for(let x=0;x<W;x+=22){R(x,Y0+16,1,16,'rgba(60,50,36,.3)');R(x+11,Y0+24,1,8,'rgba(60,50,36,.22)');}
 R(0,Y0+23,W,1,'rgba(60,50,36,.25)');R(0,Y0+29,W,3,'#6f7a62');                         /* la ligne d'algues */
@@ -1172,8 +1174,6 @@ function decor(){
   for(const [i,[x,y]] of [[300,590],[900,590],[300,866],[900,866]].entries())P('x_jol_massif',x,y,{col:[84,14],v:i});
   /* les bancs : le long de l'axe, adossés aux parterres, et autour de la fontaine */
   for(const [x,y] of [[505,560],[695,560],[505,900],[695,900],[330,700],[870,700],[240,512],[960,512]])P('x_jol_banc',x,y,{col:[40,6]});
-  /* deux pins parasols encadrent le bas de la place */
-  P('x_jol_pin',120,990,{col:[16,8]});P('x_jol_pin',1080,990,{col:[16,8]});
   /* des oliviers en bac le long du quai du tram */
   for(const x of [130,530,670,1070])P('x_jol_olivier',x,456,{col:[18,6]});
 
@@ -1458,11 +1458,20 @@ const AMBIANCE=(()=>{
  const ARBRES=[];
  for(const x of [60,240,450,750,960,1140])ARBRES.push([x,342,24,10]);
  [470,610,750,890].forEach(y=>{ARBRES.push([42,y,34,14]);ARBRES.push([W-42,y,34,14]);});
- ARBRES.push([120,990,38,12],[1080,990,38,12]);
  for(const x of [130,530,670,1070])ARBRES.push([x,456,13,5]);
  const TACHES=ARBRES.map(([x,y,r,ry],i)=>{const L=[];const n=r>30?9:r>20?7:4;
    for(let k=0;k<n;k++){const a=rnd(i,k)*6.283,d=Math.sqrt(rnd(k,i+40))*r*.8;L.push([Math.cos(a)*d,Math.sin(a)*d*.42,r*(.34+rnd(i+9,k)*.3),rnd(k,i)*6.283]);}
    return {x:x+r*.42,y:y+ry*.5+2,r,L};});
+ /* la toile des vaguelettes : des crêtes claires en petits arcs, quelques éclats, dessinés une fois */
+ let VAG=null;
+ function vagues(){if(VAG)return VAG;const c=document.createElement('canvas');c.width=W;c.height=H-PLACE_BAS-40;const g=c.getContext('2d');
+   for(let i=0;i<520;i++){const x=rnd(i,301)*W,y=4+rnd(i,302)*(c.height-8),l=5+rnd(i,303)*11,pr=y/c.height;
+     g.fillStyle='rgba(214,244,250,'+(.28+rnd(i,304)*.34)+')';
+     g.fillRect(x|0,y|0,l|0,1);g.fillRect((x+1)|0,(y-1)|0,Math.max(1,(l-3)|0),1);                 /* la crête, un petit arc */
+     if(x+l>W)g.fillRect(0,y|0,(x+l-W)|0,1);
+     g.fillStyle='rgba(6,40,84,'+(.16+pr*.14)+')';g.fillRect((x+2)|0,(y+1)|0,(l-1)|0,1);}          /* son creux */
+   for(let i=0;i<70;i++){g.fillStyle='rgba(255,255,255,.85)';g.fillRect((rnd(i,305)*W)|0,(6+rnd(i,306)*(c.height-12))|0,2,1);}
+   VAG=c;return c;}
  /* --- les lampes --- */
  const LAMPES=[[535,500],[665,500],[535,960],[665,960],[130,655],[1070,655],[130,756],[1070,756],[420,470],[780,470]];
  /* --- les feuilles qui tombent des platanes --- */
@@ -1521,14 +1530,21 @@ const AMBIANCE=(()=>{
    /* le sol : ombres le jour, halos le soir, scintillement de l'eau */
    L.push({y:-1e5+2,f:(g,camX,camY)=>{
      if(k<.85){g.save();g.fillStyle='rgba(38,52,30,'+(.13*(1-k))+')';
+       g.globalAlpha=1-k;
        for(const A of TACHES){const X=A.x-camX,Y=A.y-camY;if(X<-80||Y<-50||X>VW+80||Y>VH+50)continue;
-         for(const [dx,dy,r,ph] of A.L){const sw=Math.sin(t*.9+ph)*1.6,sr=1+Math.sin(t*.7+ph*2)*.06;
-           g.beginPath();g.ellipse(X+dx+sw,Y+dy+Math.cos(t*.8+ph)*.6,r*sr,r*.42*sr,0,0,7);g.fill();}}
+         if(!A.c){const R=Math.ceil(A.r*1.5),c=document.createElement('canvas');c.width=R*2;c.height=R;const q=c.getContext('2d');q.fillStyle='rgba(38,52,30,.13)';
+           for(const [dx,dy,r] of A.L){q.beginPath();q.ellipse(R+dx,R/2+dy,r,r*.42,0,0,7);q.fill();}A.c=c;A.R=R;}
+         g.drawImage(A.c,Math.round(X-A.R+Math.sin(t*.9+A.x)*1.6),Math.round(Y-A.R/2+Math.cos(t*.8+A.x)*.6));}
+       g.globalAlpha=1;
        g.restore();}
-     /* l'eau du port : des éclats qui s'allument et s'éteignent */
-     if(PLACE_BAS+36-camY<VH+4){for(let i=0;i<70;i++){const x=rnd(i,201)*W-camX,y=PLACE_BAS+40+rnd(i,202)*(H-PLACE_BAS-44)-camY;if(x<-6||x>VW+6||y>VH+2)continue;
-         const a=Math.sin(t*(1.2+rnd(i,203)*1.6)+i*1.7);if(a<.35)continue;
-         g.fillStyle='rgba(240,250,255,'+((a-.35)*1.1*(1-k*.6))+')';g.fillRect(Math.round(x+Math.sin(t*.6+i)*2),Math.round(y),3+(i%3),1);}}
+     /* l'eau du port : une toile de vaguelettes peinte une fois, glissée en deux couches qui se croisent */
+     {const y0=PLACE_BAS+40,top=y0-camY;if(top<VH){const V=vagues(),sy=Math.max(0,-top),hh=Math.min(V.height-sy,VH-Math.max(0,top));
+       if(hh>0){const dy=Math.max(0,top),a=1-k*.55;
+         for(const [vit,amp,al] of [[9,0,.9],[-6,3,.6]]){const off=((t*vit)%W+W)%W,sx=(camX+off)%W;
+           g.globalAlpha=al*a*(.8+.2*Math.sin(t*1.3+vit));
+           const w1=Math.min(VW,W-sx),yy=dy+Math.sin(t*.9+vit)*amp*.3;
+           g.drawImage(V,sx,sy,w1,hh,0,yy,w1,hh);if(w1<VW)g.drawImage(V,0,sy,VW-w1,hh,w1,yy,VW-w1,hh);}
+         g.globalAlpha=1;}}}
      if(k>.05){for(const [x,y] of LAMPES)lueurNuit(g,x-camX,y-camY-4,58,'rgba(255,196,120,1)');
        for(let x=DX+70;x<DX+FACW-40;x+=96)lueurNuit(g,x-camX,DOCKS_PIED+18-camY,54,'rgba(255,214,150,1)');}
    }});
