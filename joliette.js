@@ -586,7 +586,7 @@ function dessinerLesPortes(g,X0,Y0){
   });
 }
 
-const NOEL=false;
+const NOEL=(()=>{try{const q=new URLSearchParams(location.search).get('noel');if(q==='1'||q==='0')localStorage.setItem('bdl.noel',q);return (localStorage.getItem('bdl.noel')||'1')==='1';}catch(x){return true;}})();
 /* les platanes prennent leurs couleurs d'automne du 22 septembre au 20 décembre (?automne=0 ou 1 pour forcer) */
 const AUTOMNE=(()=>{try{const q=new URLSearchParams(location.search).get('automne');if(q!==null)return q==='1';}catch(x){}
   const d=new Date(),m=d.getMonth(),j=d.getDate();return (m===8&&j>=22)||m===9||m===10||(m===11&&j<=20);})();   /* pas de décor de Noël */
@@ -714,6 +714,42 @@ for(let i=0;i<60;i++){const a=(i*2.399),rr=Math.sqrt(i/60)*46;touffe(cx-4+Math.c
 for(let i=0;i<40;i++){const a=(i*2.399),rr=Math.sqrt(i/40)*40;touffe(cx-10+Math.cos(a)*rr,C0-3+Math.sin(a)*rr*.26,6,'#40703f');}
 for(let i=0;i<26;i++){const a=(i*2.399),rr=Math.sqrt(i/26)*30;touffe(cx-16+Math.cos(a)*rr,C0-6+Math.sin(a)*rr*.22,4,'#5c8c4c');}
 for(let i=0;i<40;i++){const a=i*2.399,rr=Math.sqrt(i/40)*44;R(cx-4+Math.cos(a)*rr,C0+Math.sin(a)*rr*.3,1,1,'#78a45a');}
+return {toile:c,W:L,H:HH,sol:s};
+}
+/* LE GRAND SAPIN DE NOËL : trois étages de branches enneigées, guirlandes
+   lumineuses en spirale, boules rouges et dorées, une étoile au sommet. Les
+   lumières vives sont marquées (jaune pur) : la couche de nuit les fera briller. */
+function graverSapin(){
+const L=150,HH=236,{c,g,R}=toile(L,HH),cx=L/2,s=HH-6;
+g.fillStyle='rgba(20,30,24,.3)';g.beginPath();g.ellipse(cx,s+1,56,12,0,0,7);g.fill();
+/* le pied : tronc + cache-pot rouge */
+R(cx-7,s-18,14,18,'#5a3a22');R(cx-7,s-18,14,2,'#6e4a2e');
+R(cx-22,s-12,44,14,'#9a2a2a');R(cx-22,s-12,44,2,'#c24242');R(cx-22,s,44,2,'#6a1a1a');
+for(let x=cx-20;x<cx+22;x+=8)R(x,s-12,2,14,'rgba(255,255,255,.1)');
+/* LE CORPS : un triangle plein, dessiné ligne par ligne du bas au sommet.
+   À chaque hauteur, une largeur ; on remplit, puis on festonne le bord bas
+   de chaque étage pour l'effet branches. */
+const yBas=s-20, yHaut=s-212, HT=yBas-yHaut;
+const larg=u=>62*(1-u)*(1-u*0.15);                 /* u=0 en bas, 1 au sommet */
+const TV=['#0e3420','#164628','#1e5632','#276b3c'];
+for(let y=yBas;y>yHaut;y--){const u=(yBas-y)/HT, w=larg(u);
+  for(let x=-w;x<w;x++){const sh=(x/w);const t=TV[((h((x*7+y)|0,3,53)*0.6+(sh<-.2?0:sh>.3?2.2:1.2))|0)%4];
+    R(cx+x,y,1,1,t);}}
+/* les festons de branches (3 crans) : une frange plus claire + neige sur le dessus */
+for(const u0 of [0.02,0.34,0.66]){const y=yBas-u0*HT, w=larg(u0);
+  for(let x=-w;x<w;x+=1){const d=Math.abs((x/ (w||1))); const dip=Math.sin(((x+w)/ (2*w||1))*Math.PI*7)*3;
+    R(cx+x,y+6+dip,1,2,'#2e7a42');}
+  for(let x=-w*.9;x<w*.9;x+=2){R(cx+(x|0),yBas-u0*HT-1,2,1,'rgba(240,248,255,.8)');}}
+/* la guirlande lumineuse en spirale, serrée sur le corps */
+const BULB=['#ffe27a','#ff6a5a','#7ad0ff','#9affa0','#ffb0e0'];
+for(let i=0;i<60;i++){const u=i/60,y=yBas-u*HT,w=larg(u)*0.86,xx=cx+Math.sin(u*30)*w;
+  R(xx,y,2,2,BULB[i%5]);R(xx,y,1,1,'#ffffff');}
+/* les boules */
+for(let i=0;i<26;i++){const u=Math.sqrt(h(i,9,56)),y=yBas-u*HT,w=larg(u)*0.8,xx=cx+(h(i,9,57)-.5)*2*w;
+  const dd=h(i,3,58)<.5?'#d22c2c':'#e8ae30';R(xx-1,y-1,3,3,dd);R(xx-1,y-1,1,1,'rgba(255,255,255,.7)');}
+/* l'étoile, posée juste au sommet */
+const ty=yHaut-2;R(cx-1,ty-4,2,12,'#ffe27a');R(cx-5,ty+1,12,2,'#ffe27a');
+R(cx-2,ty-1,4,4,'#fff2b0');R(cx-1,ty,2,2,'#ffffff');
 return {toile:c,W:L,H:HH,sol:s};
 }
 function graverOlivier(){
@@ -1140,7 +1176,7 @@ function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   ['pointerdown','touchstart','keydown'].forEach(t2=>d.addEventListener(t2,ev=>ev.stopPropagation()));
   try{vibrer(8);}catch(x){}}
 
-const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide};
+const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_sapin:graverSapin,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide};
 function graver(t,v){return (GRAVEURS[t]||graverVide)(v||0);}
 
 function decor(){
@@ -1158,6 +1194,7 @@ function decor(){
   P('x_jol_tram',600,400,{anim:'jol_tram',sens:-1,arret:800});
   /* la fontaine au milieu, deux oliviers en bacs de part et d'autre */
   P('x_jol_fontaine_ronde',PLACE.CX,PLACE.FY,{anim:'jol_fontaine'});
+  if(NOEL)P('x_jol_sapin',PLACE.CX,PLACE.FY-96,{col:[34,26]});   /* le grand sapin, sur l'axe, devant la fontaine */
   for(const s of PLACE.SEGS)P('x_jol_place_sol',s.x,s.y,{v:s.v});
   /* les allées de platanes */
   [470,610,750,890].forEach((y,i)=>{P('x_jol_platane',42,y,{col:[12,6],v:i%3});P('x_jol_platane',W-42,y,{col:[12,6],v:i%3+3});});
@@ -1508,13 +1545,42 @@ const AMBIANCE=(()=>{
    p.dir=DIRS[((Math.round(Math.atan2(dy,dx)/(Math.PI/4))%8)+8)%8];}}
  function figurants(){const n=performance.now(),dt=Math.min(.1,(n-TD)/1000);TD=n;try{vieGens(dt);vieChat(dt);}catch(x){}
    return GENS.map(p=>({x:p.x,y:p.y,ap:p.ap,dir:p.dir,pas:p.pas,marche:p.marche}));}
+
+ /* ===== NOËL : guirlandes, flocons, ampoules qui clignotent ===== */
+ const NEIGE=[];for(let i=0;i<70;i++)NEIGE.push({x:h(i,1,141)*W,y:h(i,2,141)*H,v:14+h(i,3,141)*20,a:1+h(i,4,141)*3,ph:h(i,5,141)*6.28,r:h(i,6,141)<.3?2:1});
+ /* les guirlandes : des festons d'ampoules tendus d'un point à un autre */
+ const festoon=(x1,y1,x2,y2,creux,n)=>{const pts=[];for(let i=0;i<=n;i++){const u=i/n,x=x1+(x2-x1)*u,y=y1+(y2-y1)*u+Math.sin(u*Math.PI)*creux;pts.push([x,y]);}return pts;};
+ const GUIRL=[];
+ /* le long de la façade des Docks */
+ for(let x=DX+40;x<DX+FACW-80;x+=130)GUIRL.push(festoon(x,DOCKS_PIED-4,x+130,DOCKS_PIED-4,16,9));
+ /* d'un platane à l'autre, de chaque côté de l'axe, sur les allées */
+ for(const [ys] of [[470],[610],[750]]){GUIRL.push(festoon(60,ys-60,540,ys-60,22,16));GUIRL.push(festoon(660,ys-60,1140,ys-60,22,16));}
+ const BCOL=['#ff5a4a','#ffe27a','#6ad0ff','#7affa0','#ff9ae0'];
+ function noelSol(g,camX,camY,k){
+   /* les festons : le fil sombre + les ampoules (vives la nuit) */
+   g.strokeStyle='rgba(20,30,20,.5)';g.lineWidth=1;
+   for(const pts of GUIRL){g.beginPath();for(let i=0;i<pts.length;i++){const X=pts[i][0]-camX,Y=pts[i][1]-camY;i?g.lineTo(X,Y):g.moveTo(X,Y);}g.stroke();}
+   for(const pts of GUIRL)for(let i=0;i<pts.length;i++){const X=Math.round(pts[i][0]-camX),Y=Math.round(pts[i][1]-camY);if(X<-4||Y<-4||X>VW+4||Y>VH+4)continue;
+     const cl=BCOL[i%BCOL.length],br=k>.1?(.5+.5*Math.sin(t*3+i*1.7+pts[0][0])):0;
+     R(X,Y,2,2,cl);if(br>.5){g.globalAlpha=(br-.5)*2*k;R(X-1,Y-1,4,4,cl);g.globalAlpha=1;}}
+ }
+
  function acteurs(){const t=(performance.now()-T0)/1000,L=[];let k=0;try{k=nuitDecor();}catch(x){}
    /* le sol : ombres le jour, halos le soir, scintillement de l'eau */
    L.push({y:-1e5+2,f:(g,camX,camY)=>{
      /* plus d'ombres de feuillage au sol */
      if(k>.05){for(const [x,y] of LAMPES)lueurNuit(g,x-camX,y-camY-4,58,'rgba(255,196,120,1)');
        for(let x=DX+70;x<DX+FACW-40;x+=96)lueurNuit(g,x-camX,DOCKS_PIED+18-camY,54,'rgba(255,214,150,1)');}
+     if(NOEL){try{noelSol(g,camX,camY,k);}catch(x){}
+       if(k>.05){lueurNuit(g,PLACE.CX-camX,PLACE.FY-96-camY-206,66,'rgba(255,236,150,1)');   /* le halo de l'étoile */
+         lueurNuit(g,PLACE.CX-camX,PLACE.FY-96-camY-90,96,'rgba(255,170,90,1)');}}            /* la chaleur du sapin */
    }});
+   /* la neige : au-dessus de tout, legère, qui se replie en haut quand elle sort en bas */
+   if(NOEL)L.push({y:1e9,f:(g,camX,camY)=>{g.fillStyle='#ffffff';
+     for(const fl of NEIGE){fl.y+=fl.v*0.016;fl.x+=Math.sin(t*1.4+fl.ph)*0.3;if(fl.y>H)fl.y-=H;
+       const X=((fl.x-camX*0.9)%W+W)%W, Y=((fl.y-camY*0.9)%H+H)%H;
+       g.globalAlpha=.55+.35*Math.sin(t*2+fl.ph);g.fillRect(X|0,Y|0,fl.r,fl.r);}
+     g.globalAlpha=1;}});
    /* plus de feuilles qui tombent */
    /* le chat */
    L.push({y:CHAT.y,f:(g,camX,camY)=>{const X=CHAT.x-camX,Y=CHAT.y-camY;if(X<-14||Y<-4||X>VW+14||Y>VH+18)return;dessinerChat(g,X,Y);}});
