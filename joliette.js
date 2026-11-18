@@ -156,11 +156,18 @@ for(const x0 of [0,W-84]){
    quai, trois pointus amarrés et leurs bouées. */
 {
 const Y0=PLACE_BAS;
-for(let y=Y0;y<H;y++){const k=(y-Y0-32)/(H-Y0-32),q=Math.max(0,Math.min(1,k)),e=q*q*(3-2*q);
-  R(0,y,W,1,'rgb('+(70-e*46|0)+','+(170-e*72|0)+','+(200-e*46|0)+')');}
-/* de grandes nappes plus claires et plus sombres : la houle, vue de haut */
-for(let i=0;i<46;i++){const cx=h(i,1,93)*W,cy=Y0+50+h(i,2,93)*(H-Y0-60),rx=40+h(i,3,93)*90,ry=5+h(i,4,93)*9;
-  g.fillStyle=h(i,5,93)<.5?'rgba(150,226,236,.10)':'rgba(8,46,92,.10)';g.beginPath();g.ellipse(cx,cy,rx,ry,0,0,7);g.fill();}
+/* L'EAU DU PORT, RÉALISTE ET CALME. Un vert-bleu profond, vite assombri vers
+   le large ; aucune vaguelette dessinée, aucun motif : juste la profondeur et
+   de larges ondulations douces, posées une fois pour toutes. */
+for(let y=Y0+32;y<H;y++){const q=Math.min(1,(y-Y0-32)/(H-Y0-40)),e=q*q*(3-2*q);
+  R(0,y,W,1,'rgb('+(24-e*14|0)+','+(58-e*30|0)+','+(74-e*34|0)+')');}
+/* de très larges bandes d'ombre et de clarté : la houle vue de loin, floue */
+for(let i=0;i<13;i++){const cy=Y0+50+h(i,2,93)*(H-Y0-60),amp=4+h(i,4,93)*8,phase=h(i,3,93)*6.28,clr=h(i,5,93)<.5;
+  for(let x=0;x<W;x++){const y=cy+Math.sin(x/70+phase)*amp;
+    g.fillStyle=clr?'rgba(90,150,160,.05)':'rgba(4,20,36,.07)';g.fillRect(x,y-3,1,6);}}
+/* le chemin de lune : une colonne pâle vers le large, très diffuse, immobile */
+for(let y=Y0+40;y<H;y++){const q=(y-Y0)/(H-Y0),lar=16+q*34;
+  for(let dx=-lar;dx<lar;dx++){const a=(1-Math.abs(dx)/lar)*.10*(1-q*.5);if(a>.01&&h((y*131+dx)|0,7,94)<.5)R(W*.62+dx,y,1,1,'rgba(150,180,180,'+a.toFixed(3)+')');}}
 /* le mur du quai sous la terrasse, son ombre sur l'eau, l'écume au pied */
 R(0,Y0+16,W,16,'#a39a86');for(let x=0;x<W;x+=22){R(x,Y0+16,1,16,'rgba(60,50,36,.3)');R(x+11,Y0+24,1,8,'rgba(60,50,36,.22)');}
 R(0,Y0+23,W,1,'rgba(60,50,36,.25)');R(0,Y0+29,W,3,'#6f7a62');                         /* la ligne d'algues */
@@ -1462,17 +1469,7 @@ const AMBIANCE=(()=>{
  const TACHES=ARBRES.map(([x,y,r,ry],i)=>{const L=[];const n=r>30?9:r>20?7:4;
    for(let k=0;k<n;k++){const a=rnd(i,k)*6.283,d=Math.sqrt(rnd(k,i+40))*r*.8;L.push([Math.cos(a)*d,Math.sin(a)*d*.42,r*(.34+rnd(i+9,k)*.3),rnd(k,i)*6.283]);}
    return {x:x+r*.42,y:y+ry*.5+2,r,L};});
- /* la toile des vaguelettes : des crêtes claires en petits arcs, quelques éclats, dessinés une fois */
- let VAG=null;
- function vagues(){if(VAG)return VAG;const c=document.createElement('canvas');c.width=W;c.height=H-PLACE_BAS-40;const g=c.getContext('2d');
-   for(let i=0;i<520;i++){const x=rnd(i,301)*W,y=4+rnd(i,302)*(c.height-8),l=5+rnd(i,303)*11,pr=y/c.height;
-     g.fillStyle='rgba(214,244,250,'+(.28+rnd(i,304)*.34)+')';
-     g.fillRect(x|0,y|0,l|0,1);g.fillRect((x+1)|0,(y-1)|0,Math.max(1,(l-3)|0),1);                 /* la crête, un petit arc */
-     if(x+l>W)g.fillRect(0,y|0,(x+l-W)|0,1);
-     g.fillStyle='rgba(6,40,84,'+(.16+pr*.14)+')';g.fillRect((x+2)|0,(y+1)|0,(l-1)|0,1);}          /* son creux */
-   for(let i=0;i<70;i++){g.fillStyle='rgba(255,255,255,.85)';g.fillRect((rnd(i,305)*W)|0,(6+rnd(i,306)*(c.height-12))|0,2,1);}
-   VAG=c;return c;}
- /* --- les lampes --- */
+  /* --- les lampes --- */
  const LAMPES=[[535,500],[665,500],[535,960],[665,960],[130,655],[1070,655],[130,756],[1070,756],[420,470],[780,470]];
  /* --- les feuilles qui tombent des platanes --- */
  const FEUILLES=[];for(let i=0;i<18;i++)FEUILLES.push({i,t:rnd(i,1)*9});
@@ -1537,13 +1534,6 @@ const AMBIANCE=(()=>{
          g.drawImage(A.c,Math.round(X-A.R+Math.sin(t*.9+A.x)*1.6),Math.round(Y-A.R/2+Math.cos(t*.8+A.x)*.6));}
        g.globalAlpha=1;
        g.restore();}
-     /* l'eau du port : une toile de vaguelettes peinte une fois, glissée en deux couches qui se croisent */
-     {const y0=PLACE_BAS+40,top=y0-camY;if(top<VH){const V=vagues(),sy=Math.max(0,-top),hh=Math.min(V.height-sy,VH-Math.max(0,top));
-       if(hh>0){const dy=Math.max(0,top),a=1-k*.55;
-         /* une seule couche, qui dérive tout doucement : rien d'autre ne bouge */
-         {const off=((t*2.2)%W+W)%W,sx=Math.floor((camX+off)%W),w1=Math.min(VW,W-sx);g.globalAlpha=.85*a;
-           g.drawImage(V,sx,sy,w1,hh,0,dy,w1,hh);if(w1<VW)g.drawImage(V,0,sy,VW-w1,hh,w1,dy,VW-w1,hh);}
-         g.globalAlpha=1;}}}
      if(k>.05){for(const [x,y] of LAMPES)lueurNuit(g,x-camX,y-camY-4,58,'rgba(255,196,120,1)');
        for(let x=DX+70;x<DX+FACW-40;x+=96)lueurNuit(g,x-camX,DOCKS_PIED+18-camY,54,'rgba(255,214,150,1)');}
    }});
