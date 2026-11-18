@@ -844,9 +844,7 @@ function arbrePlatane(v){const L=120,HH=150,{c,g,R}=toileA(L,HH),cx=L/2,s=HH-6;o
     feuillage(g,R,cx,s-84,48,14,M[0],260,4);feuillage(g,R,cx-28,s-100,32,24,M[1],320,1);feuillage(g,R,cx+28,s-102,32,24,M[2],320,2);feuillage(g,R,cx,s-120,38,24,M[3],360,3);
     /* quelques touffes d'une autre couleur, mêlées dans la masse */
     feuillage(g,R,cx-10,s-108,40,26,M[(v+1)%4],120,5+(v||0));
-    /* le tapis de feuilles mortes au pied */
-    const T=['#d8a830','#c0602a','#9a6a38','#e8c050','#a04020','#b08048'];
-    for(let i=0;i<300;i++){const a=hA(i,7+(v||0),61)*Math.PI*2,r=Math.sqrt(hA(i,8,61));g.fillStyle=T[(i+(v||0))%T.length];g.beginPath();g.ellipse(cx+10+Math.cos(a)*r*56,s+Math.sin(a)*r*10,1.4,.9,a,0,7);g.fill();}}
+    }
   return {c,W:L,H:HH,s};}
 /* 5. LE MAGNOLIA : feuilles vernissées sombres, grandes fleurs blanches */
 function arbreMagnolia(){const L=110,HH=140,{c,g,R}=toileA(L,HH),cx=L/2,s=HH-6;ombreA(g,cx+12,s+1,38,8);
