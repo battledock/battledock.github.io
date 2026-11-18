@@ -6,7 +6,7 @@
    Ce morceau ne touche à rien d'autre : le sol, le décor, les collisions
    et la sortie vivent ici, et le moteur ne fait que les appeler. */
 (()=>{
-const W=1200, H=1080;                       /* la place voit grand : 1200 × 1080 */
+const W=1200, H=1140;                       /* la place voit grand : 1200 × 1080 */
 const FACW=800, DX=(W-FACW)/2;              /* la façade des Docks garde ses 800 ; DX la recentre */
 const DOCKS_PIED=236, TROTTOIR=346, TRAM0=346, TRAM1=422, PLACE_BAS=1000;
 const SORTIE_X=400, SORTIE_DEMI=44;
@@ -68,6 +68,16 @@ R(0,418,W,4,'#b9b3a6');R(0,TRAM1-1,W,1,'#7f796c');
 dalles(g,R,0,TRAM1,W,PLACE_BAS-TRAM1,['#ebe4d6','#e6dfd0','#efe8da','#e2dbcc','#e8e1d3'],56,22);
 for(let x=84;x<W-84;x+=104){R(x,TRAM1,4,PLACE_BAS-TRAM1,'#d4c8b2');R(x,TRAM1,1,PLACE_BAS-TRAM1,'#c4b8a0');}
 for(let y=TRAM1+40;y<PLACE_BAS;y+=88){R(84,y,W-168,4,'#d4c8b2');R(84,y,W-168,1,'#c4b8a0');}
+/* LES MATIÈRES. Des dalles qui ont vécu : quelques-unes plus pâles ou plus
+   grises, des fissures fines, de la mousse dans les joints à l'ombre des
+   arbres, des feuilles collées au sol sous les platanes. */
+for(let i=0;i<150;i++){const x=90+h(i,1,95)*(W-180),y=TRAM1+6+h(i,2,95)*(PLACE_BAS-TRAM1-30),k=h(i,3,95);
+  R(x-(x%56),y-(y%22),56,22,k<.5?'rgba(255,250,236,.16)':'rgba(120,104,80,.07)');}
+for(let i=0;i<70;i++){let x=90+h(i,1,96)*(W-180),y=TRAM1+10+h(i,2,96)*(PLACE_BAS-TRAM1-40);const n=8+h(i,3,96)*18;
+  for(let k=0;k<n;k++){R(x,y,1,1,'rgba(96,82,60,.42)');x+=h(i,k,97)<.72?1:0;y+=h(i,k,98)<.5?1:(h(i,k,99)<.5?0:-1);}}
+for(let i=0;i<520;i++){const cote=h(i,1,102)<.5,x=(cote?6:W-150)+h(i,2,102)*144,y=TRAM1+10+h(i,3,102)*(PLACE_BAS-TRAM1-20),k=h(i,4,102);
+  R(x,y,2,2,k<.4?'#d98a2c':k<.75?'#e8b23c':'#b8602a');R(x,y,1,1,'rgba(255,236,190,.5)');}
+
 /* ======== LA COMPOSITION DE LA PLACE ========
    Une grande croix d'allées en brique rousse (l'axe des portes de la Galerie
    jusqu'à la rue, et la traverse qui passe par la fontaine), quatre parterres
@@ -141,13 +151,45 @@ for(const x0 of [0,W-84]){
     R(x,y,1,1,h(i,x0,23)<.5?'#c4b28a':'#e6d6b2');}
   R(x0===0?82:x0,TRAM1,2,PLACE_BAS-TRAM1,'#bfae88');
 }
-/* LA RUE DU BAS (plus de passage piéton : le port n'est plus un lieu) */
-R(0,PLACE_BAS,W,4,'#b9b3a6');R(0,PLACE_BAS,W,1,'#eee8da');
-for(let y=PLACE_BAS+4;y<H;y++)R(0,y,W,1,teinte('#5e6066',((y-PLACE_BAS)%7===0)?-6:0));
-for(let i=0;i<1500;i++)R(h(i,1,31)*W,PLACE_BAS+4+h(i,2,31)*36,1,1,h(i,3,31)<.5?'#6c6e74':'#54565c');
-for(let x=10;x<W;x+=44){if(Math.abs(x+11-FONT[0])<70)continue;R(x,PLACE_BAS+40,22,2,'#d8d4c6');}          /* la ligne d'axe */
-for(let x=FONT[0]-48;x<FONT[0]+48;x+=12)R(x,PLACE_BAS+8,7,H-PLACE_BAS-12,'#e6e2d6');                      /* le passage piéton, dans l'axe */
-R(0,PLACE_BAS+4,W,2,'rgba(0,0,0,.18)');
+/* LE BAS DE LA PLACE : UNE TERRASSE SUR LE PORT. Une balustrade de pierre,
+   et derrière elle l'eau du bassin, vue de haut : les vaguelettes, le mur du
+   quai, trois pointus amarrés et leurs bouées. */
+{
+const Y0=PLACE_BAS;
+for(let y=Y0;y<H;y++){const k=(y-Y0)/(H-Y0);R(0,y,W,1,'rgb('+(52-k*14|0)+','+(134-k*26|0)+','+(184-k*22|0)+')');}
+for(let i=0;i<2600;i++){const x=h(i,1,91)*W,y=Y0+34+h(i,2,91)*(H-Y0-36),k=h(i,3,91);
+  R(x,y,3+k*7,1,k<.45?'rgba(150,206,236,.55)':k<.8?'rgba(24,84,130,.5)':'rgba(214,238,250,.6)');}
+/* le mur du quai sous la terrasse, son ombre sur l'eau, l'écume au pied */
+R(0,Y0+16,W,16,'#a39a86');for(let x=0;x<W;x+=22){R(x,Y0+16,1,16,'rgba(60,50,36,.3)');R(x+11,Y0+24,1,8,'rgba(60,50,36,.22)');}
+R(0,Y0+23,W,1,'rgba(60,50,36,.25)');R(0,Y0+29,W,3,'#6f7a62');                         /* la ligne d'algues */
+R(0,Y0+32,W,7,'rgba(10,40,70,.32)');
+for(let x=0;x<W;x+=5){if(h(x,3,92)<.55)R(x,Y0+32+(h(x,4,92)*2|0),3,1,'rgba(236,246,252,.8)');}
+/* les anneaux d'amarrage */
+for(let x=90;x<W;x+=170){R(x,Y0+20,5,5,'#4a4f56');R(x+1,Y0+21,3,3,'#a39a86');}
+/* les pointus : coque peinte, pont de bois, banc, mât couché, amarre */
+const pointu=(cx,cy,coque,lisere)=>{
+  g.fillStyle='rgba(8,36,64,.35)';g.beginPath();g.ellipse(cx+3,cy+7,34,9,0,0,7);g.fill();
+  g.fillStyle=coque;g.beginPath();g.moveTo(cx-34,cy);g.quadraticCurveTo(cx-20,cy-12,cx,cy-12);g.quadraticCurveTo(cx+22,cy-12,cx+36,cy);g.quadraticCurveTo(cx+22,cy+11,cx,cy+11);g.quadraticCurveTo(cx-20,cy+11,cx-34,cy);g.fill();
+  g.fillStyle=lisere;g.beginPath();g.moveTo(cx-31,cy);g.quadraticCurveTo(cx-19,cy-9.5,cx,cy-9.5);g.quadraticCurveTo(cx+21,cy-9.5,cx+33,cy);g.quadraticCurveTo(cx+21,cy+8.5,cx,cy+8.5);g.quadraticCurveTo(cx-19,cy+8.5,cx-31,cy);g.fill();
+  g.fillStyle='#c9a06a';g.beginPath();g.moveTo(cx-27,cy);g.quadraticCurveTo(cx-17,cy-7,cx,cy-7);g.quadraticCurveTo(cx+19,cy-7,cx+29,cy);g.quadraticCurveTo(cx+19,cy+6,cx,cy+6);g.quadraticCurveTo(cx-17,cy+6,cx-27,cy);g.fill();
+  for(let x=cx-22;x<cx+24;x+=5)R(x,cy-6,1,12,'rgba(90,60,30,.28)');
+  R(cx-9,cy-7,4,13,'#8a6238');R(cx+10,cy-7,4,13,'#8a6238');                              /* les bancs */
+  R(cx-20,cy-1,34,2,'#e8dcc0');R(cx-20,cy+1,34,1,'rgba(60,40,20,.3)');                   /* le mât couché, voile ferlée */
+  R(cx+18,cy-3,7,6,'#3c4046');R(cx+19,cy-2,5,2,'#6a7078');                               /* le moteur */
+  g.strokeStyle='rgba(236,226,200,.85)';g.lineWidth=1;g.beginPath();g.moveTo(cx-33,cy-1);g.quadraticCurveTo(cx-40,cy-24,cx-44,Y0+24);g.stroke();};
+pointu(250,Y0+78,'#2a5ea8','#f4ecd8');pointu(640,Y0+96,'#c8402e','#f4ecd8');pointu(960,Y0+74,'#2f8a6a','#f6d87a');
+for(const [bx,by,c] of [[420,Y0+110,'#e8642a'],[820,Y0+118,'#e8642a'],[1120,Y0+104,'#f2c94c'],[80,Y0+112,'#f2c94c']]){
+  g.fillStyle='rgba(8,36,64,.3)';g.beginPath();g.ellipse(bx+1,by+3,5,2,0,0,7);g.fill();
+  g.fillStyle=c;g.beginPath();g.arc(bx,by,4,0,7);g.fill();R(bx-2,by-3,2,2,'rgba(255,255,255,.6)');}
+/* la balustrade : main courante, balustres tournés, socle ; des dés coiffés d'une boule */
+R(0,Y0-3,W,3,'rgba(60,44,24,.14)');
+R(0,Y0+12,W,5,'#cfc3aa');R(0,Y0+12,W,1,'#efe6d2');R(0,Y0+16,W,1,'#8f8572');
+for(let x=3;x<W;x+=7){R(x,Y0+3,3,9,'#e9e0cc');R(x+2,Y0+3,1,9,'#c2b69c');R(x-1,Y0+6,5,3,'#efe7d4');R(x+3,Y0+6,1,3,'#c2b69c');}
+R(0,Y0-1,W,4,'#f4eede');R(0,Y0-1,W,1,'#fffaf0');R(0,Y0+3,W,1,'#b9ad94');
+for(let x=30;x<W;x+=114){R(x-7,Y0-4,14,22,'#e6dcc6');R(x-7,Y0-4,14,1,'#fffaf0');R(x+5,Y0-4,2,22,'#c2b69c');R(x-9,Y0-6,18,3,'#f4eede');R(x-9,Y0-3,18,1,'#b9ad94');
+  g.fillStyle='#e9e0cc';g.beginPath();g.arc(x,Y0-11,5.5,0,7);g.fill();g.fillStyle='#fffaf0';g.beginPath();g.arc(x-1.6,Y0-12.6,2,0,7);g.fill();
+  g.fillStyle='rgba(120,104,80,.5)';g.beginPath();g.arc(x+1.6,Y0-9.6,3.4,-.3,1.9);g.fill();}
+}
 return c;
 }
 function dalles(g,R,x0,y0,w,hh,tons,tw,th){
@@ -1132,7 +1174,7 @@ function decor(){
   /* les bancs : le long de l'axe, adossés aux parterres, et autour de la fontaine */
   for(const [x,y] of [[505,560],[695,560],[505,900],[695,900],[330,700],[870,700],[240,512],[960,512]])P('x_jol_banc',x,y,{col:[40,6]});
   /* deux pins parasols encadrent le bas de la place */
-  P('x_jol_pin',120,1000,{col:[16,8]});P('x_jol_pin',1080,1000,{col:[16,8]});
+  P('x_jol_pin',120,990,{col:[16,8]});P('x_jol_pin',1080,990,{col:[16,8]});
   /* des oliviers en bac le long du quai du tram */
   for(const x of [130,530,670,1070])P('x_jol_olivier',x,456,{col:[18,6]});
 
@@ -1151,7 +1193,7 @@ function decor(){
 function bloque(x,y){
   if(x<14||x>W-14)return true;
   if(y<DOCKS_PIED+16)return true;                     /* la façade des Docks */
-  if(y>PLACE_BAS+4)return true;   /* la rue : on ne la traverse plus */
+  if(y>PLACE_BAS-3)return true;   /* la balustrade : on s'y accoude, on ne la passe pas */
   if(y>H-4)return true;
   if(PLACE.bloquePlace(x,y))return true;
   for(const o of DECOR){if(o.anim==='jol_tram'){try{if(dansLaRame(o,x,y)&&!dansLaRame(o,joueur.x,joueur.y))return true;}catch(e){}continue;}
@@ -1407,8 +1449,101 @@ let calme=0;const guet=setInterval(()=>{const occupe=window.ECRAN_COUVRANT||docu
   d.onclick=ev=>{if(ev.target===d)f();};d.querySelector('button').onclick=f;},500);
 })();
 
+/* ====================================================================
+   L'AMBIANCE : les ombres des feuillages qui bougent, les halos du soir,
+   l'eau qui scintille, les feuilles qui tombent, un chat, des passants.
+   ==================================================================== */
+const AMBIANCE=(()=>{
+ const T0=performance.now(),rnd=(a,b)=>h(a,b,131);
+ /* --- les ombres des arbres --- */
+ const ARBRES=[];
+ for(const x of [60,240,450,750,960,1140])ARBRES.push([x,342,24,10]);
+ [470,610,750,890].forEach(y=>{ARBRES.push([42,y,34,14]);ARBRES.push([W-42,y,34,14]);});
+ ARBRES.push([120,990,38,12],[1080,990,38,12]);
+ for(const x of [130,530,670,1070])ARBRES.push([x,456,13,5]);
+ const TACHES=ARBRES.map(([x,y,r,ry],i)=>{const L=[];const n=r>30?9:r>20?7:4;
+   for(let k=0;k<n;k++){const a=rnd(i,k)*6.283,d=Math.sqrt(rnd(k,i+40))*r*.8;L.push([Math.cos(a)*d,Math.sin(a)*d*.42,r*(.34+rnd(i+9,k)*.3),rnd(k,i)*6.283]);}
+   return {x:x+r*.42,y:y+ry*.5+2,r,L};});
+ /* --- les lampes --- */
+ const LAMPES=[[535,500],[665,500],[535,960],[665,960],[130,655],[1070,655],[130,756],[1070,756],[420,470],[780,470]];
+ /* --- les feuilles qui tombent des platanes --- */
+ const FEUILLES=[];for(let i=0;i<18;i++)FEUILLES.push({i,t:rnd(i,1)*9});
+ const posFeuille=(f,t)=>{const cyc=7+rnd(f.i,2)*5,u=((t+f.t)%cyc)/cyc,n=Math.floor((t+f.t)/cyc);
+   const cote=rnd(f.i,n)<.5,ax=(cote?42:W-42)+(rnd(n,f.i+3)-.5)*90,sol=[470,610,750,890][(rnd(f.i+5,n)*4)|0]+8+rnd(n,f.i)*26;
+   const ch=Math.min(1,u/.62),y=sol-(1-ch)*(58+rnd(f.i,7)*20),x=ax+Math.sin(ch*7+f.i)*9*(1-ch*.4)+ch*10;
+   return {x,y,sol,pose:ch>=1,a:u>.9?(1-u)/.1:1,c:['#d98a2c','#e8b23c','#c8642a','#e2a03a'][f.i%4],tour:Math.sin(ch*16+f.i)>0};};
+ /* --- le chat --- */
+ const CHAT={x:560,y:566,cx:560,cy:566,etat:'assis',t:3,sens:1,pas:0};
+ const COINS=[[560,566],[742,908],[300,716],[930,524],[640,994],[210,516]];
+ let TD=performance.now();
+ function vieChat(dt){CHAT.t-=dt;
+   if(CHAT.etat==='assis'){if(CHAT.t<=0){const c=COINS[(Math.random()*COINS.length)|0];CHAT.cx=c[0];CHAT.cy=c[1];CHAT.etat='va';}}
+   else{const dx=CHAT.cx-CHAT.x,dy=CHAT.cy-CHAT.y,d=Math.hypot(dx,dy);
+     if(d<2){CHAT.etat='assis';CHAT.t=5+Math.random()*9;}
+     else{const v=24*dt;CHAT.x+=dx/d*v;CHAT.y+=dy/d*v;if(Math.abs(dx)>1)CHAT.sens=dx>0?1:-1;CHAT.pas+=dt*9;}}
+   /* si l'on s'approche trop, il file */
+   try{if(CHAT.etat==='assis'&&Math.hypot(joueur.x-CHAT.x,joueur.y-CHAT.y)<20&&CHAT.t<4.2)CHAT.t=0;}catch(x){}}
+ function dessinerChat(g,X,Y){const s=CHAT.sens,t=performance.now()/1000,P=(x,y,w,hh,c)=>{g.fillStyle=c;g.fillRect(Math.round(X+(s>0?x:-x-w)),Math.round(Y+y),w,hh);};
+   g.fillStyle='rgba(30,24,16,.22)';g.beginPath();g.ellipse(X,Y,7,2.2,0,0,7);g.fill();
+   const R1='#d9892f',R2='#b96a1e',B='#f6ead6';
+   if(CHAT.etat==='assis'){
+     P(-4,-8,7,8,R1);P(-4,-3,7,1,R2);P(-4,-6,7,1,R2);P(0,-2,3,2,B);                    /* le corps assis */
+     P(1,-13,6,6,R1);P(1,-15,2,2,R1);P(5,-15,2,2,R1);P(2,-14,1,1,'#f2b8a0');           /* la tête, les oreilles */
+     P(3,-11,1,1,'#2a3a1a');P(5,-11,1,1,'#2a3a1a');P(4,-9,2,1,B);
+     const q=Math.sin(t*2.2)>0?1:0;P(-6,-2-q,2,2,R1);P(-7,-4-q*2,2,2,R2);              /* la queue qui bat */
+   }else{const k=Math.floor(CHAT.pas)%2;
+     P(-6,-8,11,5,R1);P(-4,-8,1,5,R2);P(-1,-8,1,5,R2);P(2,-8,1,5,R2);                  /* le corps qui trotte */
+     P(4,-11,5,5,R1);P(4,-13,2,2,R1);P(7,-13,2,2,R1);P(7,-9,1,1,'#2a3a1a');P(8,-8,1,1,'#f2b8a0');
+     P(-5+k,-3,2,3,R2);P(-1-k,-3,2,3,R1);P(2+k,-3,2,3,R2);P(4-k,-3,2,3,R1);
+     P(-8,-10,2,2,R1);P(-9,-12,2,2,R2);}}
+ /* --- les passants --- */
+ const AP=[{peau:1,cheveux:4,coiffe:6,haut:2,veste:'#e8e2d4',pantalon:'#3a4a6a',sac:0},{peau:4,cheveux:1,coiffe:11,haut:3,veste:'#a8524a',pantalon:'#2f3a4a',sac:0,barbe:2},
+   {peau:0,cheveux:6,coiffe:16,haut:1,veste:'#4a7d7d',bas:2,pantalon:'#c2a04a',souliers:2,sac:0},{peau:6,cheveux:0,coiffe:3,haut:5,veste:'#54606b',pantalon:'#26241f',sac:0},
+   {peau:2,cheveux:3,coiffe:19,haut:1,veste:'#f2ece0',motif:2,raye:16,bas:1,pantalon:'#5a6b8f',souliers:1,sac:0},{peau:3,cheveux:5,coiffe:9,haut:6,veste:'#7d6a3f',pantalon:'#4f5a4a',sac:0,barbe:4},
+   {peau:5,cheveux:2,coiffe:13,haut:2,veste:'#8ab4d8',bas:4,pantalon:'#8a2a3a',souliers:2,sac:0}].map(a=>Object.assign(a,{_pnj:true}));
+ const mk=(ap,route,v)=>({ap,route,v,i:1,x:route[0][0],y:route[0][1],dir:'bas',pas:Math.random()*20,pause:Math.random()*3,marche:route.length>1,sens:1});
+ const GENS=[
+   mk(AP[0],[[110,300],[1090,300]],25),mk(AP[1],[[1060,326],[140,326]],21),
+   mk(AP[2],[[130,438],[1070,438]],27),
+   mk(AP[3],[[110,712],[400,712]],22),mk(AP[4],[[1090,698],[800,698]],24),
+   mk(AP[5],[[588,850],[588,988]],20),mk(AP[6],[[1112,470],[1112,950]],23),
+   Object.assign(mk(AP[2],[[852,516]],0),{dir:'haut',ap:AP[4]}),                     /* celui qui lit les affiches */
+   Object.assign(mk(AP[3],[[770,994]],0),{dir:'bas',ap:AP[0]})];                      /* celle qui regarde le port */
+ const DIRS=['droite','bas-droite','bas','bas-gauche','gauche','haut-gauche','haut','haut-droite'];
+ function vieGens(dt){for(const p of GENS){if(p.route.length<2){p.marche=false;continue;}
+   if(p.pause>0){p.pause-=dt;p.marche=false;continue;}
+   const [tx,ty]=p.route[p.i],dx=tx-p.x,dy=ty-p.y,d=Math.hypot(dx,dy);
+   if(d<2){p.pause=1.2+Math.random()*3.5;p.i+=p.sens;if(p.i>=p.route.length||p.i<0){p.sens=-p.sens;p.i+=p.sens*2;}continue;}
+   p.marche=true;p.x+=dx/d*p.v*dt;p.y+=dy/d*p.v*dt;p.pas+=dt*7.2;
+   p.dir=DIRS[((Math.round(Math.atan2(dy,dx)/(Math.PI/4))%8)+8)%8];}}
+ function figurants(){const n=performance.now(),dt=Math.min(.1,(n-TD)/1000);TD=n;try{vieGens(dt);vieChat(dt);}catch(x){}
+   return GENS.map(p=>({x:p.x,y:p.y,ap:p.ap,dir:p.dir,pas:p.pas,marche:p.marche}));}
+ function acteurs(){const t=(performance.now()-T0)/1000,L=[];let k=0;try{k=nuitDecor();}catch(x){}
+   /* le sol : ombres le jour, halos le soir, scintillement de l'eau */
+   L.push({y:-1e5+2,f:(g,camX,camY)=>{
+     if(k<.85){g.save();g.fillStyle='rgba(38,52,30,'+(.13*(1-k))+')';
+       for(const A of TACHES){const X=A.x-camX,Y=A.y-camY;if(X<-80||Y<-50||X>VW+80||Y>VH+50)continue;
+         for(const [dx,dy,r,ph] of A.L){const sw=Math.sin(t*.9+ph)*1.6,sr=1+Math.sin(t*.7+ph*2)*.06;
+           g.beginPath();g.ellipse(X+dx+sw,Y+dy+Math.cos(t*.8+ph)*.6,r*sr,r*.42*sr,0,0,7);g.fill();}}
+       g.restore();}
+     /* l'eau du port : des éclats qui s'allument et s'éteignent */
+     if(PLACE_BAS+36-camY<VH+4){for(let i=0;i<70;i++){const x=rnd(i,201)*W-camX,y=PLACE_BAS+40+rnd(i,202)*(H-PLACE_BAS-44)-camY;if(x<-6||x>VW+6||y>VH+2)continue;
+         const a=Math.sin(t*(1.2+rnd(i,203)*1.6)+i*1.7);if(a<.35)continue;
+         g.fillStyle='rgba(240,250,255,'+((a-.35)*1.1*(1-k*.6))+')';g.fillRect(Math.round(x+Math.sin(t*.6+i)*2),Math.round(y),3+(i%3),1);}}
+     if(k>.05){for(const [x,y] of LAMPES)lueurNuit(g,x-camX,y-camY-4,58,'rgba(255,196,120,1)');
+       for(let x=DX+70;x<DX+FACW-40;x+=96)lueurNuit(g,x-camX,DOCKS_PIED+18-camY,54,'rgba(255,214,150,1)');}
+   }});
+   /* les feuilles */
+   if(k<.9)for(const f of FEUILLES){const p=posFeuille(f,t);L.push({y:p.pose?-1e5+3:p.sol,f:(g,camX,camY)=>{const X=Math.round(p.x-camX),Y=Math.round(p.y-camY);if(X<-4||Y<-4||X>VW+4||Y>VH+4)return;
+       g.globalAlpha=p.a;g.fillStyle=p.c;if(p.pose||p.tour)g.fillRect(X,Y,3,2);else g.fillRect(X,Y,2,3);g.fillStyle='rgba(255,236,190,.5)';g.fillRect(X,Y,1,1);g.globalAlpha=1;}});}
+   /* le chat */
+   L.push({y:CHAT.y,f:(g,camX,camY)=>{const X=CHAT.x-camX,Y=CHAT.y-camY;if(X<-14||Y<-4||X>VW+14||Y>VH+18)return;dessinerChat(g,X,Y);}});
+   return L;}
+ return {acteurs,figurants};
+})();
+
 ANIM_DECOR.jol_tram=dessinerTram;
 ANIM_DECOR.jol_docks=dessinerLesDocks;
 ANIM_DECOR.jol_fontaine=PLACE.dessinerFontaine;
-return {sol,decor,bloque,graver,depart:DEPART,solFin:PLACE.solFin,acteurs:()=>PIGEONS.acteurs().concat(VOEU.acteurs())};
+return {sol,decor,bloque,graver,depart:DEPART,solFin:PLACE.solFin,figurants:AMBIANCE.figurants,acteurs:()=>PIGEONS.acteurs().concat(VOEU.acteurs(),AMBIANCE.acteurs())};
 })()
