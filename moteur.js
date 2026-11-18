@@ -2640,7 +2640,7 @@ g.fillStyle='#e8cf8a';g.font='9px Georgia,serif';g.fillText('ENTREPÔT',w*0.66,h
 ];
 const PAGES_PORT=[
 {titre:'Se déplacer',sous:'LE POUCE ET LE BOUTON',
-txt:['<b>Touche un endroit</b> : ton perso y va tout seul, son chemin se dessine en pointillés d’or. <b>Deux touchers</b> : il y court. Ou <b>garde le doigt posé</b> : il te suit.',
+txt:['<b>Touche un endroit</b> : ton perso y va tout seul. <b>Deux touchers</b> : il y court. Ou <b>garde le doigt posé</b> : il te suit.',
 'Près d’un lieu ou d’un objet, un <b>bouton</b> apparaît en bas de l’écran : touche-le pour entrer, pêcher, acheter…'],
 img:(g,w,h)=>{g.fillStyle='#d9c7a0';g.fillRect(0,0,w,h);g.fillStyle='rgba(0,0,0,.06)';for(let y=0;y<h;y+=14)for(let x=(y/14)%2*12;x<w;x+=24)g.fillRect(x,y,23,1);
 const ox=w*0.3,oy=h*0.55;g.beginPath();g.arc(ox,oy,30,0,7);g.fillStyle='rgba(20,14,8,.12)';g.fill();g.lineWidth=1.5;g.strokeStyle='rgba(250,244,228,.9)';g.stroke();
@@ -15006,7 +15006,7 @@ const TRANS={etat:'idle', depuis:0, dirPrec:'bas', couPrec:false, marchePrec:fal
    est dessiné pour un départ arrêté — le corps s'accroupissait pour
    pousser alors qu'il était déjà lancé. Un changement de régime ne
    s'accroupit pas : il pique du buste vers l'avant. */
-const DUREE={elan:260, frein:300, pivot:180, lance:220, depart:520, arret:640};
+const DUREE={elan:260, frein:300, pivot:180, lance:220, depart:360, arret:400};
 function majTransition(dir,marche,court){
 const t=Date.now();
 const age=t-TRANS.depuis;
@@ -19168,7 +19168,7 @@ const ORDRE8=['droite','bas-droite','bas','bas-gauche','gauche','haut-gauche','h
    qu'on voie le personnage pivoter, pas assez pour qu'il paraisse mou.
    Sert au joueur ET aux autres joueurs, qui sautaient d'une direction à
    l'autre. */
-const PAS_ROTATION=0.058;
+const PAS_ROTATION=0.036;
 function tournerVue(o,cible,dt){
 if(!o.dirVue||ORDRE8.indexOf(o.dirVue)<0||ORDRE8.indexOf(cible)<0){o.dirVue=cible;o.tVue=0;return;}
 if(o.dirVue===cible){o.tVue=0;return;}
@@ -19317,13 +19317,13 @@ try{SOUF.maj(dt,court&&n>0.16,n>0.16);}catch(x){}
    marche en glissant sur le sol. La marche descend de quarante pour
    cent — un peu moins de deux mètres par seconde, une marche franche —
    et la course garde toute sa vitesse : c'est elle qui sert à aller vite. */
-const MARCHE_HUMAINE=0.6;
+const MARCHE_HUMAINE=0.8;      /* plus léger : il était lourd à mener sur la grande place */
 /* LA COURSE À ALLURE HUMAINE, elle aussi : elle filait à six ou sept
    mètres par seconde à la taille du personnage — un sprint de
    compétition, tenu aussi longtemps que le souffle. Elle descend à un
    peu moins de quatre : une course franche, qu'on peut tenir. Les
    souliers la font toujours monter. */
-const COURSE_HUMAINE=0.6;
+const COURSE_HUMAINE=0.82;
 const allureS=allure*(court&&SOUF.v>0?1.22:1)*(SOUF.vide?0.82:1)*(court?COURSE_HUMAINE:MARCHE_HUMAINE);   /* le sprint, et le souffle court quand la jauge est vide */
 /* ================= LE VIRAGE =================
    Le pivot ne se déclenchait que sur un cas : le renversement
@@ -19357,7 +19357,7 @@ const cibleY=n>0.16?(joyY/n)*allureS*pousse:0;
 const glace=false;
 /* LA MARCHE EN DOUCEUR : il se met en route au lieu de bondir,
    et il glisse un peu à l'arrêt au lieu de se figer net. */
-const k=1-Math.exp(-(glace?(n>0.16?2.2:0.55):(n>0.16?7.5:9))*dt);
+const k=1-Math.exp(-(glace?(n>0.16?2.2:0.55):(n>0.16?16:20))*dt);
 /* LE DEMI-TOUR : le corps freine avant de repartir dans l'autre sens */
 if(!glace&&cibleX*vx<0&&Math.abs(vx)>30)vx*=0.55;
 if(!glace&&cibleY*vy<0&&Math.abs(vy)>30)vy*=0.55;
@@ -19890,16 +19890,6 @@ function toucherAller(sx,sy){
   DERNIER_TAP={t:n,x:sx,y:sy};
   allerVers(sx,sy);
   if(MARCHE){MARCHE.court=dbl;try{vibrer(dbl?[8,30,8]:8);}catch(z){}}}
-function filDor(pts,camX,camY,court){
-  /* des perles qui coulent le long du chemin, de lui vers le but */
-  const t=performance.now()/1000,pas=court?7:9,vit=court?26:15;let reste=(t*vit)%pas;
-  ctx.save();
-  for(let k=1;k<pts.length;k++){const [ax,ay]=pts[k-1],[bx,by]=pts[k],L=Math.hypot(bx-ax,by-ay);if(L<.5)continue;
-    let d=reste;for(;d<L;d+=pas){const u=d/L,x=ax+(bx-ax)*u-camX,y=ay+(by-ay)*u-camY;
-      ctx.fillStyle='rgba(60,40,10,.4)';ctx.fillRect(Math.round(x)-1,Math.round(y),3,2);
-      ctx.fillStyle=court?'#ff9a3c':'#f2b93c';ctx.fillRect(Math.round(x)-1,Math.round(y)-1,2,2);}
-    reste=d-L;}
-  ctx.restore();}
 function butDor(X,Y,age,court){
   /* le but : une onde qui s'ouvre au toucher, puis un losange qui respire */
   const t=performance.now()/1000,p=.5+.5*Math.sin(t*5),c=court?'255,154,60':'242,185,60';
@@ -19918,15 +19908,14 @@ function guiderMarche(dt){
   /* coincé (un passant, un pigeon têtu) : on recalcule une fois, puis on renonce */
   if(d<MARCHE.best-1){MARCHE.best=d;MARCHE.bloqueT=0;}else{MARCHE.bloqueT+=dt;if(MARCHE.bloqueT>.9){const f=MARCHE.fin,re=!MARCHE.re;if(re){const ch=chercherChemin(joueur.x,joueur.y,f[0],f[1]);if(ch&&ch.length){MARCHE={...MARCHE,ch,i:0,best:1e9,bloqueT:0,re:1};return;}}arreterMarche();return;}}
   let reste=d;for(let k=MARCHE.i+1;k<MARCHE.ch.length;k++)reste+=Math.hypot(MARCHE.ch[k][0]-MARCHE.ch[k-1][0],MARCHE.ch[k][1]-MARCHE.ch[k-1][1]);
-  const p=MARCHE.court?(reste>26?.97:.7):(reste>260?.95:Math.max(.62,Math.min(.75,d/30)));   /* deux touchers : il court ; sinon il ne court que si c'est vraiment loin */
+  const p=MARCHE.court?(reste>26?.97:.7):(reste>120?.95:Math.max(.62,Math.min(.75,d/30)));   /* deux touchers : il court ; sinon il ne court que si c'est vraiment loin */
   joyX=(x-joueur.x)/d*p;joyY=(y-joueur.y)/d*p;}
 function acteurDoigt(acteurs,camX,camY){if(!J.actif||!J.suit||!J.va)return;try{const cvR=cv.getBoundingClientRect(),wx=CAM_IMG.x+(J.fx-cvR.left)/ECH_CSS,wy=CAM_IMG.y+(J.fy-cvR.top)/ECH_CSS+26;
   acteurs.push({y:-1e5+1,f:()=>{const c=Math.hypot(joyX,joyY)>0.88;
-    filDor([[joueur.x,joueur.y],[wx,wy]],camX,camY,c);butDor(wx-camX,wy-camY,9,c);}});}catch(z){}}
+    butDor(wx-camX,wy-camY,9,c);}});}catch(z){}}
 function acteurMarche(acteurs,camX,camY){if(!MARCHE||!MARCHE.vu)return;const M=MARCHE,f=M.fin;
   acteurs.push({y:-1e5+1,f:()=>{
-    const pts=[[joueur.x,joueur.y]];for(let k=M.i;k<M.ch.length;k++)pts.push(M.ch[k]);
-    filDor(pts,camX,camY,!!M.court);butDor(f[0]-camX,f[1]-camY,(Date.now()-M.t0)/1000,!!M.court);}});}
+    butDor(f[0]-camX,f[1]-camY,(Date.now()-M.t0)/1000,!!M.court);}});}
 let joySale=false;
 function dessinerJoy(dt){
 if(J.suit&&J.actif)J.vie=0;
