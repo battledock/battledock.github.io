@@ -895,6 +895,211 @@ function graverPlatane(v){const t=arbrePlatane(v);return {toile:t.c,W:t.W,H:t.H,
 function graverMagnolia(){const t=arbreMagnolia();return {toile:t.c,W:t.W,H:t.H,sol:t.s};}
 
 /* ---------- LA PLACE RONDE : haie de buis, graminées, banc circulaire, fontaine ---------- */
+
+/* ============== LA PORTE DU GRAND PORT MARITIME ==============
+   Une palissade blanche à barreaux serrés, portillon central fermé, baraque
+   du gardien à gauche, panneaux réglementaires. Le gardien est rendu par
+   le système de personnages (figurant) pour être au même style que les
+   autres joueurs. */
+function graverPorteDuPort(){
+  const W=190, H=140, sol=130, D=2;
+  const c=document.createElement('canvas');c.width=W*D;c.height=H*D;
+  const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,hh,col)=>{g.fillStyle=col;g.fillRect(x|0,y|0,Math.max(1,w|0),Math.max(1,hh|0));};
+
+  /* ------ BARAQUE DU GARDIEN (à gauche de la palissade) ------ */
+  /* ombre portée au sol */
+  R(2,sol+1,42,3,'rgba(0,0,0,.2)');
+  /* socle béton */
+  R(2,sol-2,42,4,'#9a9488');
+  R(2,sol-2,42,1,'#b8b2a4');
+  /* mur arrière (derrière le gardien) */
+  R(4,74,38,56,'#e8e2d4');
+  R(4,74,38,2,'#f6efe4');
+  R(4,128,38,2,'#b8b2a4');
+  R(4,74,2,56,'#f6efe4');
+  R(40,74,2,56,'#b8b2a4');
+  /* toit en pente métallique */
+  R(0,68,46,7,'#3a3a40');
+  R(0,68,46,2,'#5a5a60');
+  R(0,75,46,1,'#1a1a1a');
+  /* antenne/cheminée au sommet */
+  R(10,58,2,10,'#2a2a30');
+  R(9,56,4,2,'#f2d070');
+  /* panneau "SÛRETÉ" sur le toit */
+  R(14,62,22,6,'#1a4a8a');
+  R(14,62,22,1,'#2a5a9a');
+  g.fillStyle='#ffffff';g.font='bold 5px Arial';g.textAlign='center';g.textBaseline='middle';
+  g.fillText('SÛRETÉ',25,65);
+  /* fenêtre vitrée (à gauche) */
+  R(8,82,14,22,'#3a5668');
+  R(8,82,14,2,'#5a7888');
+  R(8,82,2,22,'#5a7888');
+  R(20,82,2,22,'#1a2e3c');
+  R(21,82,1,22,'#15202a');
+  /* reflet dans la vitre */
+  g.fillStyle='rgba(180,210,235,.35)';g.beginPath();g.moveTo(10,84);g.lineTo(14,84);g.lineTo(11,102);g.lineTo(8,102);g.closePath();g.fill();
+  /* comptoir en bas de la fenêtre */
+  R(6,104,18,3,'#8a7c62');R(6,104,18,1,'#a89880');
+  /* ouverture / porte à droite (le gardien se tient devant) */
+  R(26,82,14,46,'#2a2018');
+  R(26,82,14,2,'#15100a');
+  R(26,82,2,46,'#15100a');
+  R(38,82,2,46,'#4a3a2a');
+  /* linteau lumineux au-dessus de l'ouverture */
+  R(24,80,18,2,'#f6e9a0');
+  R(25,80,16,1,'#fffde8');
+  /* numéro de contrôle "POSTE 1" au-dessus */
+  R(10,70,30,3,'#2a2018');
+  g.fillStyle='#f2d070';g.font='bold 3px Arial';g.textAlign='center';g.textBaseline='middle';
+  g.fillText('POSTE  1',25,71.5);
+
+  /* ------ PALISSADE (à droite de la baraque) ------ */
+  const palX0=46, palX1=186;
+  const palY0=52, palY1=128;
+  /* traverse haute */
+  R(palX0,palY0,palX1-palX0,3,'#f4efe4');
+  R(palX0,palY0,palX1-palX0,1,'#ffffff');
+  /* traverse médiane */
+  R(palX0,palY0+30,palX1-palX0,2,'#f4efe4');
+  R(palX0,palY0+30,palX1-palX0,1,'#ffffff');
+  /* traverse basse */
+  R(palX0,palY1-4,palX1-palX0,4,'#f4efe4');
+  R(palX0,palY1-4,palX1-palX0,1,'#ffffff');
+  R(palX0,palY1,palX1-palX0,1,'#9a9488');
+  /* barreaux verticaux serrés avec pointes */
+  for(let x=palX0+3;x<palX1-2;x+=4){
+    R(x,palY0-4,2,palY1-palY0+4,'#f4efe4');
+    R(x,palY0-4,1,palY1-palY0+4,'#ffffff');
+    R(x,palY0-6,2,2,'#f4efe4');
+    R(x,palY0-7,1,1,'#b8b2a4');
+    R(x+1,palY0-6,1,1,'#b8b2a4');
+  }
+  /* montants principaux */
+  function montant(x){
+    R(x-2,palY0-10,5,palY1-palY0+10,'#f4efe4');
+    R(x-2,palY0-10,1,palY1-palY0+10,'#ffffff');
+    R(x+2,palY0-10,1,palY1-palY0+10,'#b8b2a4');
+    R(x-3,palY0-12,7,2,'#2a2a30');
+    R(x-3,palY0-12,7,1,'#4a4a52');
+  }
+  montant(palX0);
+  montant(palX1);
+  montant(106);   /* montant gauche du portillon */
+  montant(126);   /* montant droit du portillon */
+
+  /* ------ PORTILLON (deux vantaux fermés) ------ */
+  /* traverses verticales des cadres */
+  R(108,palY0-3,1,palY1-palY0+3,'#e8e2d4');
+  R(116,palY0-3,1,palY1-palY0+3,'#e8e2d4');
+  R(118,palY0-3,1,palY1-palY0+3,'#e8e2d4');
+  R(124,palY0-3,1,palY1-palY0+3,'#e8e2d4');
+  /* fente centrale (jonction des vantaux) */
+  R(117,palY0-4,1,palY1-palY0+4,'#5a4a3a');
+  /* serrure au centre */
+  R(115,palY0+24,5,7,'#2a2a30');
+  R(115,palY0+24,5,1,'#4a4a52');
+  R(117,palY0+27,1,1,'#f2d070');
+  /* poignées verticales */
+  R(112,palY0+18,2,8,'#4a4438');
+  R(120,palY0+18,2,8,'#4a4438');
+
+  /* ------ PANNEAUX RÉGLEMENTAIRES ------ */
+  /* 1) Panneau rouge/blanc "ACCÈS INTERDIT AU PUBLIC" */
+  (function(){const px=56, py=62, pw=42, ph=28;
+    R(px+1,py+1,pw,ph,'rgba(0,0,0,.18)');
+    R(px,py,pw,ph,'#ffffff');
+    R(px,py,pw,1,'#e2ddd2');
+    R(px,py+ph-1,pw,1,'#8a8478');
+    R(px,py,1,ph,'#e2ddd2');
+    R(px+pw-1,py,1,ph,'#8a8478');
+    /* cadre rouge */
+    R(px+1,py+1,pw-2,2,'#c42018');
+    R(px+1,py+ph-3,pw-2,2,'#c42018');
+    R(px+1,py+1,2,ph-2,'#c42018');
+    R(px+pw-3,py+1,2,ph-2,'#c42018');
+    /* texte rouge */
+    g.fillStyle='#c42018';g.font='bold 4px Arial';g.textAlign='center';g.textBaseline='top';
+    g.fillText('ACCÈS INTERDIT',px+pw/2,py+5);
+    g.fillText('AU PUBLIC',px+pw/2,py+11);
+    /* ligne de séparation */
+    R(px+5,py+17,pw-10,1,'#a8a498');
+    /* sous-titre noir */
+    g.fillStyle='#2a2a30';g.font='3px Arial';
+    g.fillText('ZONE PORTUAIRE',px+pw/2,py+20);
+    g.fillText('DE SÛRETÉ',px+pw/2,py+24);
+  })();
+
+  /* 2) Panneau bleu "GRAND PORT MARITIME DE MARSEILLE" */
+  (function(){const px=138, py=60, pw=44, ph=22;
+    R(px+1,py+1,pw,ph,'rgba(0,0,0,.18)');
+    R(px,py,pw,ph,'#1a4a8a');
+    R(px,py,pw,1,'#2a5a9a');
+    R(px,py+ph-1,pw,1,'#0e3570');
+    R(px,py,1,ph,'#2a5a9a');
+    R(px+pw-1,py,1,ph,'#0e3570');
+    /* logo blanc (ancre stylisée) */
+    R(px+2,py+3,8,16,'#ffffff');
+    g.fillStyle='#1a4a8a';
+    g.beginPath();g.arc(px+6,py+6,1.5,0,7);g.fill();
+    R(px+5,py+8,2,8,'#1a4a8a');
+    R(px+3,py+10,6,1,'#1a4a8a');
+    R(px+3,py+14,2,2,'#1a4a8a');
+    R(px+7,py+14,2,2,'#1a4a8a');
+    /* texte */
+    g.fillStyle='#ffffff';g.font='bold 4px Arial';g.textAlign='left';g.textBaseline='top';
+    g.fillText('GRAND PORT',px+12,py+4);
+    g.fillText('MARITIME',px+12,py+10);
+    g.fillStyle='#f2d070';g.font='bold 3px Arial';
+    g.fillText('DE MARSEILLE',px+12,py+16);
+  })();
+
+  /* 3) Panneau vert "POINT DE RASSEMBLEMENT" */
+  (function(){const px=160, py=90, pw=24, ph=20;
+    R(px+1,py+1,pw,ph,'rgba(0,0,0,.18)');
+    R(px,py,pw,ph,'#2a8a4a');
+    R(px,py,pw,1,'#3ea868');
+    R(px,py+ph-1,pw,1,'#1a6a30');
+    /* 4 flèches blanches vers centre */
+    R(px+3,py+3,4,1,'#ffffff');R(px+4,py+4,2,1,'#ffffff');
+    R(px+pw-7,py+3,4,1,'#ffffff');R(px+pw-6,py+4,2,1,'#ffffff');
+    R(px+3,py+ph-4,4,1,'#ffffff');R(px+4,py+ph-5,2,1,'#ffffff');
+    R(px+pw-7,py+ph-4,4,1,'#ffffff');R(px+pw-6,py+ph-5,2,1,'#ffffff');
+    /* carré central avec perso blanc */
+    R(px+10,py+7,4,6,'#ffffff');
+    R(px+11,py+8,2,1,'#2a8a4a');
+    /* texte */
+    g.fillStyle='#ffffff';g.font='bold 2.5px Arial';g.textAlign='center';g.textBaseline='middle';
+    g.fillText('POINT DE',px+pw/2,py+ph-4);
+    g.fillText('RASSEMBLEMENT',px+pw/2,py+ph-2);
+  })();
+
+  /* ------ BOLLARDS JAUNES ------ */
+  for(const bx of [50,76,150,180]){
+    R(bx-2,sol+1,4,2,'rgba(0,0,0,.25)');
+    R(bx-2,sol-7,4,9,'#f2c418');
+    R(bx-2,sol-7,1,9,'#fff066');
+    R(bx-2,sol-8,4,1,'#1a1a20');
+    R(bx-2,sol-4,4,1,'#2a2a30');
+  }
+
+  /* ------ LIGNE JAUNE AU SOL ------ */
+  for(let x=42;x<palX1;x+=6){R(x,sol+4,4,1,'#f2c418');}
+
+  /* ------ LAMPE AU-DESSUS DU PORTILLON ------ */
+  R(106,palY0-16,22,3,'#2a2a30');
+  R(108,palY0-14,18,2,'#f6e9a0');
+  R(109,palY0-13,16,1,'#fffde8');
+
+  /* ------ CAMÉRA SUR LE MONTANT DROIT ------ */
+  R(184,palY0-6,2,10,'#4a4438');
+  R(180,palY0+2,6,2,'#2a2a30');
+  R(178,palY0+3,2,2,'#1a1a1a');
+  R(180,palY0+4,1,1,'#c42018');
+
+  return {toile:c, W, H, sol};
+}
+
 const PLACE=(()=>{
 function mixH(a,b,t){const p=s=>[1,3,5].map(i=>parseInt(s.slice(i,i+2),16));const A=p(a),B=p(b);return 'rgb('+A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(',')+')';}
 /* un anneau de pavés en éventail, ellipse parfaite */
@@ -1131,11 +1336,7 @@ const CSS_QUAI=`#quaiJ{position:fixed;inset:0;z-index:2147483000;overflow-y:auto
 #quaiJ .bar{position:fixed;left:0;right:0;bottom:0;padding:14px 18px calc(16px + env(safe-area-inset-bottom));background:linear-gradient(rgba(230,218,194,0),#e6dac2 45%);display:flex;justify-content:center}
 #quaiJ .bar button{all:unset;box-sizing:border-box;width:100%;max-width:440px;text-align:center;background:#16213a;color:#ffd860;border:4px solid #e8c050;box-shadow:0 0 0 4px #16213a,0 6px 0 rgba(0,0,0,.25);border-radius:4px;padding:12px;font:900 15px ui-monospace,monospace;letter-spacing:2px;cursor:pointer}`;
 /* LE TRAM : à l'arrêt, on choisit sa destination ; le tram nous y dépose */
-const DESTINATIONS=[
-  {n:'Vélodrome',d:'Le stade · parvis et grand escalier',page:'stade.html',c:'#2f9ae0'},
-  {n:'Plage des Catalans',d:'Le sable, la mer, le château d’If',page:'plage.html',c:'#e8b44a'},
-  {n:'La Corniche',d:'Le grand banc, les plongeurs, la mer',page:'corniche.html',c:'#3aa0a0'},
-  {n:'Vieux-Port',d:'Bientôt',page:null,c:'#c8604a'}];
+const DESTINATIONS=[];   /* le tram ne mène plus nulle part pour l'instant */
 function ouvrirTram(){if(document.getElementById('tramM'))return;
   const d=document.createElement('div');d.id='tramM';
   d.style.cssText='position:fixed;inset:0;z-index:2147483000;background:rgba(10,16,30,.55);display:flex;align-items:flex-end;justify-content:center;font-family:"Helvetica Neue",Arial,sans-serif;opacity:0;transition:opacity .2s';
@@ -1176,7 +1377,7 @@ function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   ['pointerdown','touchstart','keydown'].forEach(t2=>d.addEventListener(t2,ev=>ev.stopPropagation()));
   try{vibrer(8);}catch(x){}}
 
-const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_sapin:graverSapin,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide};
+const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_porte_port:graverPorteDuPort,x_jol_sapin:graverSapin,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide};
 function graver(t,v){return (GRAVEURS[t]||graverVide)(v||0);}
 
 function decor(){
@@ -1184,11 +1385,11 @@ function decor(){
   /* la façade des Docks, au demi-pixel */
   P('x_jol_docks_sol',W/2,DOCKS_PIED,{anim:'jol_docks'});
   /* le parvis : des magnolias dans leurs grilles, deux terrasses de café */
-  for(const x of [60,240,450,750,960,1140])P('x_jol_arbre_magnolia',x,342,{col:[10,5]});
+  for(const x of [240,450,750,960,1140])P('x_jol_arbre_magnolia',x,342,{col:[10,5]});
   for(const x of [310,370,830,890])P('x_jol_parasol',x,290,{col:[44,12],bas:5});
   /* les deux stations : une sur le parvis pour la voie du haut, une sur le quai côté place */
-  P('x_jol_abri',420,350,{col:[100,6],agir:ouvrirTram,libelle:'Prendre le tram',nom:'STATION JOLIETTE'});
-  P('x_jol_abri',800,420,{col:[100,6],agir:ouvrirTram,libelle:'Prendre le tram',nom:'STATION JOLIETTE'});
+  P('x_jol_abri',420,350,{col:[100,6]});
+  P('x_jol_abri',800,420,{col:[100,6]});
   /* les deux rames, une par voie ; elles s'arrêtent devant leur station */
   P('x_jol_tram',600,376,{anim:'jol_tram',sens:1,arret:420});
   P('x_jol_tram',600,400,{anim:'jol_tram',sens:-1,arret:800});
@@ -1204,7 +1405,7 @@ function decor(){
   /* les bancs : le long de l'axe, adossés aux parterres, et autour de la fontaine */
   for(const [x,y] of [[505,560],[695,560],[505,900],[695,900],[330,700],[870,700],[240,512],[960,512]])P('x_jol_banc',x,y,{col:[40,6]});
   /* des oliviers en bac le long du quai du tram */
-  for(const x of [130,530,670,1070])P('x_jol_olivier',x,456,{col:[18,6]});
+  for(const x of [530,670,1070])P('x_jol_olivier',x,456,{col:[18,6]});
 
   /* des bancs tournés vers la fontaine */
   /* les lampadaires */
@@ -1212,6 +1413,8 @@ function decor(){
   /* le tableau d'embauche, à deux pas de l'arrivée */
   /* le kiosque à journaux */
   for(const [px] of PORTES)P('x_jol_entree',px+DX,DOCKS_PIED+10,{agir:entrerGalerie,libelle:'Entrer',nom:'LA GALERIE BLEUE'});
+  /* la porte du Grand Port Maritime, devant l'aile gauche */
+  P('x_jol_porte_port',110,346,{col:[160,70],agir:entrerPort,libelle:'Entrer au port',nom:'GRAND PORT MARITIME'});
   P('x_jol_kiosque',320,500,{col:[96,14],agir:ouvrirVacationsKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
   P('x_jol_entree',PLACE.CX,748,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
   P('x_jol_affiches',880,500,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
@@ -1242,6 +1445,24 @@ setInterval(()=>{try{
       location.href='quai.html?de=joliette'+v;},620);
   }}catch(x){}},150);
 
+
+/* ====================================================================
+   LA PORTE DU GRAND PORT MARITIME : on présente son badge au gardien,
+   un voile bleu marine se lève, et on arrive sur les quais. */
+let ENTRE_PORT=false;
+function entrerPort(){if(ENTRE_PORT)return;ENTRE_PORT=true;
+  try{vibrer&&vibrer(12);}catch(x){}
+  const v=document.createElement('div');
+  v.style.cssText='position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none;'+
+    'background:radial-gradient(ellipse at 50% 46%,#2a5088 0%,#153362 55%,#0a1c38 100%);color:#fff;font-family:Georgia,serif;transition:opacity .5s;opacity:0';
+  v.innerHTML='<div style="font-size:12px;letter-spacing:.5em;opacity:.75;transform:translateX(.25em)">GRAND PORT MARITIME</div>'
+    +'<div style="font-weight:800;font-size:28px;letter-spacing:.14em">LE VIEUX-PORT</div>'
+    +'<div style="width:64px;height:2px;background:#f2d070;border-radius:2px"></div>';
+  document.body.appendChild(v);requestAnimationFrame(()=>v.style.opacity='1');
+  try{sauver();}catch(x){}
+  setTimeout(()=>{const u=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';
+    location.href='quai.html?de=joliette'+u;},900);
+}
 
 /* ====================================================================
    LA GALERIE BLEUE N'EST PLUS UN LIEU : C'EST UN BEAU MENU.
@@ -1485,9 +1706,9 @@ const AMBIANCE=(()=>{
  const T0=performance.now(),rnd=(a,b)=>h(a,b,131);
  /* --- les ombres des arbres --- */
  const ARBRES=[];
- for(const x of [60,240,450,750,960,1140])ARBRES.push([x,342,24,10]);
+ for(const x of [240,450,750,960,1140])ARBRES.push([x,342,24,10]);
  [470,610,750,890].forEach(y=>{ARBRES.push([42,y,34,14]);ARBRES.push([W-42,y,34,14]);});
- for(const x of [130,530,670,1070])ARBRES.push([x,456,13,5]);
+ for(const x of [530,670,1070])ARBRES.push([x,456,13,5]);
  const TACHES=ARBRES.map(([x,y,r,ry],i)=>{const L=[];const n=r>30?9:r>20?7:4;
    for(let k=0;k<n;k++){const a=rnd(i,k)*6.283,d=Math.sqrt(rnd(k,i+40))*r*.8;L.push([Math.cos(a)*d,Math.sin(a)*d*.42,r*(.34+rnd(i+9,k)*.3),rnd(k,i)*6.283]);}
    return {x:x+r*.42,y:y+ry*.5+2,r,L};});
@@ -1535,7 +1756,9 @@ const AMBIANCE=(()=>{
    mk(AP[3],[[110,712],[400,712]],22),mk(AP[4],[[1090,698],[800,698]],24),
    mk(AP[5],[[588,850],[588,988]],20),mk(AP[6],[[1112,470],[1112,950]],23),
    Object.assign(mk(AP[2],[[852,516]],0),{dir:'haut',ap:AP[4]}),                     /* celui qui lit les affiches */
-   Object.assign(mk(AP[3],[[770,994]],0),{dir:'bas',ap:AP[0]})];                      /* celle qui regarde le port */
+   Object.assign(mk(AP[3],[[770,994]],0),{dir:'bas',ap:AP[0]}),                      /* celle qui regarde le port */
+   /* LE GARDIEN DU PORT, devant la baraque, en uniforme marine avec casquette */
+   Object.assign(mk({peau:2,cheveux:0,coiffe:0,haut:0,veste:'#1a1a24',pantalon:'#1a1a24',souliers:0,chaussures:'#000000',chapeau:1,sac:0,_pnj:true},[[48,352]],0),{dir:'bas'})];
  const DIRS=['droite','bas-droite','bas','bas-gauche','gauche','haut-gauche','haut','haut-droite'];
  function vieGens(dt){for(const p of GENS){if(p.route.length<2){p.marche=false;continue;}
    if(p.pause>0){p.pause-=dt;p.marche=false;continue;}
