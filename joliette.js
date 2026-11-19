@@ -1414,7 +1414,7 @@ function decor(){
   /* le kiosque à journaux */
   for(const [px] of PORTES)P('x_jol_entree',px+DX,DOCKS_PIED+10,{agir:entrerGalerie,libelle:'Entrer',nom:'LA GALERIE BLEUE'});
   /* la porte du Grand Port Maritime, devant l'aile gauche */
-  P('x_jol_porte_port',110,346,{col:[160,70],agir:entrerPort,libelle:'Entrer au port',nom:'GRAND PORT MARITIME'});
+  P('x_jol_porte_port',110,236,{col:[180,140],agir:entrerPort,libelle:'Entrer au port',nom:'GRAND PORT MARITIME'});
   P('x_jol_kiosque',320,500,{col:[96,14],agir:ouvrirVacationsKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
   P('x_jol_entree',PLACE.CX,748,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
   P('x_jol_affiches',880,500,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
@@ -1758,7 +1758,7 @@ const AMBIANCE=(()=>{
    Object.assign(mk(AP[2],[[852,516]],0),{dir:'haut',ap:AP[4]}),                     /* celui qui lit les affiches */
    Object.assign(mk(AP[3],[[770,994]],0),{dir:'bas',ap:AP[0]}),                      /* celle qui regarde le port */
    /* LE GARDIEN DU PORT, devant la baraque, en uniforme marine avec casquette */
-   Object.assign(mk({peau:2,cheveux:0,coiffe:0,haut:0,veste:'#1a1a24',pantalon:'#1a1a24',souliers:0,chaussures:'#000000',chapeau:1,sac:0,_pnj:true},[[48,352]],0),{dir:'bas'})];
+   Object.assign(mk({peau:2,cheveux:0,coiffe:0,haut:0,veste:'#1a1a24',pantalon:'#1a1a24',souliers:0,chaussures:'#000000',chapeau:1,sac:0,_pnj:true},[[48,242]],0),{dir:'bas'})];
  const DIRS=['droite','bas-droite','bas','bas-gauche','gauche','haut-gauche','haut','haut-droite'];
  function vieGens(dt){for(const p of GENS){if(p.route.length<2){p.marche=false;continue;}
    if(p.pause>0){p.pause-=dt;p.marche=false;continue;}
