@@ -957,6 +957,28 @@ function graverPorteDuPort(){
   /* ------ PALISSADE (à droite de la baraque) ------ */
   const palX0=46, palX1=186;
   const palY0=52, palY1=128;
+  /* arrière-plan derrière la grille : on voit une COUR portuaire sombre
+     avec un peu d'asphalte et le bâtiment au loin — pas la façade collée */
+  /* bande d'asphalte en bas (sol de la cour intérieure) */
+  R(palX0,palY0+40,palX1-palX0,palY1-palY0-40,'#3a3a40');
+  R(palX0,palY0+40,palX1-palX0,1,'#4a4a52');
+  R(palX0,palY1-5,palX1-palX0,1,'#1a1a20');
+  /* ciel lointain au-dessus (visible à travers le haut de la grille) */
+  R(palX0,palY0,palX1-palX0,40,'#6a8ca8');
+  R(palX0,palY0+36,palX1-palX0,4,'#8aacc8');
+  /* silhouette d'un gros ferry blanc au loin */
+  R(palX0+16,palY0+22,palX1-palX0-32,10,'#e8e4da');
+  R(palX0+16,palY0+22,palX1-palX0-32,2,'#ffffff');
+  R(palX0+16,palY0+31,palX1-palX0-32,1,'#a89880');
+  /* cheminée rouge au loin */
+  R(palX0+(palX1-palX0)/2-3,palY0+15,6,8,'#c42018');
+  R(palX0+(palX1-palX0)/2-3,palY0+15,6,1,'#e43e30');
+  /* quelques petits reflets d'eau entre le bateau et le quai */
+  for(let i=0;i<8;i++){const x=palX0+10+i*((palX1-palX0-20)/8);R(x,palY0+34,4,1,'rgba(180,210,230,.3)');}
+  /* grue portuaire au fond */
+  R(palX0+10,palY0+10,2,14,'#e0a828');
+  R(palX0+8,palY0+9,8,2,'#f2d070');
+  R(palX0+14,palY0+10,10,2,'#e0a828');
   /* traverse haute */
   R(palX0,palY0,palX1-palX0,3,'#f4efe4');
   R(palX0,palY0,palX1-palX0,1,'#ffffff');
