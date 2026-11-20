@@ -1436,7 +1436,7 @@ function decor(){
   /* la porte du Grand Port Maritime, devant l'aile gauche */
   P('x_jol_kiosque',320,500,{col:[96,14],agir:ouvrirVacationsKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
   P('x_jol_entree',PLACE.CX,748,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
-  P('x_jol_affiches',900,590,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
+  P("x_jol_affiches",900,590,{col:[90,8],agir:ouvrirAffiches,libelle:"Voir les affiches",nom:"À L'AFFICHE",demi:56});
   return D;
 }
 
