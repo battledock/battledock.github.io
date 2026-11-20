@@ -1397,7 +1397,77 @@ function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   ['pointerdown','touchstart','keydown'].forEach(t2=>d.addEventListener(t2,ev=>ev.stopPropagation()));
   try{vibrer(8);}catch(x){}}
 
-const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_sapin:graverSapin,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide};
+/* ---------- BUREAU MARITIME (comptoir Corsica Linea sous les arches, aile gauche) ---------- */
+function graverBureauMaritime(){
+  const L=120,HH=80,{c,g,R}=toileA(L,HH),s=HH-4;
+  /* ombre portée */
+  g.fillStyle='rgba(30,22,14,.22)';g.beginPath();g.ellipse(L/2+3,s+1,52,5,0,0,7);g.fill();
+  /* comptoir en bois sombre */
+  R(4,s-20,L-8,20,'#3a2a1a');R(4,s-20,L-8,2,'#5a4a30');R(L-6,s-20,2,20,'#2a1a0e');
+  /* dessus du comptoir plus clair */
+  R(2,s-22,L-4,3,'#8a6a3a');R(2,s-22,L-4,1,'#b8944a');
+  /* enseigne au-dessus : fond bleu marine */
+  const gr=g.createLinearGradient(0,s-56,0,s-28);gr.addColorStop(0,'#1a3a6a');gr.addColorStop(.5,'#0e2a4a');gr.addColorStop(1,'#1a3a6a');g.fillStyle=gr;g.fillRect(6,s-56,L-12,30);
+  R(6,s-56,L-12,2,'#2a5a9a');R(6,s-28,L-12,2,'#0a1a30');
+  /* bande rouge Corsica Linea */
+  R(6,s-38,L-12,4,'#d82810');R(6,s-38,L-12,1,'#f04230');
+  /* texte CORSICA LINEA */
+  g.fillStyle='#ffffff';g.font='bold 5.6px Arial,sans-serif';g.textAlign='center';g.textBaseline='middle';
+  g.fillText('CORSICA',L/2,s-49);g.fillText('LINEA',L/2,s-43);
+  /* sous-texte BILLETTERIE */
+  g.fillStyle='#f2d070';g.font='bold 3.5px Arial,sans-serif';g.fillText('BILLETTERIE',L/2,s-31);
+  /* vitre du guichet (au centre du comptoir) */
+  R(L/2-14,s-18,28,14,'#4a6888');
+  g.fillStyle='rgba(200,225,240,.35)';g.beginPath();g.moveTo(L/2-12,s-6);g.lineTo(L/2-4,s-16);g.lineTo(L/2+2,s-16);g.lineTo(L/2-8,s-6);g.closePath();g.fill();
+  R(L/2-14,s-18,28,1,'#6a8aa8');
+  /* brochures empilées sur le comptoir */
+  for(let i=0;i<4;i++){const bx=8+i*8,col=['#d82810','#2a5a9a','#f2c418','#3a8a4a'][i];
+    R(bx,s-24,6,2,col);R(bx,s-24,6,.5,'rgba(255,255,255,.4)');}
+  /* lampe de comptoir */
+  R(L-18,s-30,2,10,'#2a2a30');R(L-22,s-32,10,3,'#f2d070');R(L-22,s-32,10,1,'#ffe8a0');
+  return {toile:c,W:L,H:HH,sol:s};}
+
+/* ---------- PANNEAU TOURISTIQUE (info interactive, aile droite) ---------- */
+function graverPanneauTouristique(){
+  const L=70,HH=90,{c,g,R}=toileA(L,HH),cx=L/2,s=HH-4;
+  /* ombre */
+  g.fillStyle='rgba(30,22,14,.22)';g.beginPath();g.ellipse(cx+2,s+1,22,4,0,0,7);g.fill();
+  /* deux pieds acier */
+  R(14,s-70,3,70,'#4a4e56');R(14,s-70,1,70,'#6a6e76');
+  R(L-17,s-70,3,70,'#4a4e56');R(L-17,s-70,1,70,'#6a6e76');
+  /* embase béton */
+  R(10,s-4,L-20,4,'#9a9488');R(10,s-4,L-20,1,'#b8b2a4');
+  /* le cadre du panneau : métal gris anthracite */
+  R(6,s-80,L-12,54,'#2a2e34');R(6,s-80,L-12,2,'#4a4e56');R(L-8,s-80,2,54,'#1a1e22');
+  /* le fond du panneau : blanc cassé */
+  R(10,s-76,L-20,46,'#f4efe4');
+  /* en-tête bleu ville de Marseille */
+  const gr=g.createLinearGradient(0,s-76,0,s-66);gr.addColorStop(0,'#1a4a8a');gr.addColorStop(1,'#0e3570');g.fillStyle=gr;g.fillRect(10,s-76,L-20,12);
+  R(10,s-76,L-20,1,'#4a7ac8');
+  g.fillStyle='#ffffff';g.font='bold 4px Arial,sans-serif';g.textAlign='center';g.textBaseline='middle';
+  g.fillText('MARSEILLE',cx,s-72);
+  g.fillStyle='#f2d070';g.font='bold 3px Arial,sans-serif';
+  g.fillText('OFFICE DE TOURISME',cx,s-67);
+  /* carte simplifiée (rectangle beige avec lignes bleues = mer/côte) */
+  R(14,s-62,L-28,20,'#e8e0cc');
+  /* la côte */
+  g.strokeStyle='#2a6a8a';g.lineWidth=.8;g.beginPath();
+  g.moveTo(14,s-50);g.quadraticCurveTo(20,s-54,28,s-52);g.quadraticCurveTo(36,s-48,42,s-50);g.quadraticCurveTo(48,s-54,L-14,s-52);g.stroke();
+  /* mer en bas de la carte */
+  g.fillStyle='rgba(42,106,138,.2)';g.fillRect(14,s-50,L-28,8);
+  /* points d'intérêt sur la carte */
+  for(const [px,py,col] of [[20,s-56,'#d82810'],[30,s-58,'#2a5a9a'],[42,s-55,'#f2c418'],[50,s-57,'#3a8a4a']]){
+    g.fillStyle=col;g.beginPath();g.arc(px,py,1.5,0,7);g.fill();}
+  /* texte info en bas du panneau */
+  g.fillStyle='#2a2016';g.font='bold 3px Arial,sans-serif';
+  g.fillText('VIEUX-PORT · CALANQUES',cx,s-38);
+  g.fillText('BONNE MÈRE · IF',cx,s-34);
+  /* le i dans un cercle (symbole info) */
+  g.fillStyle='#1a4a8a';g.beginPath();g.arc(cx,s-25,5,0,7);g.fill();
+  g.fillStyle='#ffffff';g.font='bold 7px Georgia,serif';g.fillText('i',cx,s-24.5);
+  return {toile:c,W:L,H:HH,sol:s};}
+
+const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_sapin:graverSapin,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_bureau_maritime:graverBureauMaritime,x_jol_panneau_tourisme:graverPanneauTouristique,x_jol_tram:graverVide};
 function graver(t,v){return (GRAVEURS[t]||graverVide)(v||0);}
 
 function decor(){
@@ -1436,7 +1506,11 @@ function decor(){
   /* la porte du Grand Port Maritime, devant l'aile gauche */
   P('x_jol_kiosque',320,500,{col:[96,14],agir:ouvrirVacationsKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
   P('x_jol_entree',PLACE.CX,748,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
-  P("x_jol_affiches",900,590,{col:[90,8],agir:ouvrirAffiches,libelle:"Voir les affiches",nom:"À L'AFFICHE",demi:56});
+  P("x_jol_affiches",900,590,{col:[90,8],agir:ouvrirAffiches,libelle:"Voir les affiches",nom:"À L’AFFICHE",demi:56});
+  /* bureau Corsica Linea, sous les arches de l'aile gauche */
+  P('x_jol_bureau_maritime',100,280,{col:[100,14]});
+  /* panneau touristique, sous les arches de l'aile droite */
+  P('x_jol_panneau_tourisme',1100,280,{col:[60,8]});
   return D;
 }
 
