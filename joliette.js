@@ -28,12 +28,13 @@ for(let y=0;y<26;y++){const k=y/26;R(0,y,W,1,'rgb('+(118+k*60|0)+','+(170+k*40|0
 /* la façade des Docks est un objet du décor (x_jol_docks_sol), dessiné au demi-pixel ;
    elle garde ses 800 points au centre, et deux ailes d'entrepôt la prolongent de chaque côté */
 R(0,26,W,DOCKS_PIED-26,'#e3d0a8');
-for(const x0 of [0,W-DX]){
+/* ======== AILE DROITE : même entrepôt qu'avant (office de tourisme à venir) ======== */
+{const x0=W-DX;
   for(let y=26;y<96;y++){const k=(y-26)/70;R(x0,y,DX,1,'rgb('+(60+k*40|0)+','+(140+k*40|0)+','+(208+k*26|0)+')');}
-  R(x0,88,DX,5,'#ece6dc');R(x0,93,DX,2,'#7a3f2a');R(x0,95,DX,2,'rgba(30,24,16,.2)');          /* la casquette rouillée */
+  R(x0,88,DX,5,'#ece6dc');R(x0,93,DX,2,'#7a3f2a');R(x0,95,DX,2,'rgba(30,24,16,.2)');
   for(let y=97;y<210;y+=9)for(let x=x0;x<x0+DX;x+=18){const d=(h(x,y,61)-.5)*8;
     R(x,y,18,9,teinte('#e9dfd2',d|0));R(x,y,18,.5,teinte('#f6efe6',d|0));R(x,y,.5,9,'#d8ccbc');}
-  for(let i=0;i<3;i++){const ax=x0+30+i*((DX-60)/2.6);                                        /* trois baies cintrées */
+  for(let i=0;i<3;i++){const ax=x0+30+i*((DX-60)/2.6);
     g.fillStyle='#2f6466';g.fillRect(ax,122,34,76);
     g.fillStyle='#17262c';g.fillRect(ax+2,124,30,72);
     g.fillStyle='#2f6466';g.beginPath();g.ellipse(ax+17,124,17,13,0,Math.PI,0);g.fill();
@@ -41,8 +42,116 @@ for(const x0 of [0,W-DX]){
     for(let k=1;k<5;k++)R(ax+2+k*6,116,1,80,'#2f6466');R(ax+2,152,30,1.4,'#2f6466');
     g.fillStyle='rgba(200,230,255,.18)';g.beginPath();g.moveTo(ax+4,196);g.lineTo(ax+22,126);g.lineTo(ax+28,126);g.lineTo(ax+10,196);g.fill();
     R(ax-3,196,40,4,'#cbbcaa');R(ax-3,196,40,1,'#f6efe6');}
-  R(x0,208,DX,4,'#cbbcaa');R(x0,212,DX,24,'#d9cdb8');R(x0,212,DX,1,'#efe6d2');                /* le socle */
+  R(x0,208,DX,4,'#cbbcaa');R(x0,212,DX,24,'#d9cdb8');R(x0,212,DX,1,'#efe6d2');
   for(let x=x0+9;x<x0+DX;x+=22)R(x,214,1,20,'rgba(90,70,50,.12)');
+}
+/* ======== AILE GAUCHE : BUREAU MARITIME CORSICA LINEA ======== */
+/* Un vrai guichet portuaire : mur béton texturé, auvent acier, enseigne bleu
+   marine + bande rouge, 3 guichets vitrés avec comptoir inox, écrans de
+   départs, numéros de poste dorés, néons, barrières de file, valises. */
+{const x0=0;
+  /* le ciel derrière (même dégradé bleu) */
+  for(let y=26;y<66;y++){const k=(y-26)/40;R(x0,y,DX,1,'rgb('+(60+k*40|0)+','+(140+k*40|0)+','+(208+k*26|0)+')');}
+  /* AUVENT ACIER en porte-à-faux, profil industriel */
+  R(x0,56,DX+6,4,'#4a4e56');R(x0,56,DX+6,1,'#6a6e76');R(x0,59,DX+6,1,'#2a2e34');
+  for(let x=x0+12;x<x0+DX;x+=28){g.strokeStyle='#4a4e56';g.lineWidth=.6;
+    g.beginPath();g.moveTo(x,60);g.lineTo(x+6,68);g.stroke();g.beginPath();g.moveTo(x+12,60);g.lineTo(x+6,68);g.stroke();}
+  /* ombre portée de l'auvent */
+  for(let k=0;k<6;k+=.5)R(x0,60+k,DX,.5,'rgba(30,24,16,'+(0.3*(1-k/6)).toFixed(3)+')');
+  /* MUR BÉTON BRUT texturé (pas de la pierre, du béton portuaire gris chaud) */
+  for(let y=66;y<210;y+=12)for(let x=x0;x<x0+DX;x+=24){const d=(h(x,y,62)-.5)*10;
+    R(x,y,24,12,teinte('#9a9488',d|0));R(x,y,24,.4,teinte('#b0a89a',d|0));R(x,y,.4,12,'rgba(60,50,40,.08)');}
+  /* grain de béton (mouchetis) */
+  for(let i=0;i<400;i++){const x=x0+h(i,1,63)*DX,y=66+h(i,2,63)*144;
+    R(x,y,1,1,h(i,3,63)<.4?'rgba(40,30,20,.22)':'rgba(255,245,220,.1)');}
+  /* fissures fines */
+  for(let k=0;k<2;k++){let fx=x0+30+h(k,1,64)*140,fy=80+h(k,2,64)*60;
+    for(let j=0;j<30;j++){R(fx,fy,.5,.5,'rgba(50,40,30,.35)');fx+=h(k,j,65)*3-1.5;fy+=h(k,j,66)*2;}}
+  /* ENSEIGNE BLEU MARINE avec bande rouge Corsica Linea */
+  R(x0+4,68,DX-8,22,'#0e2244');R(x0+4,68,DX-8,1.5,'#1a3a6a');R(x0+4,88,DX-8,1.5,'#060e1a');
+  /* bande rouge */
+  R(x0+4,82,DX-8,4,'#c82010');R(x0+4,82,DX-8,.8,'#e83020');R(x0+4,85,DX-8,.5,'#8a1008');
+  /* texte CORSICA LINEA en blanc, espacé */
+  g.fillStyle='#ffffff';g.font='900 8px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';
+  g.fillText('CORSICA LINEA',x0+DX/2,76);
+  /* sous-texte doré */
+  g.fillStyle='#c8a040';g.font='700 3.5px system-ui,sans-serif';
+  g.fillText('BILLETTERIE · FRET · PASSAGERS',x0+DX/2,92);
+  /* ÉCRAN DE DÉPARTS (noir, texte vert/ambre, monospace) */
+  R(x0+10,100,DX-20,42,'#0a0e14');R(x0+10,100,DX-20,1.2,'#2a2e34');R(x0+DX-12,100,1,42,'#060a10');
+  /* reflet sur le cadre */
+  R(x0+10,100,DX-20,.5,'#4a4e56');
+  /* en-tête de l'écran */
+  R(x0+12,102,DX-24,7,'#1a1e24');
+  g.fillStyle='#40c060';g.font='700 4px ui-monospace,monospace';g.textAlign='left';
+  g.fillText('DEST.',x0+14,105.5);g.fillText('HEURE',x0+70,105.5);
+  g.textAlign='right';g.fillText('STATUT',x0+DX-14,105.5);g.textAlign='left';
+  /* lignes de départs (5 destinations) */
+  const DEPARTS=[['AJACCIO','18:30','EMBARQ.','#40e060'],['BASTIA','21:00','OUVERT','#f0c040'],
+    ['ÎLE-ROUSSE','06:00+1','FERMÉ','#e04040'],['PORTO-VECCHIO','22:15','OUVERT','#f0c040'],
+    ['PROPRIANO','07:30+1','FERMÉ','#808080']];
+  DEPARTS.forEach(([d,hr,s,c],i)=>{const ly=113+i*5.5;
+    g.fillStyle='#b0d0b0';g.font='700 3.2px ui-monospace,monospace';g.textAlign='left';g.fillText(d,x0+14,ly);
+    g.fillStyle='#f0e8c0';g.fillText(hr,x0+72,ly);
+    g.fillStyle=c;g.textAlign='right';g.fillText(s,x0+DX-14,ly);g.textAlign='left';});
+  /* led verte clignotante en haut à droite de l'écran */
+  g.fillStyle='#40e060';g.beginPath();g.arc(x0+DX-16,103,1.2,0,7);g.fill();
+  /* 3 GUICHETS avec comptoir inox, vitre, écran, numéro doré */
+  const GW=(DX-20)/3, GY0=148;
+  for(let i=0;i<3;i++){const gx=x0+8+i*GW;
+    /* cadre du guichet (encadrement bronze foncé) */
+    R(gx,GY0,GW-4,62,'#2c2622');R(gx,GY0,GW-4,.8,'#6a5a44');
+    /* VITRE du guichet : dégradé verre bleuté */
+    for(let y=GY0+1.5;y<GY0+30;y+=.5){const k=(y-GY0)/30;
+      R(gx+1.5,y,GW-7,.5,mix('#9ac0d8','#405a6c',k));}
+    /* reflet diagonal sur la vitre */
+    g.fillStyle='rgba(255,255,255,.22)';g.beginPath();
+    g.moveTo(gx+3,GY0+28);g.lineTo(gx+GW*.5,GY0+3);g.lineTo(gx+GW*.5+4,GY0+3);g.lineTo(gx+7,GY0+28);g.closePath();g.fill();
+    /* montant vertical de la vitre */
+    R(gx+GW/2-2.5,GY0+1,1,30,'#2c2622');
+    /* HYGIAPHONE (fente en bas de la vitre) */
+    R(gx+GW/2-10,GY0+26,16,3,'#1a1a1e');R(gx+GW/2-10,GY0+26,16,.5,'#4a4a4e');
+    for(let k=0;k<16;k+=1.2)R(gx+GW/2-10+k,GY0+27,.4,1.5,'#2a2a2e');
+    /* COMPTOIR INOX */
+    for(let y=GY0+30;y<GY0+38;y+=.5){const k=(y-GY0-30)/8;
+      R(gx+1,y,GW-6,.5,mix('#9a9ea6','#6a6e76',k));}
+    R(gx+1,GY0+30,GW-6,1,'#b0b4bc');R(gx+1,GY0+37,GW-6,1,'#4a4e54');
+    /* reflet sur l'inox */
+    R(gx+3,GY0+31,GW-10,.5,'rgba(255,255,255,.25)');
+    /* écran plat derrière la vitre (sur le comptoir de l'agent) */
+    R(gx+GW/2-8,GY0+8,14,10,'#1a1e24');R(gx+GW/2-8,GY0+8,14,1,'#3a3e46');
+    R(gx+GW/2-6,GY0+10,10,6,'#2a4868');R(gx+GW/2-6,GY0+10,10,.8,'#4a6888');
+    R(gx+GW/2-1,GY0+18,2,3,'#2a2e34');R(gx+GW/2-3,GY0+20,6,1,'#2a2e34');
+    /* NUMÉRO DE GUICHET (plaque dorée) */
+    R(gx+GW/2-5,GY0-6,8,5.5,'#c8a040');R(gx+GW/2-5,GY0-6,8,.8,'#e8c860');R(gx+GW/2-5,GY0-1,8,.5,'#8a6a20');
+    g.fillStyle='#1a1a1a';g.font='900 3.5px system-ui,sans-serif';g.textAlign='center';
+    g.fillText(''+(i+1),gx+GW/2-1,GY0-3);
+    /* soubassement du guichet */
+    R(gx,GY0+38,GW-4,24,'#2c2622');R(gx,GY0+38,GW-4,.4,'#4a3a2a');
+    /* grain dans le bois du soubassement */
+    for(let j=0;j<20;j++){R(gx+h(j,i,71)*(GW-6),GY0+39+h(j,i,72)*22,3+h(j,i,73)*4,.4,'rgba(80,60,40,.15)');}
+    /* poignée dorée */
+    R(gx+GW/2-1+2,GY0+48,.6,5,'#d8b468');
+    /* séparateur vitre entre guichets (sauf le dernier) */
+    if(i<2){R(gx+GW-3,GY0,1.5,62,'#9ac0d8');R(gx+GW-3,GY0,.5,62,'rgba(255,255,255,.3)');}
+  }
+  /* BARRIÈRES DE FILE en inox avec sangles bleues */
+  for(let bx=x0+8;bx<x0+DX;bx+=20){
+    R(bx-.8,214,1.6,20,'#c8ccd2');R(bx-.8,214,1.6,1,'#e0e4ea');
+    g.fillStyle='#c8ccd2';g.beginPath();g.ellipse(bx,214,2,1,0,0,7);g.fill();
+    g.fillStyle='#e0e4ea';g.beginPath();g.ellipse(bx,213.5,1.5,.7,0,0,7);g.fill();}
+  for(let bx=x0+8;bx<x0+DX-20;bx+=20){
+    g.strokeStyle='#1a3a6a';g.lineWidth=1;g.beginPath();g.moveTo(bx,220);g.quadraticCurveTo(bx+10,223,bx+20,220);g.stroke();
+    g.strokeStyle='#2a5a9a';g.lineWidth=.4;g.beginPath();g.moveTo(bx,219.5);g.quadraticCurveTo(bx+10,222.5,bx+20,219.5);g.stroke();}
+  /* NÉONS blancs au plafond (halo diffus) */
+  for(const nx of [x0+40,x0+100,x0+160]){
+    R(nx-16,62,.5,4,'#3a3e46');R(nx+16,62,.5,4,'#3a3e46');
+    R(nx-15,62,30,1.5,'#ffffff');
+    const gr=g.createRadialGradient(nx,63,0,nx,63,24);
+    gr.addColorStop(0,'rgba(255,255,255,.12)');gr.addColorStop(1,'rgba(255,255,255,0)');
+    g.fillStyle=gr;g.fillRect(nx-24,62,48,20);}
+  /* le socle : bande d'acier au sol */
+  R(x0,208,DX,4,'#5a5e66');R(x0,208,DX,1,'#8a8e96');R(x0,211,DX,1,'#3a3e44');
 }
 
 /* LE PARVIS DES TERRASSES : grandes dalles claires et bandes incrustées plus sombres */
