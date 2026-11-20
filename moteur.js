@@ -36300,12 +36300,11 @@ function ouvrirLEmbauche(){
 }
 
 /* ================= LE JEU CHANGE DE DIMENSION =================
-   À chaque arrivée, un écran prévient que le port est en travaux.
-   Un bouton pour entrer, et on retrouve le jeu tel qu'il est. */
+   Désactivé : les travaux sont finis, on entre directement. */
 (function ecranDimension(){
-try{
+try{return; /* plus de page travaux */
 if(document.getElementById('dimEcran'))return;
-if(window.LIEU_PAGE||/[?&](lieu|de|arrivee|niveau)=/.test(location.search))return;   /* passage d'un lieu à l'autre : pas d'écran d'accueil */
+if(window.LIEU_PAGE||/[?&](lieu|de|arrivee|niveau)=/.test(location.search))return;
 const css=document.createElement('style');css.textContent=
 '#dimEcran{position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center;padding:24px 18px calc(22px + env(safe-area-inset-bottom,0px));'+
 'background:#0d1b3e;color:#f4ecd8;font-family:system-ui,sans-serif;transition:opacity .45s;overflow:hidden}'+
