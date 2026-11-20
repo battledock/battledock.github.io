@@ -71,30 +71,55 @@ R(0,26,W,DOCKS_PIED-26,'#e3d0a8');
   R(x0+4,68,DX-8,22,'#0e2244');R(x0+4,68,DX-8,1.5,'#1a3a6a');R(x0+4,88,DX-8,1.5,'#060e1a');
   /* bande rouge */
   R(x0+4,82,DX-8,4,'#c82010');R(x0+4,82,DX-8,.8,'#e83020');R(x0+4,85,DX-8,.5,'#8a1008');
-  /* texte CORSICA LINEA en blanc, grande taille lisible */
-  g.fillStyle='#ffffff';g.font='900 12px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';
-  g.fillText('CORSICA LINEA',x0+DX/2,76);
-  /* sous-texte doré */
-  g.fillStyle='#c8a040';g.font='700 6px system-ui,sans-serif';
-  g.fillText('BILLETTERIE',x0+DX/2,92);
-  /* ÉCRAN DE DÉPARTS (noir, grand, texte pixel art lisible) */
-  R(x0+8,100,DX-16,48,'#0a0e14');R(x0+8,100,DX-16,1.5,'#2a2e34');R(x0+DX-10,100,1.5,48,'#060a10');
+  /* ENSEIGNE « CORSICA LINEA » en pixel art blanc sur fond bleu marine */
+  /* lettres 5px de haut, espacées de 1px — dessinées en rectangles nets */
+  {const ex=x0+14,ey=72;
+  /* C */ R(ex,ey,4,1,'#fff');R(ex,ey,1,5,'#fff');R(ex,ey+4,4,1,'#fff');
+  /* O */ R(ex+6,ey,3,1,'#fff');R(ex+6,ey,1,5,'#fff');R(ex+8,ey,1,5,'#fff');R(ex+6,ey+4,3,1,'#fff');
+  /* R */ R(ex+11,ey,3,1,'#fff');R(ex+11,ey,1,5,'#fff');R(ex+13,ey,1,3,'#fff');R(ex+11,ey+2,3,1,'#fff');R(ex+13,ey+3,1,2,'#fff');
+  /* S */ R(ex+16,ey,4,1,'#fff');R(ex+16,ey,1,2,'#fff');R(ex+16,ey+2,4,1,'#fff');R(ex+19,ey+3,1,1,'#fff');R(ex+16,ey+4,4,1,'#fff');
+  /* I */ R(ex+22,ey,3,1,'#fff');R(ex+23,ey,1,5,'#fff');R(ex+22,ey+4,3,1,'#fff');
+  /* C */ R(ex+27,ey,4,1,'#fff');R(ex+27,ey,1,5,'#fff');R(ex+27,ey+4,4,1,'#fff');
+  /* A */ R(ex+33,ey,3,1,'#fff');R(ex+33,ey,1,5,'#fff');R(ex+35,ey,1,5,'#fff');R(ex+33,ey+2,3,1,'#fff');
+  /* espace */
+  /* L */ R(ex+42,ey,1,5,'#fff');R(ex+42,ey+4,4,1,'#fff');
+  /* I */ R(ex+48,ey,3,1,'#fff');R(ex+49,ey,1,5,'#fff');R(ex+48,ey+4,3,1,'#fff');
+  /* N */ R(ex+53,ey,1,5,'#fff');R(ex+56,ey,1,5,'#fff');R(ex+54,ey+1,1,1,'#fff');R(ex+55,ey+2,1,1,'#fff');
+  /* E */ R(ex+59,ey,4,1,'#fff');R(ex+59,ey,1,5,'#fff');R(ex+59,ey+2,3,1,'#fff');R(ex+59,ey+4,4,1,'#fff');
+  /* A */ R(ex+65,ey,3,1,'#fff');R(ex+65,ey,1,5,'#fff');R(ex+67,ey,1,5,'#fff');R(ex+65,ey+2,3,1,'#fff');
+  }
+  /* sous-texte BILLETTERIE en doré pixel art (plus petit, 3px haut) */
+  {const ex=x0+30,ey=88;const col='#c8a040';
+  /* B */ R(ex,ey,1,3,col);R(ex+1,ey,1,1,col);R(ex+1,ey+1,1,1,col);R(ex+1,ey+2,1,1,col);
+  /* I */ R(ex+3,ey,1,3,col);
+  /* L */ R(ex+5,ey,1,3,col);R(ex+6,ey+2,1,1,col);
+  /* L */ R(ex+8,ey,1,3,col);R(ex+9,ey+2,1,1,col);
+  /* E */ R(ex+11,ey,2,1,col);R(ex+11,ey,1,3,col);R(ex+11,ey+1,2,1,col);R(ex+11,ey+2,2,1,col);
+  /* T */ R(ex+14,ey,3,1,col);R(ex+15,ey,1,3,col);
+  /* T */ R(ex+18,ey,3,1,col);R(ex+19,ey,1,3,col);
+  /* E */ R(ex+22,ey,2,1,col);R(ex+22,ey,1,3,col);R(ex+22,ey+1,2,1,col);R(ex+22,ey+2,2,1,col);
+  /* R */ R(ex+25,ey,2,1,col);R(ex+25,ey,1,3,col);R(ex+26,ey+1,1,1,col);R(ex+26,ey+2,1,1,col);
+  /* I */ R(ex+28,ey,1,3,col);
+  /* E */ R(ex+30,ey,2,1,col);R(ex+30,ey,1,3,col);R(ex+30,ey+1,2,1,col);R(ex+30,ey+2,2,1,col);
+  }
+  /* ÉCRAN DE DÉPARTS (noir, texte en pixel art coloré) */
+  R(x0+8,100,DX-16,50,'#0a0e14');R(x0+8,100,DX-16,1.5,'#2a2e34');R(x0+DX-10,100,1.5,50,'#060a10');
   R(x0+8,100,DX-16,.5,'#4a4e56');
-  /* en-tête de l'écran */
+  /* en-tête vert */
   R(x0+10,102,DX-20,8,'#1a1e24');
-  g.fillStyle='#40c060';g.font='700 6px ui-monospace,monospace';g.textAlign='left';
-  g.fillText('DEST.',x0+14,106.5);g.fillText('HEURE',x0+80,106.5);
-  g.textAlign='right';g.fillText('STATUT',x0+DX-14,106.5);g.textAlign='left';
-  /* lignes de départs */
-  const DEPARTS=[['AJACCIO','18:30','EMBARQ.','#40e060'],['BASTIA','21:00','OUVERT','#f0c040'],
-    ['ÎLE-ROUSSE','06:00','FERMÉ','#e04040'],['PORTO-V.','22:15','OUVERT','#f0c040'],
-    ['PROPRIANO','07:30','FERMÉ','#808080']];
-  DEPARTS.forEach(([d,hr,s,c],i)=>{const ly=116+i*6;
-    g.fillStyle='#b0d0b0';g.font='700 5px ui-monospace,monospace';g.textAlign='left';g.fillText(d,x0+14,ly);
-    g.fillStyle='#f0e8c0';g.fillText(hr,x0+82,ly);
-    g.fillStyle=c;g.textAlign='right';g.fillText(s,x0+DX-14,ly);g.textAlign='left';});
+  /* au lieu de fillText, barres de couleur représentant les lignes */
+  /* ligne 1 : AJACCIO — vert = embarquement */
+  R(x0+14,112,50,4,'#40c060');R(x0+70,112,24,4,'#f0e8c0');R(x0+DX-50,112,36,4,'#40e060');
+  /* ligne 2 : BASTIA — ambre = ouvert */
+  R(x0+14,118,38,4,'#b0d0b0');R(x0+70,118,24,4,'#f0e8c0');R(x0+DX-50,118,36,4,'#f0c040');
+  /* ligne 3 : ÎLE-ROUSSE — rouge = fermé */
+  R(x0+14,124,56,4,'#b0d0b0');R(x0+70,124,24,4,'#f0e8c0');R(x0+DX-50,124,36,4,'#e04040');
+  /* ligne 4 : PORTO-V. — ambre */
+  R(x0+14,130,44,4,'#b0d0b0');R(x0+70,130,24,4,'#f0e8c0');R(x0+DX-50,130,36,4,'#f0c040');
+  /* ligne 5 : PROPRIANO — gris */
+  R(x0+14,136,52,4,'#b0d0b0');R(x0+70,136,24,4,'#f0e8c0');R(x0+DX-50,136,36,4,'#808080');
   /* led verte */
-  g.fillStyle='#40e060';g.beginPath();g.arc(x0+DX-16,105,1.5,0,7);g.fill();
+  R(x0+DX-16,103,2,2,'#40e060');
   /* 3 GUICHETS avec comptoir inox, vitre, écran, numéro doré */
   const GW=(DX-20)/3, GY0=152;
   for(let i=0;i<3;i++){const gx=x0+8+i*GW;
@@ -121,25 +146,11 @@ R(0,26,W,DOCKS_PIED-26,'#e3d0a8');
     R(gx+GW/2-8,GY0+8,14,10,'#1a1e24');R(gx+GW/2-8,GY0+8,14,1,'#3a3e46');
     R(gx+GW/2-6,GY0+10,10,6,'#2a4868');R(gx+GW/2-6,GY0+10,10,.8,'#4a6888');
     R(gx+GW/2-1,GY0+18,2,3,'#2a2e34');R(gx+GW/2-3,GY0+20,6,1,'#2a2e34');
-    /* NUMÉRO DE GUICHET (plaque dorée, texte lisible) */
-    R(gx+GW/2-6,GY0-8,10,7,'#c8a040');R(gx+GW/2-6,GY0-8,10,1,'#e8c860');R(gx+GW/2-6,GY0-2,10,.5,'#8a6a20');
-    g.fillStyle='#1a1a1a';g.font='900 6px system-ui,sans-serif';g.textAlign='center';
-    g.fillText(''+(i+1),gx+GW/2-1,GY0-4);
-    /* AGENT derrière la vitre (guichet 2 : visible, les autres : silhouette) */
-    if(i===1){
-      /* tête */
-      R(gx+GW/2-3,GY0+6,6,6,'#e8c6a0');R(gx+GW/2-3,GY0+2,6,4,'#2a1a10');
-      R(gx+GW/2-2,GY0+8,1,1,'#1a1a1a');R(gx+GW/2+1,GY0+8,1,1,'#1a1a1a');
-      /* corps (chemise bleue marine) */
-      R(gx+GW/2-5,GY0+12,10,14,'#1a3a6a');R(gx+GW/2-5,GY0+12,10,1.5,'#2a5a9a');
-      /* badge doré sur la poitrine */
-      R(gx+GW/2-1,GY0+16,3,2,'#c8a040');
-    } else {
-      /* silhouette sombre (agent en retrait) */
-      g.fillStyle='rgba(30,30,40,.4)';
-      g.beginPath();g.ellipse(gx+GW/2,GY0+6,3,3,0,0,7);g.fill();
-      R(gx+GW/2-4,GY0+10,8,16,'rgba(30,30,40,.3)');
-    }
+    /* NUMÉRO DE GUICHET (plaque dorée, chiffre pixel art 3×5) */
+    R(gx+GW/2-6,GY0-9,12,8,'#c8a040');R(gx+GW/2-6,GY0-9,12,1,'#e8c860');R(gx+GW/2-6,GY0-2,12,.5,'#8a6a20');
+    {const CHIF=[[],[0b111,0b101,0b101,0b101,0b111],[0b010,0b110,0b010,0b010,0b111],[0b111,0b001,0b111,0b100,0b111],[0b111,0b001,0b111,0b001,0b111]];
+    const ch=CHIF[i+1];if(ch)for(let cy=0;cy<5;cy++)for(let cx=0;cx<3;cx++)if(ch[cy]&(4>>cx))R(gx+GW/2-2+cx,GY0-8+cy,1,1,'#1a1a1a');}
+    /* agents : dessinés comme figurants (pas ici dans le sol) */
     /* soubassement du guichet */
     R(gx,GY0+38,GW-4,24,'#2c2622');R(gx,GY0+38,GW-4,.4,'#4a3a2a');
     /* grain dans le bois du soubassement */
@@ -1952,7 +1963,11 @@ const AMBIANCE=(()=>{
    mk(AP[3],[[110,712],[400,712]],22),mk(AP[4],[[1090,698],[800,698]],24),
    mk(AP[5],[[588,850],[588,988]],20),mk(AP[6],[[1112,470],[1112,950]],23),
    Object.assign(mk(AP[2],[[852,516]],0),{dir:'haut',ap:AP[4]}),                     /* celui qui lit les affiches */
-   Object.assign(mk(AP[3],[[770,994]],0),{dir:'bas',ap:AP[0]})];                     /* celle qui regarde le port */
+   Object.assign(mk(AP[3],[[770,994]],0),{dir:'bas',ap:AP[0]}),                      /* celle qui regarde le port */
+   /* 3 agents derrière les guichets Corsica Linea (aile gauche) */
+   Object.assign(mk({peau:2,cheveux:0,coiffe:0,haut:0,veste:'#1a3a6a',pantalon:'#1a3a6a',souliers:0,chaussures:'#1a1a24',chapeau:0,sac:0,_pnj:true},[[38,168]],0),{dir:'bas'}),
+   Object.assign(mk({peau:4,cheveux:3,coiffe:1,haut:0,veste:'#1a3a6a',pantalon:'#1a3a6a',souliers:0,chaussures:'#1a1a24',chapeau:0,sac:0,_pnj:true},[[98,168]],0),{dir:'bas'}),
+   Object.assign(mk({peau:1,cheveux:1,coiffe:0,haut:0,veste:'#1a3a6a',pantalon:'#1a3a6a',souliers:0,chaussures:'#1a1a24',chapeau:0,sac:0,_pnj:true},[[158,168]],0),{dir:'bas'})];
  const DIRS=['droite','bas-droite','bas','bas-gauche','gauche','haut-gauche','haut','haut-droite'];
  function vieGens(dt){for(const p of GENS){if(p.route.length<2){p.marche=false;continue;}
    if(p.pause>0){p.pause-=dt;p.marche=false;continue;}
