@@ -1423,7 +1423,7 @@ function decor(){
   [470,610,750,890].forEach((y,i)=>{P('x_jol_platane',42,y,{col:[12,6],v:i%3});P('x_jol_platane',W-42,y,{col:[12,6],v:i%3+3});});
   /* les massifs de lavande et de graminées, avec leurs bancs */
   /* une jardinière au cœur de chaque parterre */
-  for(const [i,[x,y]] of [[300,590],[900,590],[300,866],[900,866]].entries())P('x_jol_massif',x,y,{col:[84,14],v:i});
+  for(const [i,[x,y]] of [[300,590],[300,866],[900,866]].entries())P('x_jol_massif',x,y,{col:[84,14],v:i});
   /* les bancs : le long de l'axe, adossés aux parterres, et autour de la fontaine */
   for(const [x,y] of [[505,560],[695,560],[505,900],[695,900],[330,700],[870,700],[240,512],[960,512]])P('x_jol_banc',x,y,{col:[40,6]});
   /* des oliviers en bac le long du quai du tram */
@@ -1438,7 +1438,7 @@ function decor(){
   /* la porte du Grand Port Maritime, devant l'aile gauche */
   P('x_jol_kiosque',320,500,{col:[96,14],agir:ouvrirVacationsKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
   P('x_jol_entree',PLACE.CX,748,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
-  P('x_jol_affiches',880,500,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
+  P(‘x_jol_affiches’,900,590,{col:[90,8],agir:ouvrirAffiches,libelle:’Voir les affiches’,nom:’À L’AFFICHE’,demi:56});
   return D;
 }
 
