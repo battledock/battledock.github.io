@@ -427,9 +427,7 @@ for(const [a,b] of [[0,B0],[B1,W]]){
       g.fillStyle='rgba(120,100,70,.12)';g.beginPath();g.moveTo(x+w+1.5,y0+.5);g.lineTo(x+w+4,y0+8);g.lineTo(x+w*.6,y0+8);g.closePath();g.fill();
       for(let k=0;k<w+8;k+=4){g.fillStyle='#f4efe4';g.beginPath();g.arc(x-4+k+2,y0+8,2,0,Math.PI);g.fill();}
       R(x-4,y0+7.6,w+8,.6,'#c8a868');OMB(x-3,y0+10,w+6,4,.25);
-      /* deux buis en pots */
-      for(const bx of [x-3,x+w+3]){R(bx-2.5,SOL-6,5,6,'#3a3430');R(bx-2.5,SOL-6,5,.6,'#6a5a44');
-        g.fillStyle='#3e6a3e';g.beginPath();g.arc(bx,SOL-9,3.6,0,7);g.fill();g.fillStyle='#5a8a4e';g.beginPath();g.arc(bx-1,SOL-10,2,0,7);g.fill();}
+      /* buis en pots retirés */
     }
   }
   /* les pilastres de pierre, leurs petites lanternes */
@@ -1438,7 +1436,7 @@ function decor(){
   /* la porte du Grand Port Maritime, devant l'aile gauche */
   P('x_jol_kiosque',320,500,{col:[96,14],agir:ouvrirVacationsKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
   P('x_jol_entree',PLACE.CX,748,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
-  P(‘x_jol_affiches’,900,590,{col:[90,8],agir:ouvrirAffiches,libelle:’Voir les affiches’,nom:’À L’AFFICHE’,demi:56});
+  P('x_jol_affiches',900,590,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
   return D;
 }
 
