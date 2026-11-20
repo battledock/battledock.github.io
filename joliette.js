@@ -1538,6 +1538,7 @@ let AFF_CHARGE=false;
 async function ouvrirAffiches(){try{if(!window.ouvrirLesAffiches)eval(await chargerMorceau('affiches.js'));window.ouvrirLesAffiches();}catch(x){console.warn('AFF',x);}}
 /* LE KIOSQUE : on y lit le journal, et on y prend ses vacations de docker (les petites annonces d'embauche) */
 async function ouvrirVacationsKiosque(){try{if(!window.ouvrirVacations)eval(await chargerMorceau('vacations.js'));window.ouvrirVacations({journal:ouvrirJournal});}catch(x){console.warn('VAC',x);}}
+async function ouvrirJeuConteneurs(){try{if(!window.ouvrirConteneurs)eval(await chargerMorceau('containers.js'));window.ouvrirConteneurs();}catch(x){console.warn('CTN',x);}}
 function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   if(!document.getElementById('cssQuai')){const st=document.createElement('style');st.id='cssQuai';st.textContent=CSS_QUAI;document.head.appendChild(st);}
   const J=JOURNAL,v=window.MA_VERSION?('?v='+encodeURIComponent(window.MA_VERSION)):'',im=n=>'assets/journal/'+n+'.jpg'+v;
@@ -1665,7 +1666,7 @@ function decor(){
   P('x_jol_entree',PLACE.CX,748,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
   P("x_jol_affiches",900,590,{col:[90,8],agir:ouvrirAffiches,libelle:"Voir les affiches",nom:"À L’AFFICHE",demi:56});
   /* bureau Corsica Linea, sous les arches de l'aile gauche */
-  P('x_jol_bureau_maritime',100,280,{col:[100,14]});
+  P('x_jol_bureau_maritime',100,280,{col:[100,14],agir:ouvrirJeuConteneurs,libelle:'Décharger',nom:'CORSICA LINEA'});
   /* panneau touristique, sous les arches de l'aile droite */
   P('x_jol_panneau_tourisme',1100,280,{col:[60,8]});
   return D;
