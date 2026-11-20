@@ -150,7 +150,30 @@ R(0,26,W,DOCKS_PIED-26,'#e3d0a8');
     R(gx+GW/2-6,GY0-9,12,8,'#c8a040');R(gx+GW/2-6,GY0-9,12,1,'#e8c860');R(gx+GW/2-6,GY0-2,12,.5,'#8a6a20');
     {const CHIF=[[],[0b111,0b101,0b101,0b101,0b111],[0b010,0b110,0b010,0b010,0b111],[0b111,0b001,0b111,0b100,0b111],[0b111,0b001,0b111,0b001,0b111]];
     const ch=CHIF[i+1];if(ch)for(let cy=0;cy<5;cy++)for(let cx=0;cx<3;cx++)if(ch[cy]&(4>>cx))R(gx+GW/2-2+cx,GY0-8+cy,1,1,'#1a1a1a');}
-    /* agents : dessinés comme figurants (pas ici dans le sol) */
+    /* AGENT derrière la vitre : mini personnage pixel art 8×16, au style du jeu */
+    {const ax=gx+GW/2, ay=GY0+4;
+    const PEAUX=['#e8c6a0','#d8b090','#c89060'][i];
+    const CHEV=['#2a1a10','#4a3018','#1a1a24'][i];
+    /* cheveux */
+    R(ax-3,ay,6,3,CHEV);R(ax-4,ay+1,1,4,CHEV);R(ax+3,ay+1,1,4,CHEV);
+    /* visage */
+    R(ax-3,ay+3,6,5,PEAUX);
+    /* yeux */
+    R(ax-2,ay+5,1,1,'#1a1a1a');R(ax+1,ay+5,1,1,'#1a1a1a');
+    /* bouche */
+    R(ax-1,ay+7,2,1,'rgba(120,60,40,.5)');
+    /* cou */
+    R(ax-1,ay+8,2,1,PEAUX);
+    /* uniforme bleu marine */
+    R(ax-4,ay+9,8,8,'#1a3a6a');R(ax-4,ay+9,8,1,'#2a5a9a');
+    /* col blanc */
+    R(ax-2,ay+9,4,1,'#e8e4d8');
+    /* bras */
+    R(ax-5,ay+10,1,6,'#1a3a6a');R(ax+4,ay+10,1,6,'#1a3a6a');
+    /* mains */
+    R(ax-5,ay+16,1,1,PEAUX);R(ax+4,ay+16,1,1,PEAUX);
+    /* badge doré */
+    R(ax+1,ay+12,2,1,'#c8a040');}
     /* soubassement du guichet */
     R(gx,GY0+38,GW-4,24,'#2c2622');R(gx,GY0+38,GW-4,.4,'#4a3a2a');
     /* grain dans le bois du soubassement */
@@ -1963,11 +1986,7 @@ const AMBIANCE=(()=>{
    mk(AP[3],[[110,712],[400,712]],22),mk(AP[4],[[1090,698],[800,698]],24),
    mk(AP[5],[[588,850],[588,988]],20),mk(AP[6],[[1112,470],[1112,950]],23),
    Object.assign(mk(AP[2],[[852,516]],0),{dir:'haut',ap:AP[4]}),                     /* celui qui lit les affiches */
-   Object.assign(mk(AP[3],[[770,994]],0),{dir:'bas',ap:AP[0]}),                      /* celle qui regarde le port */
-   /* 3 agents derrière les guichets Corsica Linea (aile gauche) */
-   Object.assign(mk({peau:2,cheveux:0,coiffe:0,haut:0,veste:'#1a3a6a',pantalon:'#1a3a6a',souliers:0,chaussures:'#1a1a24',chapeau:0,sac:0,_pnj:true},[[38,168]],0),{dir:'bas'}),
-   Object.assign(mk({peau:4,cheveux:3,coiffe:1,haut:0,veste:'#1a3a6a',pantalon:'#1a3a6a',souliers:0,chaussures:'#1a1a24',chapeau:0,sac:0,_pnj:true},[[98,168]],0),{dir:'bas'}),
-   Object.assign(mk({peau:1,cheveux:1,coiffe:0,haut:0,veste:'#1a3a6a',pantalon:'#1a3a6a',souliers:0,chaussures:'#1a1a24',chapeau:0,sac:0,_pnj:true},[[158,168]],0),{dir:'bas'})];
+   Object.assign(mk(AP[3],[[770,994]],0),{dir:'bas',ap:AP[0]})];
  const DIRS=['droite','bas-droite','bas','bas-gauche','gauche','haut-gauche','haut','haut-droite'];
  function vieGens(dt){for(const p of GENS){if(p.route.length<2){p.marche=false;continue;}
    if(p.pause>0){p.pause-=dt;p.marche=false;continue;}
