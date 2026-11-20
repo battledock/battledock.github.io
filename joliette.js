@@ -1425,7 +1425,7 @@ function decor(){
   /* les bancs : le long de l'axe, adossés aux parterres, et autour de la fontaine */
   for(const [x,y] of [[505,560],[695,560],[505,900],[695,900],[330,700],[870,700],[240,512],[960,512]])P('x_jol_banc',x,y,{col:[40,6]});
   /* des oliviers en bac le long du quai du tram */
-  for(const x of [530,670,1070])P('x_jol_olivier',x,456,{col:[18,6]});
+  /* oliviers en bac retirés */
 
   /* des bancs tournés vers la fontaine */
   /* les lampadaires */
