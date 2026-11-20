@@ -71,33 +71,32 @@ R(0,26,W,DOCKS_PIED-26,'#e3d0a8');
   R(x0+4,68,DX-8,22,'#0e2244');R(x0+4,68,DX-8,1.5,'#1a3a6a');R(x0+4,88,DX-8,1.5,'#060e1a');
   /* bande rouge */
   R(x0+4,82,DX-8,4,'#c82010');R(x0+4,82,DX-8,.8,'#e83020');R(x0+4,85,DX-8,.5,'#8a1008');
-  /* texte CORSICA LINEA en blanc, espacé */
-  g.fillStyle='#ffffff';g.font='900 8px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';
+  /* texte CORSICA LINEA en blanc, grande taille lisible */
+  g.fillStyle='#ffffff';g.font='900 12px system-ui,sans-serif';g.textAlign='center';g.textBaseline='middle';
   g.fillText('CORSICA LINEA',x0+DX/2,76);
   /* sous-texte doré */
-  g.fillStyle='#c8a040';g.font='700 3.5px system-ui,sans-serif';
-  g.fillText('BILLETTERIE · FRET · PASSAGERS',x0+DX/2,92);
-  /* ÉCRAN DE DÉPARTS (noir, texte vert/ambre, monospace) */
-  R(x0+10,100,DX-20,42,'#0a0e14');R(x0+10,100,DX-20,1.2,'#2a2e34');R(x0+DX-12,100,1,42,'#060a10');
-  /* reflet sur le cadre */
-  R(x0+10,100,DX-20,.5,'#4a4e56');
+  g.fillStyle='#c8a040';g.font='700 6px system-ui,sans-serif';
+  g.fillText('BILLETTERIE',x0+DX/2,92);
+  /* ÉCRAN DE DÉPARTS (noir, grand, texte pixel art lisible) */
+  R(x0+8,100,DX-16,48,'#0a0e14');R(x0+8,100,DX-16,1.5,'#2a2e34');R(x0+DX-10,100,1.5,48,'#060a10');
+  R(x0+8,100,DX-16,.5,'#4a4e56');
   /* en-tête de l'écran */
-  R(x0+12,102,DX-24,7,'#1a1e24');
-  g.fillStyle='#40c060';g.font='700 4px ui-monospace,monospace';g.textAlign='left';
-  g.fillText('DEST.',x0+14,105.5);g.fillText('HEURE',x0+70,105.5);
-  g.textAlign='right';g.fillText('STATUT',x0+DX-14,105.5);g.textAlign='left';
-  /* lignes de départs (5 destinations) */
+  R(x0+10,102,DX-20,8,'#1a1e24');
+  g.fillStyle='#40c060';g.font='700 6px ui-monospace,monospace';g.textAlign='left';
+  g.fillText('DEST.',x0+14,106.5);g.fillText('HEURE',x0+80,106.5);
+  g.textAlign='right';g.fillText('STATUT',x0+DX-14,106.5);g.textAlign='left';
+  /* lignes de départs */
   const DEPARTS=[['AJACCIO','18:30','EMBARQ.','#40e060'],['BASTIA','21:00','OUVERT','#f0c040'],
-    ['ÎLE-ROUSSE','06:00+1','FERMÉ','#e04040'],['PORTO-VECCHIO','22:15','OUVERT','#f0c040'],
-    ['PROPRIANO','07:30+1','FERMÉ','#808080']];
-  DEPARTS.forEach(([d,hr,s,c],i)=>{const ly=113+i*5.5;
-    g.fillStyle='#b0d0b0';g.font='700 3.2px ui-monospace,monospace';g.textAlign='left';g.fillText(d,x0+14,ly);
-    g.fillStyle='#f0e8c0';g.fillText(hr,x0+72,ly);
+    ['ÎLE-ROUSSE','06:00','FERMÉ','#e04040'],['PORTO-V.','22:15','OUVERT','#f0c040'],
+    ['PROPRIANO','07:30','FERMÉ','#808080']];
+  DEPARTS.forEach(([d,hr,s,c],i)=>{const ly=116+i*6;
+    g.fillStyle='#b0d0b0';g.font='700 5px ui-monospace,monospace';g.textAlign='left';g.fillText(d,x0+14,ly);
+    g.fillStyle='#f0e8c0';g.fillText(hr,x0+82,ly);
     g.fillStyle=c;g.textAlign='right';g.fillText(s,x0+DX-14,ly);g.textAlign='left';});
-  /* led verte clignotante en haut à droite de l'écran */
-  g.fillStyle='#40e060';g.beginPath();g.arc(x0+DX-16,103,1.2,0,7);g.fill();
+  /* led verte */
+  g.fillStyle='#40e060';g.beginPath();g.arc(x0+DX-16,105,1.5,0,7);g.fill();
   /* 3 GUICHETS avec comptoir inox, vitre, écran, numéro doré */
-  const GW=(DX-20)/3, GY0=148;
+  const GW=(DX-20)/3, GY0=152;
   for(let i=0;i<3;i++){const gx=x0+8+i*GW;
     /* cadre du guichet (encadrement bronze foncé) */
     R(gx,GY0,GW-4,62,'#2c2622');R(gx,GY0,GW-4,.8,'#6a5a44');
@@ -122,10 +121,25 @@ R(0,26,W,DOCKS_PIED-26,'#e3d0a8');
     R(gx+GW/2-8,GY0+8,14,10,'#1a1e24');R(gx+GW/2-8,GY0+8,14,1,'#3a3e46');
     R(gx+GW/2-6,GY0+10,10,6,'#2a4868');R(gx+GW/2-6,GY0+10,10,.8,'#4a6888');
     R(gx+GW/2-1,GY0+18,2,3,'#2a2e34');R(gx+GW/2-3,GY0+20,6,1,'#2a2e34');
-    /* NUMÉRO DE GUICHET (plaque dorée) */
-    R(gx+GW/2-5,GY0-6,8,5.5,'#c8a040');R(gx+GW/2-5,GY0-6,8,.8,'#e8c860');R(gx+GW/2-5,GY0-1,8,.5,'#8a6a20');
-    g.fillStyle='#1a1a1a';g.font='900 3.5px system-ui,sans-serif';g.textAlign='center';
-    g.fillText(''+(i+1),gx+GW/2-1,GY0-3);
+    /* NUMÉRO DE GUICHET (plaque dorée, texte lisible) */
+    R(gx+GW/2-6,GY0-8,10,7,'#c8a040');R(gx+GW/2-6,GY0-8,10,1,'#e8c860');R(gx+GW/2-6,GY0-2,10,.5,'#8a6a20');
+    g.fillStyle='#1a1a1a';g.font='900 6px system-ui,sans-serif';g.textAlign='center';
+    g.fillText(''+(i+1),gx+GW/2-1,GY0-4);
+    /* AGENT derrière la vitre (guichet 2 : visible, les autres : silhouette) */
+    if(i===1){
+      /* tête */
+      R(gx+GW/2-3,GY0+6,6,6,'#e8c6a0');R(gx+GW/2-3,GY0+2,6,4,'#2a1a10');
+      R(gx+GW/2-2,GY0+8,1,1,'#1a1a1a');R(gx+GW/2+1,GY0+8,1,1,'#1a1a1a');
+      /* corps (chemise bleue marine) */
+      R(gx+GW/2-5,GY0+12,10,14,'#1a3a6a');R(gx+GW/2-5,GY0+12,10,1.5,'#2a5a9a');
+      /* badge doré sur la poitrine */
+      R(gx+GW/2-1,GY0+16,3,2,'#c8a040');
+    } else {
+      /* silhouette sombre (agent en retrait) */
+      g.fillStyle='rgba(30,30,40,.4)';
+      g.beginPath();g.ellipse(gx+GW/2,GY0+6,3,3,0,0,7);g.fill();
+      R(gx+GW/2-4,GY0+10,8,16,'rgba(30,30,40,.3)');
+    }
     /* soubassement du guichet */
     R(gx,GY0+38,GW-4,24,'#2c2622');R(gx,GY0+38,GW-4,.4,'#4a3a2a');
     /* grain dans le bois du soubassement */
