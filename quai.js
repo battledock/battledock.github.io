@@ -103,14 +103,9 @@ async function guichet(n){try{if(!window.ouvrirVacations)eval(await chargerMorce
  const d=document.createElement('div');d.id='bcmoMot';d.style.cssText='position:fixed;left:50%;bottom:calc(120px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147482000;width:min(88vw,360px);background:#1b2330;color:#f2efe4;border-radius:18px;padding:14px 16px;box-shadow:0 12px 30px rgba(0,0,0,.4);font-family:"Baloo 2",system-ui,sans-serif';
  d.innerHTML='<b style="display:block;color:#f5d27a;font-size:13px;letter-spacing:.08em">'+(n==='porte'?'EMBAUCHE DES DOCKERS':n==='panneau'?'APPEL DU JOUR':'LE GUICHET')+'</b><div style="font-weight:700;font-size:16px;line-height:1.3;margin-top:2px">'+(n==='panneau'?'Appel à 7h, 13h et 19h. Le tableau des vacations arrive très bientôt.':'Le tableau des vacations ouvre très bientôt. Repasse nous voir !')+'</div>';
  d.onclick=()=>d.remove();document.body.appendChild(d);setTimeout(()=>{try{d.remove();}catch(x){}},4200);}vieux(n);}
-function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
- P('x_jol_maison',BX,BY);
- P('x_jol_entree',GUICHETS[0],BY+8,{agir:()=>guichet(1),libelle:'Se présenter',nom:'LE GUICHET'});
- P('x_jol_entree',BX,BY+8,{agir:()=>guichet('porte'),libelle:'Entrer',nom:'EMBAUCHE DES DOCKERS'});
- P('x_jol_entree',PANNEAU,BY+8,{agir:()=>guichet('panneau'),libelle:'Lire',nom:'APPEL DU JOUR'});
- return D;}
-function graver(t){if(t==='x_jol_maison')return graverMaison();const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};}
-function bloque(x,y){if(y<QUAI+10||x<8||x>W-8||y>H-6)return true;if(Math.abs(x-BX)<BW/2-22&&y>BY-150&&y<BY+3)return true;return false;}
+function decor(){return [];}
+function graver(t){const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};}
+function bloque(x,y){if(y<QUAI+10||x<8||x>W-8||y>H-6)return true;return false;}
 function pas(){return [];}
 function acteurs(){return [];}
 try{window.__CR={j:()=>joueur};}catch(x){}
