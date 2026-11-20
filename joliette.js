@@ -1399,7 +1399,7 @@ function ouvrirJournal(){if(document.getElementById('quaiJ'))return;
   ['pointerdown','touchstart','keydown'].forEach(t2=>d.addEventListener(t2,ev=>ev.stopPropagation()));
   try{vibrer(8);}catch(x){}}
 
-const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_porte_port:graverPorteDuPort,x_jol_sapin:graverSapin,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide};
+const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_sapin:graverSapin,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_tram:graverVide};
 function graver(t,v){return (GRAVEURS[t]||graverVide)(v||0);}
 
 function decor(){
@@ -1436,7 +1436,6 @@ function decor(){
   /* le kiosque à journaux */
   for(const [px] of PORTES)P('x_jol_entree',px+DX,DOCKS_PIED+10,{agir:entrerGalerie,libelle:'Entrer',nom:'LA GALERIE BLEUE'});
   /* la porte du Grand Port Maritime, devant l'aile gauche */
-  P('x_jol_porte_port',110,236,{col:[180,140],agir:entrerPort,libelle:'Entrer au port',nom:'GRAND PORT MARITIME'});
   P('x_jol_kiosque',320,500,{col:[96,14],agir:ouvrirVacationsKiosque,libelle:'Au kiosque',nom:'KIOSQUE · EMBAUCHE'});
   P('x_jol_entree',PLACE.CX,748,{agir:()=>VOEU.faire(),libelle:'Faire un vœu',nom:'FONTAINE À VŒUX'});
   P('x_jol_affiches',880,500,{col:[90,8],agir:ouvrirAffiches,libelle:'Voir les affiches',nom:'À L’AFFICHE',demi:56});
@@ -1455,36 +1454,6 @@ function bloque(x,y){
   return false;
 }
 
-/* LA SORTIE : au bout du passage piéton, on descend au port */
-let PARTI=false;
-setInterval(()=>{try{
-  if(true||PARTI||typeof joueur==='undefined')return;   /* le port n'est plus un lieu : le travail se prend au kiosque */
-  if(joueur.y>PLACE_BAS+22&&Math.abs(joueur.x-SORTIE_X)<SORTIE_DEMI){
-    PARTI=true;
-    try{texteVolant(joueur.x,joueur.y-40,'Direction le port…','#f0cf7d');}catch(x){}
-    try{sauver();}catch(x){}
-    setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';
-      location.href='quai.html?de=joliette'+v;},620);
-  }}catch(x){}},150);
-
-
-/* ====================================================================
-   LA PORTE DU GRAND PORT MARITIME : on présente son badge au gardien,
-   un voile bleu marine se lève, et on arrive sur les quais. */
-let ENTRE_PORT=false;
-function entrerPort(){if(ENTRE_PORT)return;ENTRE_PORT=true;
-  try{vibrer&&vibrer(12);}catch(x){}
-  const v=document.createElement('div');
-  v.style.cssText='position:fixed;inset:0;z-index:2147483000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none;'+
-    'background:radial-gradient(ellipse at 50% 46%,#2a5088 0%,#153362 55%,#0a1c38 100%);color:#fff;font-family:Georgia,serif;transition:opacity .5s;opacity:0';
-  v.innerHTML='<div style="font-size:12px;letter-spacing:.5em;opacity:.75;transform:translateX(.25em)">GRAND PORT MARITIME</div>'
-    +'<div style="font-weight:800;font-size:28px;letter-spacing:.14em">LE VIEUX-PORT</div>'
-    +'<div style="width:64px;height:2px;background:#f2d070;border-radius:2px"></div>';
-  document.body.appendChild(v);requestAnimationFrame(()=>v.style.opacity='1');
-  try{sauver();}catch(x){}
-  setTimeout(()=>{const u=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';
-    location.href='quai.html?de=joliette'+u;},900);
-}
 
 /* ====================================================================
    LA GALERIE BLEUE N'EST PLUS UN LIEU : C'EST UN BEAU MENU.
@@ -1778,9 +1747,7 @@ const AMBIANCE=(()=>{
    mk(AP[3],[[110,712],[400,712]],22),mk(AP[4],[[1090,698],[800,698]],24),
    mk(AP[5],[[588,850],[588,988]],20),mk(AP[6],[[1112,470],[1112,950]],23),
    Object.assign(mk(AP[2],[[852,516]],0),{dir:'haut',ap:AP[4]}),                     /* celui qui lit les affiches */
-   Object.assign(mk(AP[3],[[770,994]],0),{dir:'bas',ap:AP[0]}),                      /* celle qui regarde le port */
-   /* LE GARDIEN DU PORT, devant la baraque, en uniforme marine avec casquette */
-   Object.assign(mk({peau:2,cheveux:0,coiffe:0,haut:0,veste:'#1a1a24',pantalon:'#1a1a24',souliers:0,chaussures:'#000000',chapeau:1,sac:0,_pnj:true},[[48,242]],0),{dir:'bas'})];
+   Object.assign(mk(AP[3],[[770,994]],0),{dir:'bas',ap:AP[0]})];                     /* celle qui regarde le port */
  const DIRS=['droite','bas-droite','bas','bas-gauche','gauche','haut-gauche','haut','haut-droite'];
  function vieGens(dt){for(const p of GENS){if(p.route.length<2){p.marche=false;continue;}
    if(p.pause>0){p.pause-=dt;p.marche=false;continue;}
