@@ -155,8 +155,24 @@ function graverPlante(){if(CACHE.pl)return CACHE.pl;const Wd=50,Hd=80,s=76;const
   R(g,15,s-20,20,20,'#e0b040');R(g,15,s-20,20,3,'#fff2b8');R(g,17,s-17,16,14,'#14061e');
   for(let k=0;k<9;k++){const a=-Math.PI/2+(k-4)*.36;g.strokeStyle=k%2?'#2a8a4a':'#3aa85a';g.lineWidth=3;g.beginPath();g.moveTo(25,s-20);g.quadraticCurveTo(25+Math.cos(a)*14,s-20+Math.sin(a)*30,25+Math.cos(a)*24,s-26+Math.sin(a)*40+12);g.stroke();}
   for(let k=0;k<12;k++)R(g,6+hA(k,1,9)*38,10+hA(k,2,9)*40,1.6,1.6,['#ff3ac8','#3af0ff','#ffd23a'][k%3]);return CACHE.pl={toile:c,W:Wd,H:Hd,sol:s};}
+/* LA BORNE DE LA ROUE DISCO : un socle noir laqué, une roue colorée en haut, des néons */
+function graverRoueBorne(){if(CACHE.rb)return CACHE.rb;const Wd=72,Hd=108,s=104,cx=Wd/2;const {c,g}=toile(Wd,Hd);
+  g.fillStyle='rgba(0,0,0,.45)';g.beginPath();g.ellipse(cx,s,26,6,0,0,7);g.fill();
+  /* le pied */
+  g.fillStyle=lin(g,0,s-40,0,s,[[0,'#2a1038'],[1,'#120614']]);g.fillRect(cx-16,s-42,32,42);R(g,cx-16,s-42,32,3,'#3a2a4a');
+  for(let k=0;k<3;k++)R(g,cx-13,s-34+k*12,26,2,NEON[k%6]);
+  /* la roue, de face, inclinée */
+  const ry=30,rx=28,cyR=34;g.save();g.translate(cx,cyR);
+  for(let i=0;i<12;i++){const a0=i/12*7,a1=(i+1)/12*7;g.beginPath();g.moveTo(0,0);g.ellipse(0,0,rx,ry,0,a0,a1);g.closePath();g.fillStyle=['#ff3ac8','#3af0ff','#ffd23a','#7aff6a','#b86aff','#ff7a3a'][i%6];g.fill();g.strokeStyle='rgba(0,0,0,.3)';g.lineWidth=1;g.stroke();}
+  g.beginPath();g.ellipse(0,0,rx,ry,0,0,7);g.strokeStyle='#e0b040';g.lineWidth=2.4;g.stroke();
+  g.beginPath();g.arc(0,0,5,0,7);g.fillStyle='#1a0630';g.fill();g.strokeStyle='#e0b040';g.lineWidth=1.4;g.stroke();g.restore();
+  /* le curseur en haut */
+  g.fillStyle='#fff';g.beginPath();g.moveTo(cx-5,cyR-ry-5);g.lineTo(cx+5,cyR-ry-5);g.lineTo(cx,cyR-ry+6);g.fill();
+  /* enseigne */
+  neonTexte(g,'ROUE',cx,s-50,9,'#ffd23a');
+  return CACHE.rb={toile:c,W:Wd,H:Hd,sol:s};}
 const VIDE=()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0});
-const GRAVEURS={x_jol_club_bar_sol:graverBar,x_jol_club_tab_sol:graverTabouret,x_jol_club_enc_sol:graverEnceinte,x_jol_club_pla_sol:graverPlatines,x_jol_club_bq_sol:v=>graverBanquette(v),x_jol_club_col_sol:graverColonne,x_jol_club_pot_sol:graverPoteau,x_jol_club_cv_sol:graverComptoirV,x_jol_club_th_sol:graverTableHaute,x_jol_club_rmp_sol:graverRampe,x_jol_club_jac_sol:graverJacuzzi,x_jol_club_bv_sol:graverBarVip,x_jol_club_pv_sol:graverPlatineVip,x_jol_club_cn_sol:graverCanon,x_jol_club_bo_sol:graverBanquetteOr,x_jol_club_tb_sol:graverTableau,x_jol_club_pl_sol:graverPlante,x_jol_club_vide:VIDE};
+const GRAVEURS={x_jol_club_bar_sol:graverBar,x_jol_club_tab_sol:graverTabouret,x_jol_club_enc_sol:graverEnceinte,x_jol_club_pla_sol:graverPlatines,x_jol_club_bq_sol:v=>graverBanquette(v),x_jol_club_col_sol:graverColonne,x_jol_club_pot_sol:graverPoteau,x_jol_club_cv_sol:graverComptoirV,x_jol_club_th_sol:graverTableHaute,x_jol_club_rmp_sol:graverRampe,x_jol_club_jac_sol:graverJacuzzi,x_jol_club_bv_sol:graverBarVip,x_jol_club_pv_sol:graverPlatineVip,x_jol_club_cn_sol:graverCanon,x_jol_club_bo_sol:graverBanquetteOr,x_jol_club_tb_sol:graverTableau,x_jol_club_pl_sol:graverPlante,x_jol_club_rb_sol:graverRoueBorne,x_jol_club_vide:VIDE};
 function graver(t,v){const r=(GRAVEURS[t]||VIDE)(v||0);return {toile:r.toile,W:r.W*S,H:r.H*S,sol:r.sol*S};}
 
 /* ---------- LES GENS ---------- */
@@ -283,6 +299,49 @@ window.AURA_DEVANT=(g,x,y)=>{const E=effet();if(!E)return;const t=now();
 async function ouvrirVestiaire(){try{if(!window.ouvrirDisco)eval(await chargerMorceau('disco.js'));window.ouvrirDisco();}catch(x){try{console.warn('DISCO',x);}catch(_){}}}
 function danser(){try{ouvrirEmotes();}catch(x){}}
 async function battle(){try{if(!window.ouvrirBattle)eval(await chargerMorceau('battle.js'));window.ouvrirBattle();}catch(x){try{console.warn('BATTLE',x);}catch(_){}}}
+async function roue(){try{if(!window.ouvrirRoueDisco)eval(await chargerMorceau('roue.js'));window.ouvrirRoueDisco();}catch(x){try{console.warn('ROUE',x);}catch(_){}}}
+
+/* ---------- LE NIVEAU DE DANSE : plus tu danses sur la piste, plus tu montes ---------- */
+/* chaque palier franchi = un petit cadeau (vibration, message, et à 5/10/20 un bonus de jetons local déjà crédité par sauver) */
+const PALIERS_DANSE=[[3,'Danseur du dimanche 💃'],[8,'Habitué de la piste 🕺'],[15,'Pro du disco 🪩'],[25,'Roi de la piste 👑'],[40,'Légende du Vieux-Port ✨']];
+function nivDanse(){const p=(e.danse&&e.danse.pts)||0;let n=0;for(const [s] of PALIERS_DANSE)if(p>=s)n++;return n;}
+let DANSE_T=0;
+function surLaPiste(){/* appelé en continu quand on danse sur la piste */
+  if(!e.danse)e.danse={pts:0};const t=now();if(t-DANSE_T<4)return;DANSE_T=t;
+  const avant=nivDanse();e.danse.pts=(e.danse.pts||0)+1;const apres=nivDanse();
+  if(apres>avant){const P=PALIERS_DANSE[apres-1];try{vibrer([10,40,10,40,60]);texteVolant(joueur.x,joueur.y-70,'Niveau de danse '+apres+' — '+P[1],'#ffd23a');}catch(x){}}
+  try{sauver();}catch(x){}}
+/* on surveille : quand le joueur est sur la piste et qu'une émote de danse joue, il gagne des points */
+setInterval(()=>{try{if(typeof joueur==='undefined'||window.ECRAN_COUVRANT)return;const P=PISTE;
+  if(joueur.x>P.x0-20&&joueur.x<P.x1+20&&joueur.y>P.y0-20&&joueur.y<P.y1+20){
+    const danse=(e.ap&&e.ap._emote)||window.EMOTE_EN_COURS||joueur.marche===false;if(danse)surLaPiste();}}catch(x){}},1500);
+
+/* ---------- LE POURBOIRE AU DJ : tu paies, il change les couleurs et lance ta musique ---------- */
+let DJ_T=0;
+function pourboireDJ(){const t=now();if(t-DJ_T<1)return;DJ_T=t;
+  const cout=50000;/* 500 € en centimes */
+  if((e.euros||0)<cout){try{texteVolant(DJ.x,DJ.y-70,'Il te faut 500 € pour le DJ','#ff7a9a');vibrer(30);}catch(x){}return;}
+  (async()=>{let r=null;try{r=await rpcS('depenser',{p_joueur:e.id,p_cents:cout});}catch(x){}
+   if(r&&r.erreur){try{texteVolant(DJ.x,DJ.y-70,r.erreur==='pas_assez'?'Pas assez d’euros':'La caisse fait des siennes','#ff7a9a');vibrer(30);}catch(x){}return;}
+   if(r&&typeof r.euros==='number')e.euros=r.euros;
+   try{majHaut&&majHaut();sauver();}catch(x){}
+   try{canon();}catch(x){}/* une volée de confettis */
+   try{window.DISCO_STYLE=['disco','funk','house'][Math.floor(Math.random()*3)];}catch(x){}
+   const m=['« Celle-là, c’est pour toi ! » 🎧','Le DJ lève le pouce et balance ta track ! 🔊','Les lumières s’affolent rien que pour toi ! 🌈'][Math.floor(Math.random()*3)];
+   try{vibrer([10,30,10]);texteVolant(DJ.x,DJ.y-70,m,'#3af0ff');}catch(x){}})();}
+
+/* ---------- LA BOULE À FACETTES : on tape dessous, elle arrose toute la salle de confettis ---------- */
+let BOULE_T=0;
+function taperBoule(){const t=now();if(t-BOULE_T<2){try{texteVolant(400*S,300*S,'La boule tourne déjà ! 🪩','#fff');}catch(x){}return;}BOULE_T=t;
+  try{canon();vibrer([8,30,8,30,8]);texteVolant(400*S,300*S,'✨ BOULE À FACETTES ✨','#ffd23a');}catch(x){}}
+
+/* ---------- LE VIDEUR DE L'ENTRÉE : il te parle ---------- */
+let VID_T=0;
+function parlerVideur(){const t=now();if(t-VID_T<1.5)return;VID_T=t;
+  const nd=nivDanse();
+  const phrases=nd>=3?['« Toi je te connais, t’es un pilier de la piste. Entre ! »','« La légende du dancefloor ! Passe donc. »']
+   :['« Bienvenue au Disco Club. Fais chauffer la piste ! »','« Pas de bagarre, que de la danse ici. Amuse-toi ! »','« T’as la pêche ce soir ? La piste t’attend. »'];
+  try{vibrer(8);texteVolant(VIDEUR.x,VIDEUR.y-66,phrases[Math.floor(Math.random()*phrases.length)],'#ffd8f4');}catch(x){}}
 function cocktail(){try{e.ap=Object.assign({},e.ap||{},{_tasse:{k:'jus',f:Date.now()+30000}});vibrer([8,30,8]);texteVolant(joueur.x,joueur.y-58,['Un cocktail sans alcool, offert !','À la santé des danseurs !','Avec une paille fluo !'][Math.floor(Math.random()*3)],'#3af0ff');}catch(x){}}
 function decor(){const D=[];const P=(t,x,y,o)=>{o=o||{};if(o.col)o={...o,col:[o.col[0]*S,o.col[1]*S]};if(o.demi!=null)o={...o,demi:o.demi*S};D.push(Object.assign({t,x:x*S,y:y*S,gr:0},o));};
   P('x_jol_club_bar_sol',130,300,{col:[196,26]});P('x_jol_club_vide',130,322,{agir:()=>ui('ouvrirBarClub',{vip:estVip()}),libelle:'Les cocktails',nom:'LE BAR À COCKTAILS',demi:70});
@@ -308,6 +367,14 @@ function decor(){const D=[];const P=(t,x,y,o)=>{o=o||{};if(o.col)o={...o,col:[o.
   P('x_jol_club_cn_sol',774,770,{col:[24,10]});P('x_jol_club_vide',760,786,{agir:canon,libelle:'Lancer les confettis',nom:'LE CANON À CONFETTIS',demi:26});
   P('x_jol_club_bo_sol',610,786,{col:[116,10]});
   P('x_jol_club_vide',400,292,{agir:battle,libelle:'Lancer une battle',nom:'BATTLE DE DANSE',demi:46});
+  /* LA ROUE DISCO : un tour gratuit par jour, des jetons à gagner */
+  P('x_jol_club_rb_sol',64,606,{col:[30,16]});P('x_jol_club_vide',64,624,{agir:roue,libelle:'Tourner la roue',nom:'LA ROUE DISCO',demi:30});
+  /* LE DJ : un pourboire change les lumières et lance ta musique */
+  P('x_jol_club_vide',400,250,{agir:pourboireDJ,libelle:'Pourboire au DJ (500 €)',nom:'LE DJ',demi:30});
+  /* LA BOULE À FACETTES : on tape dessous, elle arrose la salle */
+  P('x_jol_club_vide',400,316,{agir:taperBoule,libelle:'Toucher la boule',nom:'LA BOULE À FACETTES',demi:26});
+  /* LE VIDEUR DE L'ENTRÉE : il te parle */
+  P('x_jol_club_vide',458,700,{agir:parlerVideur,libelle:'Parler au videur',nom:'LE VIDEUR',demi:30});
   SIEGES.forEach((St,i)=>{if(ASSIS_PNJ.some(a=>a[0]===i))return;P('x_jol_club_vide',St.px/S,St.py/S,{agir:()=>asseoir(St),libelle:St.jac?'Se baigner':'S’asseoir',nom:St.nom,demi:16});});
   DECOR=D;return D;}
 let DECOR=[];
