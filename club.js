@@ -9,11 +9,12 @@
    ===================================================================== */
 (()=>{
 const rpcS=async(n,a)=>{try{if(typeof sb!=='undefined'&&sb&&sb.rpc){const q=await sb.rpc(n,a||{});return q.data!=null?q.data:(q.error?{erreur:q.error.message}:null);}return await appelRPC(n,a||{});}catch(x){return {erreur:'reseau'};}};
-const W=800,H=800,MUR=212;
-const PISTE={x0:200,x1:600,y0:300,y1:560,nx:10,ny:6};
-const DEPART=[400,742];
-const VIP={x0:552,y0:604,porte:702};   /* le carré VIP, en bas à droite ; on y entre par la gauche, à hauteur de la porte */
-const JAC={x:700,y:690,rx:52,ry:24};
+const S=1.5;                           /* facteur d'agrandissement : la salle passe de 800 à 1200, géante */
+const W=800*S,H=800*S,MUR=212*S;
+const PISTE={x0:200*S,x1:600*S,y0:300*S,y1:560*S,nx:10,ny:6};
+const DEPART=[400*S,742*S];
+const VIP={x0:552*S,y0:604*S,porte:702*S};   /* le carré VIP, en bas à droite ; on y entre par la gauche, à hauteur de la porte */
+const JAC={x:700*S,y:690*S,rx:52*S,ry:24*S};
 const hA=(x,y,k)=>{let n=((x*73856093)^(y*19349663)^(k*83492791))|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
 const R=(g,x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
 const lin=(g,x0,y0,x1,y1,st)=>{const gr=g.createLinearGradient(x0,y0,x1,y1);st.forEach(([o,c])=>gr.addColorStop(o,c));return gr;};
@@ -24,7 +25,11 @@ const BT=.5;   /* un temps : 120 battements par minute, comme la musique */
 
 /* ---------- LE SOL ET LES MURS ---------- */
 function neonTexte(g,s,x,y,px,c){g.save();g.font='900 '+px+'px "Baloo 2","Arial Black",Arial,sans-serif';g.textAlign='center';g.textBaseline='middle';g.shadowColor=c;g.shadowBlur=14;g.fillStyle=c;g.fillText(s,x,y);g.shadowBlur=4;g.fillStyle='#fff';g.fillText(s,x,y);g.restore();}
-function peindreSol(g){
+function peindreSol(G){
+  /* on agrandit tout d'un coup : le contexte est mis à l'échelle S, et le corps dessine
+     avec la géométrie d'origine (800×800) — pas une seule constante du décor à retoucher */
+  G.save();G.scale(S,S);const g=G;
+  const W=800,H=800,MUR=212,PISTE={x0:200,x1:600,y0:300,y1:560,nx:10,ny:6},VIP={x0:552,y0:604,porte:702},JAC={x:700,y:690,rx:52,ry:24};
   /* le mur du fond : velours violet, panneaux capitonnés */
   g.fillStyle=lin(g,0,0,0,MUR,[[0,'#12061e'],[.6,'#22093a'],[1,'#2e0e4a']]);g.fillRect(0,0,W,MUR);
   for(let x=0;x<W;x+=40)for(let y=40;y<MUR-20;y+=34){g.fillStyle='rgba(255,255,255,.035)';g.beginPath();g.ellipse(x+20,y+17,16,13,0,0,7);g.fill();g.fillStyle='rgba(0,0,0,.35)';g.fillRect(x+19,y+16,2,2);}
@@ -80,7 +85,8 @@ function peindreSol(g){
   /* le tapis rouge de l'entrée */
   R(g,366,590,68,H-590,'#a8101e');R(g,366,590,3,H-590,'#e0b040');R(g,431,590,3,H-590,'#e0b040');
   /* les portes du fond, en bas */
-  R(g,330,H-14,140,14,'#2a1a10');R(g,330,H-14,140,2,'#e0b040');}
+  R(g,330,H-14,140,14,'#2a1a10');R(g,330,H-14,140,2,'#e0b040');
+  G.restore();}
 function sol(){const c=document.createElement('canvas');c.width=W;c.height=H;peindreSol(c.getContext('2d'));return c;}
 function solFin(){const c=document.createElement('canvas');c.width=W*2;c.height=H*2;const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);peindreSol(g);return c;}
 
@@ -151,7 +157,7 @@ function graverPlante(){if(CACHE.pl)return CACHE.pl;const Wd=50,Hd=80,s=76;const
   for(let k=0;k<12;k++)R(g,6+hA(k,1,9)*38,10+hA(k,2,9)*40,1.6,1.6,['#ff3ac8','#3af0ff','#ffd23a'][k%3]);return CACHE.pl={toile:c,W:Wd,H:Hd,sol:s};}
 const VIDE=()=>({toile:document.createElement('canvas'),W:1,H:1,sol:0});
 const GRAVEURS={x_jol_club_bar_sol:graverBar,x_jol_club_tab_sol:graverTabouret,x_jol_club_enc_sol:graverEnceinte,x_jol_club_pla_sol:graverPlatines,x_jol_club_bq_sol:v=>graverBanquette(v),x_jol_club_col_sol:graverColonne,x_jol_club_pot_sol:graverPoteau,x_jol_club_cv_sol:graverComptoirV,x_jol_club_th_sol:graverTableHaute,x_jol_club_rmp_sol:graverRampe,x_jol_club_jac_sol:graverJacuzzi,x_jol_club_bv_sol:graverBarVip,x_jol_club_pv_sol:graverPlatineVip,x_jol_club_cn_sol:graverCanon,x_jol_club_bo_sol:graverBanquetteOr,x_jol_club_tb_sol:graverTableau,x_jol_club_pl_sol:graverPlante,x_jol_club_vide:VIDE};
-function graver(t,v){const r=(GRAVEURS[t]||VIDE)(v||0);return {toile:r.toile,W:r.W,H:r.H,sol:r.sol};}
+function graver(t,v){const r=(GRAVEURS[t]||VIDE)(v||0);return {toile:r.toile,W:r.W*S,H:r.H*S,sol:r.sol*S};}
 
 /* ---------- LES GENS ---------- */
 const AP=(o)=>Object.assign({},DEF_AP,{bas:0,souliers:1,chaussures:'#1a1a22',sac:0,chapeau:0,raye:0,motif:0,barbe:0,_civil:true,_pnj:true},o);
@@ -164,20 +170,20 @@ const DANSEURS=[
   [420,470,{peau:6,cheveux:4,coiffe:2,_disco:'disco_neon'},'dz_toupie',1.8],
   [540,520,{peau:2,cheveux:2,coiffe:14,_disco:'disco_boule'},'dz_travolta',4.1],
   [320,530,{peau:5,cheveux:3,coiffe:9,veste:'#e8302a',pantalon:'#1a1a22'},'dz_twist',2.6],
-  [470,410,{peau:1,cheveux:6,coiffe:10,veste:'#2a6ad8',pantalon:'#f6f4ee',_lun:'lun_coeur'},'dz_moonwalk',.2]].map(([x,y,ap,k,o])=>({x,y,ap:AP(ap),k,o}));
-const DJ={x:400,y:250,ap:AP({peau:4,cheveux:1,coiffe:1,barbe:3,_disco:'disco_boule'})};
-const BARMAN={x:130,y:282,ap:AP({peau:2,cheveux:1,coiffe:9,haut:2,veste:'#16161c',pantalon:'#16161c',_bij:'bij_chaine_or'})};
-const VENDEUSE={x:670,y:282,ap:AP({peau:3,cheveux:7,coiffe:6,_disco:'disco_roi'})};
-const VIDEUR={x:458,y:700,ap:AP({peau:5,cheveux:0,coiffe:1,barbe:1,veste:'#0c0c10',pantalon:'#0c0c10',_lun:'lun_noires'})};
-const VIDEUR_VIP={x:528,y:676,ap:AP({peau:4,cheveux:1,coiffe:1,veste:'#0c0c10',pantalon:'#0c0c10',_lun:'lun_aviateur',_bij:'bij_chaine_or'})};
-const BARMAN_VIP={x:612,y:620,ap:AP({peau:1,cheveux:7,coiffe:6,veste:'#f6f4ee',pantalon:'#16161c',_bij:'bij_perles'})};
-const MANNEQUINS=[[610,214,'disco_lame'],[730,214,'disco_roi']];
+  [470,410,{peau:1,cheveux:6,coiffe:10,veste:'#2a6ad8',pantalon:'#f6f4ee',_lun:'lun_coeur'},'dz_moonwalk',.2]].map(([x,y,ap,k,o])=>({x:x*S,y:y*S,ap:AP(ap),k,o}));
+const DJ={x:400*S,y:250*S,ap:AP({peau:4,cheveux:1,coiffe:1,barbe:3,_disco:'disco_boule'})};
+const BARMAN={x:130*S,y:282*S,ap:AP({peau:2,cheveux:1,coiffe:9,haut:2,veste:'#16161c',pantalon:'#16161c',_bij:'bij_chaine_or'})};
+const VENDEUSE={x:670*S,y:282*S,ap:AP({peau:3,cheveux:7,coiffe:6,_disco:'disco_roi'})};
+const VIDEUR={x:458*S,y:700*S,ap:AP({peau:5,cheveux:0,coiffe:1,barbe:1,veste:'#0c0c10',pantalon:'#0c0c10',_lun:'lun_noires'})};
+const VIDEUR_VIP={x:528*S,y:676*S,ap:AP({peau:4,cheveux:1,coiffe:1,veste:'#0c0c10',pantalon:'#0c0c10',_lun:'lun_aviateur',_bij:'bij_chaine_or'})};
+const BARMAN_VIP={x:612*S,y:620*S,ap:AP({peau:1,cheveux:7,coiffe:6,veste:'#f6f4ee',pantalon:'#16161c',_bij:'bij_perles'})};
+const MANNEQUINS=[[610*S,214*S,'disco_lame'],[730*S,214*S,'disco_roi']];
 /* les places assises : tabourets du bar, banquettes du salon */
-const SIEGES=[];for(const x of [64,104,156,196])SIEGES.push({x,h:340-14,ys:342,px:x,py:352,nom:'TABOURET'});
-for(const d of [-1,1])SIEGES.push({x:120+d*44,h:676-12,ys:678,px:120+d*44,py:690,nom:'BANQUETTE'});
+const SIEGES=[];for(const x of [64*S,104*S,156*S,196*S])SIEGES.push({x,h:(340-14)*S,ys:342*S,px:x,py:352*S,nom:'TABOURET'});
+for(const d of [-1,1])SIEGES.push({x:(120+d*44)*S,h:(676-12)*S,ys:678*S,px:(120+d*44)*S,py:690*S,nom:'BANQUETTE'});
 /* le jacuzzi du carré VIP : on s'y assoit dans l'eau */
-for(const [dx,dy] of [[-26,-4],[26,-4],[0,-10]])SIEGES.push({x:JAC.x+dx,h:JAC.y+dy+4,ys:JAC.y+dy,px:JAC.x+dx,py:JAC.y+dy+2,nom:'LE JACUZZI',jac:1,vip:1});
-for(const dx of [-24,24])SIEGES.push({x:610+dx,h:776-12,ys:778,px:610+dx,py:788,nom:'BANQUETTE DORÉE',vip:1});
+for(const [dx,dy] of [[-26*S,-4*S],[26*S,-4*S],[0,-10*S]])SIEGES.push({x:JAC.x+dx,h:JAC.y+dy+4*S,ys:JAC.y+dy,px:JAC.x+dx,py:JAC.y+dy+2*S,nom:'LE JACUZZI',jac:1,vip:1});
+for(const dx of [-24*S,24*S])SIEGES.push({x:610*S+dx,h:(776-12)*S,ys:778*S,px:610*S+dx,py:788*S,nom:'BANQUETTE DORÉE',vip:1});
 const ASSIS_PNJ=[[0,AP({peau:6,cheveux:4,coiffe:4,_disco:'disco_neon'})],[5,AP({peau:1,cheveux:2,coiffe:5,veste:'#ff3ac8',pantalon:'#2a2a34'})],[6,AP({peau:3,cheveux:7,coiffe:12,_lun:'lun_coeur',veste:'#ff7ac8',pantalon:'#ff7ac8'})],[10,AP({peau:3,cheveux:3,coiffe:3,barbe:2,_disco:'disco_travolta'})]];
 function asseoir(S){try{joueur.x=S.px;joueur.y=S.py;joueur.marche=false;window.MOI_ASSIS={x:S.x,h:S.h,ys:S.ys,px:S.px,py:S.py};vibrer(8);texteVolant(S.x,S.h-40,'bouge pour te lever','#ffd8f4');}catch(x){}}
 setInterval(()=>{try{const A=window.MOI_ASSIS;if(!A||typeof joueur==='undefined')return;if(Math.abs(joueur.x-A.px)>3||Math.abs(joueur.y-A.py)>3)window.MOI_ASSIS=null;}catch(x){}},120);
@@ -196,26 +202,26 @@ function dessinerPiste(g,cx,cy){const t=now(),P=PISTE,tw=(P.x1-P.x0)/P.nx,th=(P.
     const v=.5+.5*Math.sin(t*.9-i*.45-j*.6),h=(i*14+j*22+t*12)%360;
     g.fillStyle='hsla('+h+',70%,55%,'+(.12+v*.26)+')';g.fillRect(x,y,tw-2,th-2);g.fillStyle='rgba(255,255,255,'+(.04+v*.08)+')';g.fillRect(x+3,y+3,tw-8,2);}
   /* les éclats de la boule à facettes, qui glissent sur la piste, les murs, partout */
-  for(let k=0;k<22;k++){const a=k*2.399+t*.12,r=40+hA(k,1,7)*420,x=400+Math.cos(a)*r-cx,y=430+Math.sin(a)*r*.7-cy;if(x<-4||y<-4||x>VW+4||y>VH+4)continue;
-    const al=.18+.14*Math.sin(t*.8+k);g.fillStyle='rgba(255,255,255,'+al+')';g.fillRect(x,y,2.4,1.6);}
+  for(let k=0;k<22;k++){const a=k*2.399+t*.12,r=(40+hA(k,1,7)*420)*S,x=400*S+Math.cos(a)*r-cx,y=430*S+Math.sin(a)*r*.7-cy;if(x<-4||y<-4||x>VW+4||y>VH+4)continue;
+    const al=.18+.14*Math.sin(t*.8+k);g.fillStyle='rgba(255,255,255,'+al+')';g.fillRect(x,y,2.4*S,1.6*S);}
   /* l'écran géant derrière le DJ : un égaliseur */
-  if(cy<200){const x0=290-cx,y0=48-cy;g.fillStyle='#120820';g.fillRect(x0,y0,220,140);
-    for(let k=0;k<22;k++){const h=20+Math.abs(Math.sin(t*1.6+k*.5)*Math.cos(t*.9+k*.3))*90;for(let s=0;s<h;s+=6){g.fillStyle=NEON[Math.floor((s/120)*6)%6];g.fillRect(x0+4+k*10,y0+136-s-5,8,5);}}
-    g.fillStyle='rgba(255,255,255,.06)';g.fillRect(x0,y0,220,40);}
+  if(cy<200*S){const x0=290*S-cx,y0=48*S-cy;g.fillStyle='#120820';g.fillRect(x0,y0,220*S,140*S);
+    for(let k=0;k<22;k++){const h=20+Math.abs(Math.sin(t*1.6+k*.5)*Math.cos(t*.9+k*.3))*90;for(let s=0;s<h;s+=6){g.fillStyle=NEON[Math.floor((s/120)*6)%6];g.fillRect(x0+(4+k*10)*S,y0+(136-s-5)*S,8*S,5*S);}}
+    g.fillStyle='rgba(255,255,255,.06)';g.fillRect(x0,y0,220*S,40*S);}
   /* les spots de la rampe, allumés de couleurs qui tournent */
-  if(cy<80)for(let x=40;x<W;x+=80){const sx=x-cx,sy=42-cy,h=(x+t*30)%360;g.fillStyle='hsla('+h+',100%,70%,.9)';g.fillRect(sx-3,sy-1,6,2);const gr=g.createRadialGradient(sx,sy,1,sx,sy,16);gr.addColorStop(0,'hsla('+h+',100%,70%,.35)');gr.addColorStop(1,'hsla('+h+',100%,70%,0)');g.fillStyle=gr;g.fillRect(sx-16,sy-16,32,32);}
+  if(cy<80*S)for(let x=40*S;x<W;x+=80*S){const sx=x-cx,sy=42*S-cy,h=(x+t*30)%360;g.fillStyle='hsla('+h+',100%,70%,.9)';g.fillRect(sx-3*S,sy-1*S,6*S,2*S);const gr=g.createRadialGradient(sx,sy,1,sx,sy,16*S);gr.addColorStop(0,'hsla('+h+',100%,70%,.35)');gr.addColorStop(1,'hsla('+h+',100%,70%,0)');g.fillStyle=gr;g.fillRect(sx-16*S,sy-16*S,32*S,32*S);}
   /* les néons des murs, qui respirent */
-  if(cy<30){const al=.5+.5*Math.sin(t*2);g.fillStyle='rgba(58,240,255,'+(.25*al)+')';g.fillRect(-cx,20-cy,W,10);}}
+  if(cy<30*S){const al=.5+.5*Math.sin(t*2);g.fillStyle='rgba(58,240,255,'+(.25*al)+')';g.fillRect(-cx,20*S-cy,W,10*S);}}
 function dessinerPlafond(g,cx,cy){const t=now();try{dessinerConfettis(g,cx,cy);}catch(x){}
   /* la brume, qui traîne doucement */
-  for(let k=0;k<4;k++){const hx=((k*230+t*8)%(W+200))-100-cx,hy=320+k*90-cy;if(hx<-120||hx>VW+120||hy<-60||hy>VH+60)continue;const gr=g.createRadialGradient(hx,hy,10,hx,hy,110);gr.addColorStop(0,'rgba(220,180,255,.06)');gr.addColorStop(1,'rgba(220,180,255,0)');g.fillStyle=gr;g.fillRect(hx-110,hy-110,220,220);}
+  for(let k=0;k<4;k++){const hx=((k*230*S+t*8)%(W+200))-100-cx,hy=320*S+k*90*S-cy;if(hx<-120||hx>VW+120||hy<-60||hy>VH+60)continue;const gr=g.createRadialGradient(hx,hy,10,hx,hy,110*S);gr.addColorStop(0,'rgba(220,180,255,.06)');gr.addColorStop(1,'rgba(220,180,255,0)');g.fillStyle=gr;g.fillRect(hx-110*S,hy-110*S,220*S,220*S);}
   /* les faisceaux qui balaient la salle */
-  for(let k=0;k<6;k++){const sx=k<3?40:760,sy=-10,a=Math.sin(t*.25+k*1.1)*.45+(k<3?.9:2.25),L=900,h=(k*60+t*15)%360;const ex=sx+Math.cos(a)*L,ey=sy+Math.sin(a)*L;
+  for(let k=0;k<6;k++){const sx=(k<3?40:760)*S,sy=-10,a=Math.sin(t*.25+k*1.1)*.45+(k<3?.9:2.25),L=900*S,h=(k*60+t*15)%360;const ex=sx+Math.cos(a)*L,ey=sy+Math.sin(a)*L;
     g.fillStyle='hsla('+h+',90%,65%,.05)';g.beginPath();g.moveTo(sx-cx,sy-cy);g.lineTo(ex-cx-30,ey-cy);g.lineTo(ex-cx+30,ey-cy);g.fill();}
   /* la boule à facettes, au-dessus du centre de la piste */
-  const bx=400-cx,by=318-cy,r=16;if(by>-40&&by<VH+40&&bx>-40&&bx<VW+40){g.strokeStyle='#8a8aa0';g.lineWidth=.8;g.beginPath();g.moveTo(bx,by-r-260);g.lineTo(bx,by-r);g.stroke();
-    g.save();g.beginPath();g.arc(bx,by,r,0,7);g.clip();for(let y=-r;y<r;y+=3.4)for(let x=-r;x<r;x+=3.4){const v=hA(Math.floor((x+r+t*4)/3.4)&31,Math.floor((y+r)/3.4),Math.floor(t*1.5)%8);g.fillStyle=v<.12?'#ffffff':v<.45?'#c8ccdc':v<.8?'#8a8ea4':'#5a5e74';g.fillRect(bx+x,by+y,3,3);}g.restore();
-    g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.arc(bx,by,r+6,0,7);g.fill();}}
+  const bx=400*S-cx,by=318*S-cy,r=16*S;if(by>-40&&by<VH+40&&bx>-40&&bx<VW+40){g.strokeStyle='#8a8aa0';g.lineWidth=.8;g.beginPath();g.moveTo(bx,by-r-260*S);g.lineTo(bx,by-r);g.stroke();
+    const p=3.4*S;g.save();g.beginPath();g.arc(bx,by,r,0,7);g.clip();for(let y=-r;y<r;y+=p)for(let x=-r;x<r;x+=p){const v=hA(Math.floor((x+r+t*4*S)/p)&31,Math.floor((y+r)/p),Math.floor(t*1.5)%8);g.fillStyle=v<.12?'#ffffff':v<.45?'#c8ccdc':v<.8?'#8a8ea4':'#5a5e74';g.fillRect(bx+x,by+y,3*S,3*S);}g.restore();
+    g.fillStyle='rgba(255,255,255,.18)';g.beginPath();g.arc(bx,by,r+6*S,0,7);g.fill();}}
 function dessinerDanseur(g,cx,cy,D){const t=now()+D.o*1.7,Dz=DANSES[D.k],tt=t%(Dz.D+1.2);if(!vu(D.x,D.y,cx,cy,70,120))return;
   try{if(tt>Dz.D)personne(g,D.x-cx,D.y-cy,D.ap,'bas',0,false);else danseur(g,D.x-cx,D.y-cy,D.ap,D.k,tt);}catch(z){}}
 function acteurs(){const L=[];
@@ -252,9 +258,9 @@ function dessinerEau(g,x,y){const t=now();g.save();g.beginPath();g.ellipse(x,y,J
   for(let k=0;k<3;k++){g.strokeStyle='rgba(255,255,255,.25)';g.beginPath();g.ellipse(x,y+2,JAC.rx*(.4+k*.2)+Math.sin(t*2+k)*2,JAC.ry*(.4+k*.2),0,.2,Math.PI-.2);g.stroke();}
   g.restore();g.strokeStyle='#e0b040';g.lineWidth=1.4;g.beginPath();g.ellipse(x,y,JAC.rx+1,JAC.ry+1,0,.05,Math.PI-.05);g.stroke();
   for(let k=0;k<3;k++){const u=(t*.25+k/3)%1;g.fillStyle='rgba(255,255,255,'+(.18*(1-u))+')';g.beginPath();g.arc(x-20+k*20,y-6-u*22,4+u*6,0,7);g.fill();}}
-function dessinerChampions(g,x,y){g.font='800 6px "Baloo 2",Arial';g.textAlign='left';
-  for(let i=0;i<3;i++){const C=CHAMPIONS[i],yy=y-114+40+i*16;g.fillStyle=C?'#fff':'rgba(255,255,255,.35)';g.fillText(C?String(C.pseudo).slice(0,12):'— à toi ? —',x-28,yy);if(C){g.textAlign='right';g.fillStyle='#ffd23a';g.fillText('niv. '+C.niveau,x+44,yy);g.textAlign='left';}}
-  g.fillStyle='rgba(255,255,255,'+(.4+.3*Math.sin(now()*2))+')';g.font='700 5px Arial';g.textAlign='center';g.fillText('touche pour tout voir',x,y-30);}
+function dessinerChampions(g,x,y){g.font='800 '+(6*S)+'px "Baloo 2",Arial';g.textAlign='left';
+  for(let i=0;i<3;i++){const C=CHAMPIONS[i],yy=y+(-114+40+i*16)*S;g.fillStyle=C?'#fff':'rgba(255,255,255,.35)';g.fillText(C?String(C.pseudo).slice(0,12):'— à toi ? —',x-28*S,yy);if(C){g.textAlign='right';g.fillStyle='#ffd23a';g.fillText('niv. '+C.niveau,x+44*S,yy);g.textAlign='left';}}
+  g.fillStyle='rgba(255,255,255,'+(.4+.3*Math.sin(now()*2))+')';g.font='700 '+(5*S)+'px Arial';g.textAlign='center';g.fillText('touche pour tout voir',x,y-30*S);}
 /* LES CONFETTIS DU CARRÉ VIP : toute la salle en prend plein les yeux */
 let CONF=0;function canon(){CONF=now();try{vibrer([10,30,10,30,10]);texteVolant(joueur.x,joueur.y-60,'BOUM ! 🎉','#ffd23a');}catch(x){}}
 function dessinerConfettis(g,cx,cy){const u=now()-CONF;if(u>5)return;const C=['#ff4a6a','#ffd23a','#4ad8ff','#7aff8a','#c86aff','#ffffff'];
@@ -278,7 +284,7 @@ async function ouvrirVestiaire(){try{if(!window.ouvrirDisco)eval(await chargerMo
 function danser(){try{ouvrirEmotes();}catch(x){}}
 async function battle(){try{if(!window.ouvrirBattle)eval(await chargerMorceau('battle.js'));window.ouvrirBattle();}catch(x){try{console.warn('BATTLE',x);}catch(_){}}}
 function cocktail(){try{e.ap=Object.assign({},e.ap||{},{_tasse:{k:'jus',f:Date.now()+30000}});vibrer([8,30,8]);texteVolant(joueur.x,joueur.y-58,['Un cocktail sans alcool, offert !','À la santé des danseurs !','Avec une paille fluo !'][Math.floor(Math.random()*3)],'#3af0ff');}catch(x){}}
-function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0},o||{}));
+function decor(){const D=[];const P=(t,x,y,o)=>{o=o||{};if(o.col)o={...o,col:[o.col[0]*S,o.col[1]*S]};if(o.demi!=null)o={...o,demi:o.demi*S};D.push(Object.assign({t,x:x*S,y:y*S,gr:0},o));};
   P('x_jol_club_bar_sol',130,300,{col:[196,26]});P('x_jol_club_vide',130,322,{agir:()=>ui('ouvrirBarClub',{vip:estVip()}),libelle:'Les cocktails',nom:'LE BAR À COCKTAILS',demi:70});
   for(const x of [64,104,156,196])P('x_jol_club_tab_sol',x,344,{});
   P('x_jol_club_cv_sol',670,300,{col:[150,24]});P('x_jol_club_vide',670,322,{agir:ouvrirVestiaire,libelle:'Essayer',nom:'LE VESTIAIRE DISCO',demi:70});
@@ -290,29 +296,29 @@ function decor(){const D=[];const P=(t,x,y,o)=>D.push(Object.assign({t,x,y,gr:0}
   for(let y=620;y<=760;y+=46){P('x_jol_club_pot_sol',352,y,{col:[10,6]});P('x_jol_club_pot_sol',448,y,{col:[10,6]});}
   P('x_jol_club_vide',400,430,{agir:danser,libelle:'Danser',nom:'LA PISTE',demi:150});
   /* le tableau des champions */
-  P('x_jol_club_tb_sol',TABLEAU.x,TABLEAU.y,{col:[100,14]});P('x_jol_club_vide',TABLEAU.x,TABLEAU.y+16,{agir:()=>ui('ouvrirChampionsClub',CHAMPIONS),libelle:'Voir les champions',nom:'LE TABLEAU DES CHAMPIONS',demi:44});
+  P('x_jol_club_tb_sol',TABLEAU.x/S,TABLEAU.y/S,{col:[100,14]});P('x_jol_club_vide',TABLEAU.x/S,TABLEAU.y/S+16,{agir:()=>ui('ouvrirChampionsClub',CHAMPIONS),libelle:'Voir les champions',nom:'LE TABLEAU DES CHAMPIONS',demi:44});
   /* LE CARRÉ VIP : la rampe, les cordons, le videur, et ce qu'il y a dedans */
-  P('x_jol_club_rmp_sol',(VIP.x0+W)/2,VIP.y0+2,{});
-  for(let y=VIP.y0+20;y<H;y+=26)if(Math.abs(y-VIP.porte)>24)P('x_jol_club_pot_sol',VIP.x0-2,y,{});
-  P('x_jol_club_pot_sol',VIP.x0-2,VIP.porte-24,{});P('x_jol_club_pot_sol',VIP.x0-2,VIP.porte+24,{});
-  P('x_jol_club_vide',VIDEUR_VIP.x,VIDEUR_VIP.y+22,{agir:()=>ui('ouvrirVipClub',etatVip()),libelle:'Le carré VIP',nom:'LE VIDEUR DU CARRÉ',demi:36});
-  P('x_jol_club_jac_sol',JAC.x,JAC.y+JAC.ry+12,{});
+  P('x_jol_club_rmp_sol',(VIP.x0+W)/2/S,VIP.y0/S+2,{});
+  for(let y=VIP.y0+20*S;y<H;y+=26*S)if(Math.abs(y-VIP.porte)>24*S)P('x_jol_club_pot_sol',(VIP.x0-2*S)/S,y/S,{});
+  P('x_jol_club_pot_sol',(VIP.x0-2*S)/S,(VIP.porte-24*S)/S,{});P('x_jol_club_pot_sol',(VIP.x0-2*S)/S,(VIP.porte+24*S)/S,{});
+  P('x_jol_club_vide',VIDEUR_VIP.x/S,VIDEUR_VIP.y/S+22,{agir:()=>ui('ouvrirVipClub',etatVip()),libelle:'Le carré VIP',nom:'LE VIDEUR DU CARRÉ',demi:36});
+  P('x_jol_club_jac_sol',JAC.x/S,(JAC.y+JAC.ry+12*S)/S,{});
   P('x_jol_club_bv_sol',612,644,{col:[96,20]});P('x_jol_club_vide',612,664,{agir:()=>ui('ouvrirBarClub',{vip:estVip(),dore:true}),libelle:'Cocktail Doré',nom:'LE BAR VIP',demi:30});
   P('x_jol_club_pv_sol',740,640,{col:[56,14]});P('x_jol_club_vide',740,658,{agir:()=>ui('ouvrirMusiqueClub'),libelle:'Choisir la musique',nom:'LA PLATINE VIP',demi:30});
   P('x_jol_club_cn_sol',774,770,{col:[24,10]});P('x_jol_club_vide',760,786,{agir:canon,libelle:'Lancer les confettis',nom:'LE CANON À CONFETTIS',demi:26});
   P('x_jol_club_bo_sol',610,786,{col:[116,10]});
   P('x_jol_club_vide',400,292,{agir:battle,libelle:'Lancer une battle',nom:'BATTLE DE DANSE',demi:46});
-  SIEGES.forEach((S,i)=>{if(ASSIS_PNJ.some(a=>a[0]===i))return;P('x_jol_club_vide',S.px,S.py,{agir:()=>asseoir(S),libelle:S.jac?'Se baigner':'S’asseoir',nom:S.nom,demi:16});});
+  SIEGES.forEach((St,i)=>{if(ASSIS_PNJ.some(a=>a[0]===i))return;P('x_jol_club_vide',St.px/S,St.py/S,{agir:()=>asseoir(St),libelle:St.jac?'Se baigner':'S’asseoir',nom:St.nom,demi:16});});
   DECOR=D;return D;}
 let DECOR=[];
-function bloque(x,y){if(x<14||x>W-14||y<MUR+16||y>H-6)return true;
+function bloque(x,y){if(x<14*S||x>W-14*S||y<MUR+16*S||y>H-6*S)return true;
   /* le carré VIP : la rampe en haut, les cordons à gauche (sauf la porte), et le videur pour qui n'est pas VIP */
-  if(x>VIP.x0-3&&y>VIP.y0-4){if(!estVip()){refuserVip();return true;}}
-  if(Math.abs(y-(VIP.y0+2))<6&&x>VIP.x0-4)return true;
-  if(Math.abs(x-VIP.x0)<5&&y>VIP.y0&&Math.abs(y-VIP.porte)>20)return true;
-  {const dx=(x-JAC.x)/(JAC.rx+6),dy=(y-JAC.y)/(JAC.ry+6);if(dx*dx+dy*dy<1&&!window.MOI_ASSIS)return true;}
-  for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]/2&&y>o.y-o.col[1]&&y<o.y+3)return true;}
-  for(const D of DANSEURS)if(Math.abs(x-D.x)<7&&Math.abs(y-D.y)<5)return true;
+  if(x>VIP.x0-3*S&&y>VIP.y0-4*S){if(!estVip()){refuserVip();return true;}}
+  if(Math.abs(y-(VIP.y0+2*S))<6*S&&x>VIP.x0-4*S)return true;
+  if(Math.abs(x-VIP.x0)<5*S&&y>VIP.y0&&Math.abs(y-VIP.porte)>20*S)return true;
+  {const dx=(x-JAC.x)/(JAC.rx+6*S),dy=(y-JAC.y)/(JAC.ry+6*S);if(dx*dx+dy*dy<1&&!window.MOI_ASSIS)return true;}
+  for(const o of DECOR){if(!o.col)continue;if(Math.abs(x-o.x)<o.col[0]/2&&y>o.y-o.col[1]&&y<o.y+3*S)return true;}
+  for(const D of DANSEURS)if(Math.abs(x-D.x)<7*S&&Math.abs(y-D.y)<5*S)return true;
   return false;}
 
 /* ---------- LA FLUIDITÉ : toutes les poses des danseurs gravées d'avance, quelques-unes par image ---------- */
@@ -322,7 +328,7 @@ setTimeout(()=>{try{const Q=[];for(const D of DANSEURS.concat([{ap:DJ.ap,k:'dz_t
 setInterval(()=>{try{if(typeof SON_PRET!=='undefined'&&SON_PRET&&!document.hidden)musiqueDisco(true);}catch(x){}},800);
 /* LA SORTIE : par les portes du bas, on retrouve la place */
 let PARTI=false;
-setInterval(()=>{try{if(PARTI||typeof joueur==='undefined')return;if(joueur.y>H-24&&joueur.x<VIP.x0-10){PARTI=true;window.EFFET_CLUB=null;window.AURA_DERRIERE=null;window.AURA_DEVANT=null;try{sauver();}catch(x){}
+setInterval(()=>{try{if(PARTI||typeof joueur==='undefined')return;if(joueur.y>H-24*S&&joueur.x<VIP.x0-10*S){PARTI=true;window.EFFET_CLUB=null;window.AURA_DERRIERE=null;window.AURA_DEVANT=null;try{sauver();}catch(x){}
   try{const f=document.createElement('div');f.style.cssText='position:fixed;inset:0;z-index:2147483000;background:#12061e;opacity:0;transition:opacity .45s;pointer-events:none';document.body.appendChild(f);requestAnimationFrame(()=>f.style.opacity='1');}catch(x){}
   setTimeout(()=>{const v=window.MA_VERSION?('&v='+encodeURIComponent(window.MA_VERSION)):'';location.href='spawn.html?de=club'+v+'&t='+Date.now();},480);}}catch(x){}},150);
 setTimeout(()=>{const v=document.getElementById('voileDC');if(v){v.style.opacity='0';setTimeout(()=>v.remove(),800);}},700);
