@@ -206,12 +206,16 @@ function boucle(t){if(!RAC)return;RAF=requestAnimationFrame(boucle);
   if(flash>0){G.fillStyle='rgba(255,246,210,'+flash+')';G.fillRect(0,0,CV.width,CV.height);}}
 
 function taper(ex,ey){
-  /* vérifier qu'on tape sur le conteneur */
-  const DPR=devicePixelRatio||1;const W=CV.width,H=CV.height;
+  /* convertir coords écran → coords canvas */
+  const rect=CV.getBoundingClientRect();
+  const mx=(ex-rect.left)/rect.width*CV.width;
+  const my=(ey-rect.top)/rect.height*CV.height;
+  /* vérifier qu'on tape sur le conteneur (zone large pour le tactile) */
+  const W=CV.width,H=CV.height;
   const CX=W/2,CY=H*.56,CW=W*.58,CH=CW*.42,TOP=CH*.16,SIDE=CH*.12;
   const x0=CX-CW/2,y0=CY-CH/2;
-  const mx=ex*DPR,my=ey*DPR;
-  if(mx<x0||mx>x0+CW+SIDE||my<y0-TOP||my>y0+CH)return;
+  const marge=W*.04;
+  if(mx<x0-marge||mx>x0+CW+SIDE+marge||my<y0-TOP-marge||my>y0+CH+marge)return;
   euros++;tapAnim=1;shake=1;flash=.2;
   try{vibrer(12);}catch(x){}
   for(let i=0;i<10;i++){const a=Math.random()*Math.PI*2,v=2+Math.random()*5;
