@@ -1,0 +1,132 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+body{margin:0;background:#e3d0a8;font-family:monospace}
+.row{display:flex;flex-wrap:wrap;gap:0;justify-content:center}
+.cell{width:300px;text-align:center;padding:10px 0}
+canvas{image-rendering:pixelated;background:#cdbfa0}
+.lab{font-size:14px;font-weight:700;color:#2a2018;margin-top:4px}
+</style></head><body>
+<div class="row" id="row"></div>
+<script>
+const h=(x,y,k)=>{let n=(x*374761393+y*668265263+k*1442695041)|0;n=(n^(n>>>13))*1274126177|0;return((n^(n>>>16))>>>0)/4294967296;};
+const teinte=(hex,d)=>{const v=parseInt(hex.slice(1),16);const c=k=>Math.max(0,Math.min(255,((v>>k)&255)+d));return 'rgb('+c(16)+','+c(8)+','+c(0)+')';};
+const hx=a=>[1,3,5].map(i=>parseInt(a.slice(i,i+2),16));
+const mix=(a,b,k)=>{const A=hx(a),B=hx(b);return 'rgb('+A.map((v,i)=>Math.round(v+(B[i]-v)*k)).join(',')+')';};
+const D=2;
+function toile(L,HH){const c=document.createElement('canvas');c.width=L*D;c.height=HH*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,hh,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(hh)));};return {c,g,R};}
+
+/* ============ fond commun : façade entrepôt + dalles, comme le spawn ============ */
+function cadre(graveur,label){
+  const L=180,HH=230;const c=document.createElement('canvas');c.width=L*D;c.height=HH*D;const g=c.getContext('2d');g.setTransform(D,0,0,D,0,0);g.imageSmoothingEnabled=false;
+  const R=(x,y,w,hh,col)=>{g.fillStyle=col;g.fillRect(Math.round(x),Math.round(y),Math.max(1,Math.round(w)),Math.max(1,Math.round(hh)));};
+  /* mur entrepôt crème */
+  R(0,0,L,150,'#e3d0a8');
+  /* bandeau haut bleu (comme l'aile) */
+  for(let y=0;y<40;y++){const k=y/40;R(0,y,L,1,'rgb('+(60+k*40|0)+','+(140+k*40|0)+','+(208+k*26|0)+')');}
+  R(0,40,L,4,'#ece6dc');R(0,43,L,2,'#7a3f2a');
+  /* briques crème texturées */
+  for(let y=48;y<150;y+=9)for(let x=0;x<L;x+=18){const d=(h(x,y,61)-.5)*8;R(x,y,18,9,teinte('#e9dfd2',d|0));R(x,y,18,.5,teinte('#f6efe6',d|0));R(x,y,.5,9,'#d8ccbc');}
+  /* sol : dalles claires */
+  R(0,150,L,HH-150,'#e6e0d6');
+  for(let y=150;y<HH;y+=18)for(let x=0;x<L;x+=46){const t=['#e6e0d6','#e2dcd2','#eae4da','#ded8cc'][(x/46+y/18|0)%4];R(x,y,46,18,t);R(x,y,46,.5,'#f0 eae0'.replace(' ',''));}
+  R(0,150,L,3,'rgba(40,30,20,.22)');
+  /* la porte, dessinée par le graveur, centrée, posée au sol (y=150) */
+  const spr=graveur();const px=(L-spr.W)/2, py=150-spr.sol;
+  g.drawImage(spr.c,0,0,spr.W*D,spr.H*D,px,py,spr.W,spr.H);
+  const cell=document.createElement('div');cell.className='cell';
+  const cc=document.createElement('canvas');cc.width=L*D;cc.height=HH*D;cc.style.width=L+'px';cc.style.height=HH+'px';cc.getContext('2d').drawImage(c,0,0);
+  cell.appendChild(cc);const lb=document.createElement('div');lb.className='lab';lb.textContent=label;cell.appendChild(lb);
+  document.getElementById('row').appendChild(cell);
+}
+
+/* ============ PORTE 1 : PORTAIL DE FERME EN BOIS + PIERRE ============ */
+function porte1(){const L=120,HH=120,{c,g,R}=toile(L,HH),cx=L/2,s=HH-2;
+  g.fillStyle='rgba(30,22,14,.25)';g.beginPath();g.ellipse(cx,s,46,6,0,0,7);g.fill();
+  /* deux piliers de pierre sèche */
+  for(const bx of [10,L-28]){
+    for(let y=s-96;y<s;y+=8)for(let x=bx;x<bx+18;x+=9){const d=(h(x,y,71)-.5)*14;R(x,y,9,8,teinte('#b2a890',d|0));R(x,y,9,.5,teinte('#cabfa6',d|0));R(x,y,.5,8,'rgba(70,58,42,.3)');}
+    R(bx-2,s-98,22,4,'#9a8f78');R(bx-2,s-98,22,1,'#b8ad94');}
+  /* barrière de bois à 3 lisses */
+  const x0=30,x1=L-30;
+  for(const yy of [s-82,s-60,s-38]){R(x0,yy,x1-x0,7,'#9c6b3f');R(x0,yy,x1-x0,1.5,'#b4814e');R(x0,yy+6,x1-x0,1,'#6e4524');
+    for(let x=x0;x<x1;x+=5)R(x+h(x,yy,72)*2,yy+1,.6,5,'rgba(90,56,30,.3)');}
+  /* montants + croix */
+  for(const mx of [x0+8,x1-12]){R(mx,s-90,8,86,'#88592f');R(mx,s-90,8,1.5,'#a06c3c');R(mx+1,s-88,1.5,82,'rgba(255,230,190,.15)');}
+  g.strokeStyle='#7a4e2a';g.lineWidth=5;g.beginPath();g.moveTo(x0+12,s-14);g.lineTo(x1-10,s-84);g.stroke();
+  g.strokeStyle='#8a5a32';g.lineWidth=1.5;g.beginPath();g.moveTo(x0+12,s-15);g.lineTo(x1-10,s-85);g.stroke();
+  /* panneau FERME gravé */
+  R(cx-26,s-112,52,16,'#6a4626');R(cx-26,s-112,52,2,'#8a6038');R(cx-26,s-98,52,1,'#3a2410');
+  R(cx-28,s-110,3,12,'#5a3a1e');R(cx+25,s-110,3,12,'#5a3a1e');
+  g.fillStyle='#f2e4c4';g.font='700 9px monospace';g.textAlign='center';g.textBaseline='middle';g.fillText('FERME',cx,s-103);
+  /* tournesol qui dépasse */
+  R(L-14,s-30,2,28,'#4a7a2e');for(let a=0;a<8;a++){const an=a/8*6.28;R(L-13+Math.cos(an)*6,s-34+Math.sin(an)*6,3,3,'#f2c230');}R(L-14,s-34,4,4,'#7a4a1a');
+  return {c,W:L,H:HH,sol:HH-2};}
+
+/* ============ PORTE 2 : ARCHE DE PIERRE VOÛTÉE + LIERRE ============ */
+function porte2(){const L=110,HH=120,{c,g,R}=toile(L,HH),cx=L/2,s=HH-2;
+  g.fillStyle='rgba(30,22,14,.25)';g.beginPath();g.ellipse(cx,s,42,6,0,0,7);g.fill();
+  /* bloc de pierre */
+  for(let y=s-96;y<s;y+=7)for(let x=12;x<L-12;x+=12){const d=(h(x,y,73)-.5)*12;R(x,y,12,7,teinte('#a89c86',d|0));R(x,y,12,.5,teinte('#c0b49c',d|0));R(x,y,.5,7,'rgba(60,50,40,.25)');}
+  /* l'ouverture voûtée, sombre */
+  g.fillStyle='#2a2218';g.beginPath();g.moveTo(cx-26,s);g.lineTo(cx-26,s-54);g.arc(cx,s-54,26,Math.PI,0);g.lineTo(cx+26,s);g.closePath();g.fill();
+  /* lueur chaude au fond (le chemin vers la ferme) */
+  const gr=g.createRadialGradient(cx,s-20,2,cx,s-20,30);gr.addColorStop(0,'#6a5a3a');gr.addColorStop(1,'#2a2218');g.fillStyle=gr;g.beginPath();g.moveTo(cx-24,s);g.lineTo(cx-24,s-52);g.arc(cx,s-52,24,Math.PI,0);g.lineTo(cx+24,s);g.closePath();g.fill();
+  /* claveaux de l'arche (pierres taillées) */
+  for(let a=0;a<=10;a++){const an=Math.PI+a/10*Math.PI,ix=cx+Math.cos(an)*26,iy=s-54+Math.sin(an)*26;const d=(h(a,1,74)-.5)*10;R(ix-3,iy-3,6,6,teinte('#b7ac97',d|0));}
+  /* chemin dallé qui sort */
+  for(let i=0;i<3;i++){R(cx-10+i*3,s-6-i*2,20-i*6,4,'#c2b494');R(cx-10+i*3,s-6-i*2,20-i*6,.6,'#d2c6a8');}
+  /* lierre qui grimpe */
+  for(const side of [[14,1],[L-14,-1]]){let lx=side[0],ly=s-10;for(let j=0;j<10;j++){R(lx,ly,5,5,['#4a7a3a','#5a8a46','#6a9a52'][j%3]);R(lx+side[1]*3,ly-4,4,4,'#5a8a46');lx+=side[1]*(h(j,2,75)*3);ly-=7;}}
+  return {c,W:L,H:HH,sol:HH-2};}
+
+/* ============ PORTE 3 : PETITE GRANGE ROUGE ============ */
+function porte3(){const L=120,HH=128,{c,g,R}=toile(L,HH),cx=L/2,s=HH-2;
+  g.fillStyle='rgba(30,22,14,.25)';g.beginPath();g.ellipse(cx,s,48,6,0,0,7);g.fill();
+  /* corps de grange, planches rouges */
+  const bx=18,bw=L-36,by=s-86;
+  for(let x=bx;x<bx+bw;x+=7){const d=(h(x,1,76)-.5)*16;R(x,by,7,86,teinte('#b23a2e',d|0));R(x,by,1,86,'rgba(90,20,14,.4)');}
+  R(bx,by,bw,2,'#c84a3a');
+  /* pignon triangulaire */
+  g.fillStyle='#9c2e24';g.beginPath();g.moveTo(bx-4,by);g.lineTo(cx,by-30);g.lineTo(bx+bw+4,by);g.closePath();g.fill();
+  for(let x=bx;x<bx+bw;x+=6){const yy=by-30*(1-Math.abs(x+3-cx)/(bw/2+4));if(yy<by)R(x,yy,1,by-yy,'rgba(90,20,14,.3)');}
+  /* faîtage */
+  g.strokeStyle='#7a2018';g.lineWidth=3;g.beginPath();g.moveTo(bx-4,by);g.lineTo(cx,by-30);g.lineTo(bx+bw+4,by);g.stroke();
+  /* double porte sombre */
+  const px=cx-28,pw=56,ph=66;R(px,s-ph,pw,ph,'#7a2018');
+  R(px,s-ph,pw/2-1,ph,'#9c2e24');R(cx+1,s-ph,pw/2-1,ph,'#9c2e24');
+  for(let x=px;x<cx-1;x+=5)R(x,s-ph,1,ph,'rgba(90,20,14,.4)');for(let x=cx+1;x<px+pw;x+=5)R(x,s-ph,1,ph,'rgba(90,20,14,.4)');
+  /* croix de St-André blanches */
+  g.strokeStyle='#e8e0d0';g.lineWidth=4;
+  g.beginPath();g.moveTo(px+2,s-ph+2);g.lineTo(cx-3,s-2);g.moveTo(cx-3,s-ph+2);g.lineTo(px+2,s-2);g.stroke();
+  g.beginPath();g.moveTo(cx+3,s-ph+2);g.lineTo(px+pw-2,s-2);g.moveTo(px+pw-2,s-ph+2);g.lineTo(cx+3,s-2);g.stroke();
+  R(cx-1,s-ph,3,ph,'#6a1810');
+  /* lucarne + foin */
+  R(cx-9,by-26,18,13,'#2a2018');R(cx-7,by-24,14,9,'#1a1410');R(cx-6,by-20,12,5,'#e0a830');R(cx-6,by-20,12,1.5,'#f0c250');
+  /* gond doré */
+  R(px+2,s-ph+8,2,2,'#d8b468');R(px+pw-4,s-ph+8,2,2,'#d8b468');
+  return {c,W:L,H:HH,sol:HH-2};}
+
+/* ============ PORTE 4 : ARCHE DE VERDURE (TUNNEL VÉGÉTAL) ============ */
+function porte4(){const L=116,HH=122,{c,g,R}=toile(L,HH),cx=L/2,s=HH-2;
+  g.fillStyle='rgba(30,22,14,.25)';g.beginPath();g.ellipse(cx,s,44,6,0,0,7);g.fill();
+  /* montants de treillis bois */
+  for(const mx of [cx-30,cx+26]){R(mx,s-70,5,70,'#8a6038');for(let y=s-66;y<s;y+=8)R(mx-1,y,7,2,'#9c6b3f');}
+  /* ouverture sombre */
+  g.fillStyle='#1c2614';g.beginPath();g.moveTo(cx-28,s);g.lineTo(cx-28,s-48);g.arc(cx,s-48,28,Math.PI,0);g.lineTo(cx+28,s);g.closePath();g.fill();
+  const gr=g.createRadialGradient(cx,s-18,2,cx,s-18,28);gr.addColorStop(0,'#5a6a3a');gr.addColorStop(1,'#1c2614');g.fillStyle=gr;g.beginPath();g.moveTo(cx-26,s);g.lineTo(cx-26,s-46);g.arc(cx,s-46,26,Math.PI,0);g.lineTo(cx+26,s);g.closePath();g.fill();
+  /* feuillage touffu en couronne (buissons empilés) */
+  const buis=[[cx-30,s-64,16],[cx-8,s-78,20],[cx+20,s-78,19],[cx+34,s-62,15],[cx+6,s-84,17]];
+  for(const [bx,by,br] of buis){for(let i=0;i<40;i++){const an=h(i,bx,77)*6.28,rr=h(i,by,78)*br;const col=['#3a5a2e','#4a7a3a','#5a8a46','#6a9a52'][(i+bx)%4];R(bx+Math.cos(an)*rr,by+Math.sin(an)*rr*.8,3,3,col);}}
+  /* fleurs */
+  for(const [fx,fy,fc] of [[cx-20,s-62,'#f2c230'],[cx+16,s-70,'#e86a9a'],[cx,s-78,'#f2c230'],[cx+28,s-58,'#e8e0d0']]){R(fx,fy,3,3,fc);R(fx-2,fy,2,2,fc);R(fx+2,fy,2,2,fc);R(fx,fy-2,2,2,fc);R(fx,fy+2,2,2,fc);R(fx,fy,2,2,'#7a4a1a');}
+  /* chemin de terre */
+  for(let i=0;i<3;i++){R(cx-9+i*3,s-5-i*2,18-i*6,4,'#b89a6a');R(cx-9+i*3,s-5-i*2,18-i*6,.6,'#c8aa7a');}
+  /* rai de lumière */
+  g.fillStyle='rgba(180,220,120,.3)';g.beginPath();g.moveTo(cx-4,s-44);g.lineTo(cx-8,s);g.lineTo(cx+2,s);g.lineTo(cx+2,s-44);g.fill();
+  return {c,W:L,H:HH,sol:HH-2};}
+
+cadre(porte1,'1 — Portail de ferme (bois + pierre)');
+cadre(porte2,'2 — Arche de pierre + lierre');
+cadre(porte3,'3 — Petite grange rouge');
+cadre(porte4,'4 — Arche de verdure');
+</script></body></html>
