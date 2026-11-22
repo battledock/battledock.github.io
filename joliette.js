@@ -1472,13 +1472,10 @@ function faceFerme(g,jour){
     g.save();g.globalCompositeOperation='lighter';for(const [x,y,w,hhh] of LUMS){g.fillStyle='rgba(140,90,35,.6)';g.fillRect(x,y,w,hhh);}
     g.fillStyle='rgba(255,200,120,.5)';g.fillRect(PX+PW/2-6,PY+2,12,PH-4);g.restore();}
 }
-let FERME_JOUR=null,FERME_NUIT=null;
+let FERME_JOUR=null;
 function toileFerme(jour){const c=document.createElement('canvas');c.width=200*2;c.height=210*2;const g=c.getContext('2d');g.setTransform(2,0,0,2,0,0);g.imageSmoothingEnabled=false;faceFerme(g,jour);return c;}
-function graverFaceFerme(){if(!FERME_JOUR)FERME_JOUR=toileFerme(true);
-  const k=(()=>{try{const c=cielDuMoment&&cielDuMoment();return c?Math.max(0,Math.min(1,c.lampes||0)):0;}catch(x){return 0;}})();
-  if(k>0.02&&!FERME_NUIT)FERME_NUIT=toileFerme(false);
-  const toile=(k>0.02&&FERME_NUIT)?melangeNuit(FERME_JOUR,FERME_NUIT,k):FERME_JOUR;
-  return {toile,W:200,H:210,sol:206};}
+/* un sprite unique, gravé une seule fois et mis en cache par le moteur (XCAL) : aucun coût par frame */
+function graverFaceFerme(){if(!FERME_JOUR)FERME_JOUR=toileFerme(true);return {toile:FERME_JOUR,W:200,H:210,sol:206};}
 
 /* ---------- BUREAU MARITIME (comptoir Corsica Linea sous les arches, aile gauche) ---------- */
 function graverBureauMaritime(){
