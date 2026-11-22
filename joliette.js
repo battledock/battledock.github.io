@@ -1625,23 +1625,7 @@ function graverPanneauTouristique(){
   g.fillStyle='#ffffff';g.font='bold 7px Georgia,serif';g.fillText('i',cx,s-24.5);
   return {toile:c,W:L,H:HH,sol:s};}
 
-/* LE DISTRIBUTEUR FARCEUR : une machine à boissons rouge, vitrine éclairée, canettes */
-function graverDistributeur(){const L=34,HH=56,{c,g,R}=toile(L,HH),cx=L/2,s=HH-4;
-  g.fillStyle='rgba(30,26,18,.25)';g.beginPath();g.ellipse(cx,s,15,3.4,0,0,7);g.fill();
-  /* carcasse */
-  R(cx-13,s-48,26,48,'#c8302a');R(cx-13,s-48,26,3,'#e8544a');R(cx-13,s-48,2,48,'#8a1c18');R(cx+11,s-48,2,48,'#8a1c18');
-  /* la vitrine éclairée avec des canettes */
-  R(cx-9,s-44,18,24,'#141820');R(cx-9,s-44,18,24,'#1a2a3a');
-  for(let i=0;i<3;i++)for(let j=0;j<4;j++){const cc=['#3af0ff','#ffd23a','#ff3ac8','#7aff6a'][(i+j)%4];R(cx-8+i*6,s-43+j*6,4,5,cc);R(cx-8+i*6,s-43+j*6,4,1.4,'rgba(255,255,255,.4)');}
-  R(cx-9,s-44,18,1.4,'rgba(130,200,255,.5)');
-  /* le clavier + la fente */
-  R(cx-11,s-18,8,14,'#2a2420');for(let j=0;j<3;j++)for(let i=0;i<2;i++)R(cx-10+i*4,s-16+j*4,3,3,'#5a5450');
-  R(cx-2,s-10,13,4,'#1a1410');R(cx-1,s-9,11,2,'#0a0806');
-  /* enseigne lumineuse */
-  R(cx-13,s-48,26,7,'#ffd23a');g.fillStyle='#8a1c18';g.font='900 5px "Baloo 2",Arial';g.textAlign='center';g.fillText('SODA',cx,s-43);
-  return {toile:c,W:L,H:HH,sol:s};}
-
-const GRAVEURS={x_jol_distributeur:graverDistributeur,x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_sapin:graverSapin,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_bureau_maritime:graverBureauMaritime,x_jol_panneau_tourisme:graverPanneauTouristique,x_jol_tram:graverVide};
+const GRAVEURS={x_jol_entree:()=>{const c=document.createElement('canvas');c.width=2;c.height=2;return {toile:c,W:1,H:1,sol:0};},x_jol_kiosque:()=>KIOSQUE.graver(),x_jol_place_sol:v=>PLACE.graverSegment(v),x_jol_fontaine_ronde:()=>PLACE.graverFontaine(),x_jol_platane:graverPlatane,x_jol_arbre_magnolia:graverMagnolia,x_jol_pin:graverPin,x_jol_olivier:graverOlivier,x_jol_sapin:graverSapin,x_jol_banc:graverBancBois,x_jol_lampadaire:graverLampadaire,x_jol_massif:graverMassifBeau,x_jol_docks_sol:graverDocks,x_jol_parasol:graverParasol,x_jol_abri:graverAbri,x_jol_panneau:graverPanneauPort,x_jol_affiches:graverPanneauAffiches,x_jol_bureau_maritime:graverBureauMaritime,x_jol_panneau_tourisme:graverPanneauTouristique,x_jol_tram:graverVide};
 function graver(t,v){return (GRAVEURS[t]||graverVide)(v||0);}
 
 function decor(){
@@ -1685,17 +1669,6 @@ function decor(){
   P('x_jol_bureau_maritime',100,280,{col:[100,14],agir:ouvrirJeuConteneurs,libelle:'Décharger',nom:'CORSICA LINEA'});
   /* panneau touristique, sous les arches de l'aile droite */
   P('x_jol_panneau_tourisme',1100,280,{col:[60,8]});
-  /* ---- LES GAGS DE LA PLACE ---- */
-  /* le dragueur lourd, planté près de la fontaine */
-  P('x_jol_entree',720,732,{agir:GAGS.parlerDrag,libelle:'Lui répondre',nom:'LE DRAGUEUR',demi:26});
-  /* le lampadaire qui parle (sur un lampadaire existant) */
-  P('x_jol_entree',420,470,{agir:GAGS.parlerLampa,libelle:'Écouter le lampadaire',nom:'LE LAMPADAIRE BAVARD',demi:20});
-  /* le distributeur farceur */
-  P('x_jol_distributeur',980,462,{col:[26,10],agir:GAGS.taperDist,libelle:'Secouer la machine',nom:'LE DISTRIBUTEUR',demi:24});
-  /* le pigeon roi : interaction qui n'apparaît que s'il est là */
-  P('x_jol_entree',600,640,{agir:GAGS.saluerRoi,libelle:'Saluer le Roi 👑',nom:'LE PIGEON ROI',demi:40});
-  /* le concours de ronflement : un panneau sur un banc */
-  P('x_jol_entree',240,900,{agir:GAGS.concours,libelle:'Participer 😴',nom:'CONCOURS DE RONFLEMENT',demi:30});
   return D;
 }
 
@@ -2067,79 +2040,8 @@ const AMBIANCE=(()=>{
  return {acteurs,figurants};
 })();
 
-/* ====================================================================
-   LES GAGS DE LA PLACE : le dragueur lourd, la mouette voleuse, le
-   lampadaire qui parle, le distributeur farceur, le pigeon roi, et
-   l'entrée du concours de ronflement. Rien de sérieux, que du rire.
-   ==================================================================== */
-const GAGS=(()=>{
- const dire=(x,y,txt,c)=>{try{texteVolant(x,y,txt,c||'#fff');}catch(e){}};
- /* --- LE DRAGUEUR LOURD : planté près de la fontaine, il drague les passants --- */
- const DRAG={x:720,y:720,ap:Object.assign({peau:3,cheveux:1,coiffe:0,barbe:2,haut:2,veste:'#1a1a2a',pantalon:'#2a2a3a',souliers:2,_lun:'lun_aviateur',_bij:'bij_chaine_or',_pnj:true},{}),t:3,dir:'bas',pas:0};
- const REPLIQUES=['« T’as un plan de la place ? Je me perds dans tes yeux… »','« Tu fais quoi ce soir ? À part briller ? »','« On s’est pas déjà vus ? Ah non, c’est dans mes rêves. »','« Ton père est docker ? Parce que t’es un sacré colis. »','« T’es pas fatiguée ? Tu tournes dans ma tête depuis ce matin. »','« C’est la fontaine ou c’est toi qui me fais tourner la tête ? »'];
- function vieDrag(dt){DRAG.t-=dt;if(DRAG.t<=0){DRAG.t=5+Math.random()*6;dire(DRAG.x,DRAG.y-62,REPLIQUES[(Math.random()*REPLIQUES.length)|0],'#ff9ae0');}}
- function parlerDrag(){DRAG.t=5+Math.random()*4;dire(DRAG.x,DRAG.y-62,['« Enfin quelqu’un de goût ! »','« Toi et moi, la place entière nous regarde. »','« Bon, tu me files ton numéro ou je continue à charmer les mouettes ? »'][(Math.random()*3)|0],'#ff9ae0');try{vibrer(8);}catch(e){}}
-
- /* --- LE LAMPADAIRE QUI PARLE : un bug assumé de la ville, il balance des vannes nulles --- */
- const LAMPA={x:420,y:470};
- const VANNES=['« Pourquoi les dockers sont zen ? Parce qu’ils lâchent prise ! »','« J’éclaire, donc je suis. Enfin je crois. »','« Un conteneur entre dans un bar. Le barman : on sert pas les gros volumes. »','« Je connais toutes les ombres du quartier. Discrètes, les ombres. »','« T’inquiète, je garde la lumière allumée pour toi. C’est mon taf. »','« Quel est le comble pour un lampadaire ? Avoir un coup de mou. »'];
- function parlerLampa(){dire(LAMPA.x,LAMPA.y-120,VANNES[(Math.random()*VANNES.length)|0],'#ffe27a');try{vibrer(6);}catch(e){}}
-
- /* --- LE DISTRIBUTEUR FARCEUR : la canette reste coincée, faut secouer --- */
- const DIST={x:980,y:470,coups:0,t:0};
- function taperDist(){const n=performance.now();if(DIST.t&&n-DIST.t<400)return;DIST.t=n;DIST.coups++;
-  try{vibrer([6,20]);}catch(e){}
-  if(DIST.coups>=3){DIST.coups=0;dire(DIST.x,DIST.y-70,'CLONK ! 🥤 Une canette tombe !','#7affa0');try{vibrer([10,30,10,40]);}catch(e){}}
-  else dire(DIST.x,DIST.y-70,['La canette est coincée… secoue encore !','Grrr… il bloque. Encore un coup !','Presque ! Tape encore une fois.'][DIST.coups-1],'#ffd23a');}
-
- /* --- LA MOUETTE VOLEUSE : elle traverse la place et pique les sandwichs (gag visuel) --- */
- const MOU={x:-40,y:300,vx:0,actif:false,t:2,cri:0};
- function vieMouette(dt){MOU.t-=dt;
-  if(!MOU.actif){if(MOU.t<=0){MOU.actif=true;MOU.x=-40;MOU.y=260+Math.random()*260;MOU.vx=120+Math.random()*60;MOU.cri=0;}}
-  else{MOU.x+=MOU.vx*dt;MOU.y+=Math.sin(MOU.x*.02)*.6;
-   if(MOU.cri===0&&MOU.x>W*.35){MOU.cri=1;dire(MOU.x,MOU.y-24,'MON SANDWICH ! 🥪','#fff');}
-   if(MOU.x>W+60){MOU.actif=false;MOU.t=12+Math.random()*18;}}}
- function dessinerMouette(g,cx,cy){if(!MOU.actif)return;const X=MOU.x-cx,Y=MOU.y-cy,t=performance.now()/1000;if(X<-40||X>VW+40)return;
-  const bat=Math.sin(t*14)*8;g.fillStyle='#f4f6fa';
-  /* corps */g.beginPath();g.ellipse(X,Y,9,4,0,0,7);g.fill();
-  /* ailes */g.strokeStyle='#e8ecf2';g.lineWidth=2.4;g.beginPath();g.moveTo(X-2,Y);g.lineTo(X-12,Y-bat);g.moveTo(X-2,Y);g.lineTo(X+10,Y-bat*.8);g.stroke();
-  /* tête + bec */g.fillStyle='#f4f6fa';g.beginPath();g.arc(X+8,Y-2,3.4,0,7);g.fill();g.fillStyle='#f2a22a';g.fillRect(X+11,Y-2,4,1.6);
-  /* le sandwich dans le bec */g.fillStyle='#e8c878';g.fillRect(X+14,Y-3,5,4);g.fillStyle='#8aca5a';g.fillRect(X+14,Y-1,5,1);g.fillStyle='#c84a3a';g.fillRect(X+14,Y,5,1);}
-
- /* --- LE PIGEON ROI : rare, majestueux, à couronne ; on peut le saluer --- */
- const ROI={x:600,y:640,actif:false,t:20+Math.random()*40,salue:0,ph:0};
- function vieRoi(dt){ROI.ph+=dt;if(!ROI.actif){ROI.t-=dt;if(ROI.t<=0){ROI.actif=true;ROI.dur=20+Math.random()*16;dire(ROI.x,ROI.y-40,'👑 Le Pigeon Roi est apparu !','#ffe24a');}}
-  else{ROI.dur-=dt;if(ROI.dur<=0){ROI.actif=false;ROI.t=70+Math.random()*130;}}}
- function saluerRoi(){if(!ROI.actif){dire(600,640,'Le Pigeon Roi n’est pas là… guette bien la place. 👀','#bfc8e0');return;}ROI.salue=performance.now();dire(ROI.x,ROI.y-44,['Le Roi hoche la tête. Tu es digne. 👑','« Rourrou. » (ça veut dire merci en pigeon)','Le Pigeon Roi déploie ses plumes. Majestueux.'][(Math.random()*3)|0],'#ffe24a');try{vibrer([8,30,8,30,60]);}catch(e){}}
- function dessinerRoi(g,cx,cy){if(!ROI.actif)return;const X=ROI.x-cx,Y=ROI.y-cy,t=ROI.ph;if(X<-30||X>VW+30||Y<-30||Y>VH+40)return;
-  g.fillStyle='rgba(30,26,18,.25)';g.beginPath();g.ellipse(X,Y,12,3.4,0,0,7);g.fill();
-  const bob=Math.sin(t*2)*1.4;
-  /* corps dodu */g.fillStyle='#6a7490';g.beginPath();g.ellipse(X,Y-10+bob,13,11,0,0,7);g.fill();
-  g.fillStyle='#8a94b0';g.beginPath();g.ellipse(X-4,Y-13+bob,8,7,0,0,7);g.fill();
-  /* reflet vert/violet au cou */g.fillStyle='#4a9c7a';g.beginPath();g.ellipse(X+5,Y-14+bob,5,5,0,0,7);g.fill();g.fillStyle='#8a5aa8';g.beginPath();g.ellipse(X+7,Y-11+bob,3,4,0,0,7);g.fill();
-  /* tête */g.fillStyle='#7a84a0';g.beginPath();g.arc(X+9,Y-20+bob,6,0,7);g.fill();
-  /* œil + bec */g.fillStyle='#f2a22a';g.beginPath();g.arc(X+9,Y-20+bob,2.6,0,7);g.fill();g.fillStyle='#2a2a34';g.beginPath();g.arc(X+9,Y-21+bob,1.1,0,7);g.fill();g.fillStyle='#e8902a';g.fillRect(X+14,Y-21+bob,4,2);
-  /* LA COURONNE dorée */g.fillStyle='#ffd23a';const kx=X+5,ky=Y-27+bob;g.beginPath();g.moveTo(kx-6,ky+4);g.lineTo(kx-6,ky-2);g.lineTo(kx-3,ky+1);g.lineTo(kx,ky-4);g.lineTo(kx+3,ky+1);g.lineTo(kx+6,ky-2);g.lineTo(kx+6,ky+4);g.closePath();g.fill();
-  g.fillStyle='#ff3a5a';g.beginPath();g.arc(kx,ky-4,1.4,0,7);g.fill();g.fillStyle='#3af0ff';g.beginPath();g.arc(kx-6,ky-2,1.2,0,7);g.fill();g.beginPath();g.arc(kx+6,ky-2,1.2,0,7);g.fill();
-  /* étincelles de majesté */if(((t*3)|0)%2){g.fillStyle='rgba(255,226,74,.8)';g.fillRect(X-16,Y-28,1.6,1.6);g.fillRect(X+18,Y-22,1.6,1.6);}}
-
- /* --- LE CONCOURS DE RONFLEMENT --- */
- async function concours(){try{if(!window.ouvrirConcoursRonflement)eval(await chargerMorceau('ronflement.js'));window.ouvrirConcoursRonflement();}catch(x){try{console.warn('RONFLE',x);}catch(_){}}}
-
- let TD=performance.now();
- function vie(){const n=performance.now(),dt=Math.min(.1,(n-TD)/1000);TD=n;try{vieDrag(dt);vieMouette(dt);vieRoi(dt);}catch(x){}}
- function figurants(){vie();return [{x:DRAG.x,y:DRAG.y,ap:DRAG.ap,dir:'bas',pas:0,marche:false}];}
- function acteurs(){const L=[];
-  L.push({y:ROI.y,f:(g,cx,cy)=>dessinerRoi(g,cx,cy)});
-  L.push({y:99998,f:(g,cx,cy)=>dessinerMouette(g,cx,cy)});
-  return L;}
- return {figurants,acteurs,parlerDrag,parlerLampa,taperDist,saluerRoi,concours,roiActif:()=>ROI.actif,DIST,LAMPA};
-})();
-
 ANIM_DECOR.jol_tram=dessinerTram;
 ANIM_DECOR.jol_docks=dessinerLesDocks;
 ANIM_DECOR.jol_fontaine=PLACE.dessinerFontaine;
-return {sol,decor,bloque,graver,depart:DEPART,solFin:PLACE.solFin,
-  figurants:()=>AMBIANCE.figurants().concat(GAGS.figurants()),
-  acteurs:()=>PIGEONS.acteurs().concat(VOEU.acteurs(),AMBIANCE.acteurs(),GAGS.acteurs())};
+return {sol,decor,bloque,graver,depart:DEPART,solFin:PLACE.solFin,figurants:AMBIANCE.figurants,acteurs:()=>PIGEONS.acteurs().concat(VOEU.acteurs(),AMBIANCE.acteurs())};
 })()
